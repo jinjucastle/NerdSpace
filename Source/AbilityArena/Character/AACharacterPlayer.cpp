@@ -109,6 +109,9 @@ void AAACharacterPlayer::ChangeZoom()
 {
 	if (CurrentCharacterZoomType == ECharacterZoomType::ZoomOut)
 	{
+		//feat: 줌인 할 때 걷기로 초기화 ver 0.2.0 C
+		StopRun();
+
 		SetCharacterControl(ECharacterZoomType::ZoomIn);
 	}
 	else if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
@@ -180,6 +183,12 @@ void AAACharacterPlayer::Look(const FInputActionValue& Value)
 
 void AAACharacterPlayer::Run()
 {
+	//feat: 달릴 때 줌인 되어있으면 리턴 ver 0.2.0 C
+	if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
+	{
+		return;
+	}
+
 	float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed + (MovementSpeed * 0.75f);
 }
