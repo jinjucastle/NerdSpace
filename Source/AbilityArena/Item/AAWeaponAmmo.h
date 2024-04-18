@@ -59,7 +59,8 @@ public:
 	// ver 0.1.1a
 	// Change Function Parameter
 	void Fire()const;
-
+	//ver 0.2.1b
+	void TestFire(const FVector& ShootDirection);
 // ver 0.0.2a
 // Object Pool System
 public:

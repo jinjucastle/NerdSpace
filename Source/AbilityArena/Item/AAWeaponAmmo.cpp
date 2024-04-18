@@ -13,7 +13,7 @@ AAAWeaponAmmo::AAAWeaponAmmo()
 	PrimaryActorTick.bCanEverTick = true;
 
 	bReplicates = true;
-	SetReplicates(true);
+	//SetReplicates(true);
 	SetReplicateMovement(true);
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -33,6 +33,9 @@ AAAWeaponAmmo::AAAWeaponAmmo()
 	AmmoMovement->ProjectileGravityScale = 0.0f;
 
 	AmmoType = EAmmoType::Normal;
+
+	//ver 0.2.1JH shoot lifeSpan
+	InitialLifeSpan = 3.0f;
 }
 
 // Called when the game starts or when spawned
@@ -80,13 +83,37 @@ void AAAWeaponAmmo::NotifyActorEndOverlap(AActor* OtherActor)
 void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
 {
 	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
-	GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Notify Hit")));
-	ReturnSelf();
+	//ver 0.2.1JH Change Log 
+
+
+	if (Other)
+	{
+		USkeletalMeshComponent* TestCom = Other->FindComponentByClass<USkeletalMeshComponent>();
+		if (TestCom)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Notify Hit")));
+			FName BoonNameText = Hit.BoneName;
+			UE_LOG(LogTemp, Warning, TEXT("TestConllision: %s"), *BoonNameText.ToString());
+			//ReturnSelf();
+		}
+		this->Destroy();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("this is not Actor"));
+	}
 }
 
 void AAAWeaponAmmo::Fire() const
 {
 	AmmoMovement->SetVelocityInLocalSpace(FVector::ForwardVector * AmmoMovement->InitialSpeed);
+}
+
+void AAAWeaponAmmo::TestFire(const FVector& ShootDirection)
+{
+	AmmoMovement->InitialSpeed = 3000.0f;
+	AmmoMovement->Velocity = ShootDirection * AmmoMovement->InitialSpeed;
+	AmmoMesh->SetPhysicsLinearVelocity(AmmoMovement->Velocity);
 }
 
 void AAAWeaponAmmo::SetOwnerPlayer(AAACharacterPlayer* InPlayer)
