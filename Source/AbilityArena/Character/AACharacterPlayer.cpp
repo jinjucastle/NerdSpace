@@ -201,7 +201,7 @@ void AAACharacterPlayer::StopRun()
 
 AAAWeaponAmmo* AAACharacterPlayer::GetPooledAmmo()
 {
-	if (AmmoPool.Num() == 0) Expand();
+	if (AmmoPool.IsEmpty()) Expand();
 	return AmmoPool.Pop();
 }
 
@@ -211,12 +211,17 @@ void AAACharacterPlayer::Expand()
 
 	for (int i = 0; i < AmmoExpandSize; i++)
 	{
-		AAAWeaponAmmo* PoolableActor = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, FVector().ZeroVector, FRotator().ZeroRotator);
-		PoolableActor->SetActive(false);
-		PoolableActor->SetOwnerPlayer(this);
-		AmmoPool.Push(PoolableActor);
+		// ver 0.3.1a
+		// Zero Location에서 spawn시 즉시 return되어 GetPooledAmmo에서 Data를 못가져오는 Bug fix
+		AAAWeaponAmmo* PoolableActor = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, FVector(0.0f, 0.0f, -5000.f), FRotator().ZeroRotator);
+		if (PoolableActor != nullptr)
+		{
+			PoolableActor->SetActive(false);
+			PoolableActor->SetOwnerPlayer(this);
+			AmmoPool.Push(PoolableActor);
+			AmmoPoolSize++;
+		}
 	}
-	AmmoPoolSize += AmmoExpandSize;
 }
 
 void AAACharacterPlayer::ReturnAmmo(AAAWeaponAmmo* InReturnAmmoActor)
@@ -234,7 +239,14 @@ void AAACharacterPlayer::ClearPool()
 		AAAWeaponAmmo* PickCurrentAmmo = Cast<AAAWeaponAmmo>(ActiveAmmo);
 		if (PickCurrentAmmo)
 		{
-			PickCurrentAmmo->ReturnSelf();
+			if (PickCurrentAmmo->AmmoType == EAmmoType::Rocket)
+			{
+				PickCurrentAmmo->Destroy();
+			}
+			else
+			{
+				PickCurrentAmmo->ReturnSelf();
+			}
 		}
 	}
 
@@ -243,25 +255,15 @@ void AAACharacterPlayer::ClearPool()
 		AmmoPool.Pop()->Destroy();
 		AmmoPoolSize--;
 	}
-	check(AmmoPool.IsEmpty() && AmmoPoolSize == 0);
+	//check(AmmoPool.IsEmpty() && AmmoPoolSize == 0);
 }
 
 void AAACharacterPlayer::Fire()
 {
-	FVector CameraStartLocation = FollowCamera->GetComponentLocation();
-	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 5000.0f;
-
 	FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
 	FRotator MuzzleRotation = Weapon->GetSocketRotation(FName("BarrelEndSocket"));
 
-	if (!HasAuthority())
-	{
-		ServerRPCFire(MuzzleLocation, MuzzleRotation);
-	}
-	else
-	{
-		ClientRPCFire(MuzzleLocation, MuzzleRotation);
-	}
+	ServerRPCFire(MuzzleLocation, MuzzleRotation);
 }
 
 bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FRotator& NewRotation)
@@ -272,52 +274,33 @@ bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, cons
 
 void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation, const FRotator& NewRotation)
 {
-	//ver 0.2.1B Change way of shooting 
-	if (GetWorld())
+	// ver 0.3.1a
+	// Panzerfaust Spawn Actor Per Fire
+	if (WeaponData->Type == EWeaponType::Panzerfaust)
 	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = this;
-		SpawnParams.Instigator = GetInstigator();
-		AAAWeaponAmmo* PoolableActor = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, NewRotation);
-		if (PoolableActor)
+		AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, NewRotation);
+		Rocket->SetOwnerPlayer(this);
+		Rocket->SetLifeSpan(2.0f);
+		Rocket->SetActive(true);
+		if (Rocket)
 		{
 			FVector LaunchDirection = NewRotation.Vector();
-			PoolableActor->TestFire(LaunchDirection);
+			Rocket->Fire(LaunchDirection);
 		}
 	}
-	/*AAAWeaponAmmo* Bullet = GetPooledAmmo();
-
-	Bullet->SetActorLocation(NewLocation);
-	Bullet->SetActorRotation(NewRotation);
-
-	Bullet->SetActive(true);
-	Bullet->Fire();
-	*/
-}
-
-void AAACharacterPlayer::ClientRPCFire_Implementation(const FVector& NewLocation, const FRotator& NewRotation)
-{
-	//ver 0.2.1B Change way of shooting 
-	if (GetWorld())
+	// Other Weapon ObjectPool
+	else
 	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = this;
-		SpawnParams.Instigator = GetInstigator();
-		AAAWeaponAmmo* PoolableActor = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, NewRotation);
-		if (PoolableActor)
+		AAAWeaponAmmo* Bullet = GetPooledAmmo();
+
+		if (Bullet != nullptr)
 		{
-			FVector LaunchDirection = NewRotation.Vector();
-			PoolableActor->TestFire(LaunchDirection);
+			Bullet->SetReplicatedRotation(NewRotation);
+			Bullet->SetActorLocationAndRotation(NewLocation, NewRotation);
+			Bullet->SetActive(true);
+			Bullet->Fire(NewRotation.Vector());
 		}
 	}
-	/*AAAWeaponAmmo* Bullet = GetPooledAmmo();
-
-	Bullet->SetActorLocation(NewLocation);
-	Bullet->SetActorRotation(NewRotation);
-
-	Bullet->SetActive(true);
-	Bullet->Fire();
-	*/
 }
 
 void AAACharacterPlayer::SetPooledAmmoClass(UClass* NewAmmoClass)
