@@ -272,24 +272,52 @@ bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, cons
 
 void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation, const FRotator& NewRotation)
 {
-	AAAWeaponAmmo* Bullet = GetPooledAmmo();
+	//ver 0.2.1B Change way of shooting 
+	if (GetWorld())
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = GetInstigator();
+		AAAWeaponAmmo* PoolableActor = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, NewRotation);
+		if (PoolableActor)
+		{
+			FVector LaunchDirection = NewRotation.Vector();
+			PoolableActor->TestFire(LaunchDirection);
+		}
+	}
+	/*AAAWeaponAmmo* Bullet = GetPooledAmmo();
 
 	Bullet->SetActorLocation(NewLocation);
 	Bullet->SetActorRotation(NewRotation);
 
 	Bullet->SetActive(true);
 	Bullet->Fire();
+	*/
 }
 
 void AAACharacterPlayer::ClientRPCFire_Implementation(const FVector& NewLocation, const FRotator& NewRotation)
 {
-	AAAWeaponAmmo* Bullet = GetPooledAmmo();
+	//ver 0.2.1B Change way of shooting 
+	if (GetWorld())
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = GetInstigator();
+		AAAWeaponAmmo* PoolableActor = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, NewRotation);
+		if (PoolableActor)
+		{
+			FVector LaunchDirection = NewRotation.Vector();
+			PoolableActor->TestFire(LaunchDirection);
+		}
+	}
+	/*AAAWeaponAmmo* Bullet = GetPooledAmmo();
 
 	Bullet->SetActorLocation(NewLocation);
 	Bullet->SetActorRotation(NewRotation);
 
 	Bullet->SetActive(true);
 	Bullet->Fire();
+	*/
 }
 
 void AAACharacterPlayer::SetPooledAmmoClass(UClass* NewAmmoClass)
