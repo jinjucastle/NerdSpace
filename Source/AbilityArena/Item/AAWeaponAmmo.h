@@ -58,7 +58,7 @@ protected:
 public:
 	// ver 0.3.1a
 	// Change Function Parameter
-	void Fire(const FVector& ShootDirection)const;
+	void Fire()const;
 
 // ver 0.0.2a
 // Object Pool System

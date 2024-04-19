@@ -9,6 +9,7 @@
 #include "Item/AAWeaponItemData.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Animation/AnimMontage.h"
 
 // Sets default values
 AAACharacterBase::AAACharacterBase()
@@ -63,6 +64,16 @@ AAACharacterBase::AAACharacterBase()
 
 	Weapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon"));
 	Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("DEF-hand_RSocket"));
+
+	// ver 0.3.2a
+	// Reload Montage
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> ReloadMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/Action/AM_Reload.AM_Reload'"));
+	if (ReloadMontageRef.Object)
+	{
+		ReloadMontage = ReloadMontageRef.Object;
+	}
+
+	bCanFire = true;
 }
 
 void AAACharacterBase::PostInitializeComponents()
@@ -76,6 +87,9 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(AAACharacterBase, WeaponData);
+	DOREPLIFETIME(AAACharacterBase, MaxAmmoSize);
+	DOREPLIFETIME(AAACharacterBase, CurrentAmmoSize);
+	DOREPLIFETIME(AAACharacterBase, bCanFire);
 }
 
 // Called when the game starts or when spawned
@@ -145,9 +159,46 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 		}
 		Weapon->SetSkeletalMesh(WeaponData->WeaponMesh.Get());
 		Stat->SetWeaponStat(WeaponData->WeaponStat);
+
+		// ver 0.3.2a
+		// Set Ammo Size
+		if (WeaponData->Type == EWeaponType::Panzerfaust)
+		{
+			MaxAmmoSize = 1;
+		}
+		else
+		{
+			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
+		}
+		CurrentAmmoSize = MaxAmmoSize;
+
 	}
 	if(!HasAuthority())
 	{
 		ServerRPCChangeWeapon(WeaponData);
 	}
+}
+
+void AAACharacterBase::PlayReloadAnimation()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->StopAllMontages(0.0f);
+
+
+	AnimInstance->Montage_Play(ReloadMontage, 1.0f);
+	FOnMontageEnded EndDelegate;
+	EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
+	AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
+
+	bCanFire = false;
+
+	CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
+
+	UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
+}
+
+void AAACharacterBase::ReloadActionEnded(UAnimMontage* Montage, bool IsEnded)
+{
+	ensure(!bCanFire);
+	bCanFire = true;
 }

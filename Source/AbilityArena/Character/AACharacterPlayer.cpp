@@ -66,6 +66,15 @@ AAACharacterPlayer::AAACharacterPlayer()
 		RunAction = InputActionRunRef.Object;
 	}
 
+	// ver 0.3.2a
+	// Add Reload Action
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionReloadRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Action/IA_Reload.IA_Reload'"));
+	if (nullptr != InputActionReloadRef.Object)
+	{
+		ReloadAction = InputActionReloadRef.Object;
+	}
+	
+
 	CurrentCharacterZoomType = ECharacterZoomType::ZoomOut;
 }
 
@@ -96,6 +105,8 @@ void AAACharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Fire);
 	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Run);
 	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &AAACharacterPlayer::StopRun);
+	EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Reload);
+
 }
 
 void AAACharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -260,10 +271,15 @@ void AAACharacterPlayer::ClearPool()
 
 void AAACharacterPlayer::Fire()
 {
-	FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
-	FRotator MuzzleRotation = Weapon->GetSocketRotation(FName("BarrelEndSocket"));
+	if (bCanFire)
+	{
+		FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
+		FRotator MuzzleRotation = Weapon->GetSocketRotation(FName("BarrelEndSocket"));
 
-	ServerRPCFire(MuzzleLocation, MuzzleRotation);
+		ServerRPCFire(MuzzleLocation, MuzzleRotation);
+
+		UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
+	}
 }
 
 bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FRotator& NewRotation)
@@ -284,8 +300,8 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 		Rocket->SetActive(true);
 		if (Rocket)
 		{
-			FVector LaunchDirection = NewRotation.Vector();
-			Rocket->Fire(LaunchDirection);
+			Rocket->Fire();
+			CurrentAmmoSize--;
 		}
 	}
 	// Other Weapon ObjectPool
@@ -298,8 +314,15 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 			Bullet->SetReplicatedRotation(NewRotation);
 			Bullet->SetActorLocationAndRotation(NewLocation, NewRotation);
 			Bullet->SetActive(true);
-			Bullet->Fire(NewRotation.Vector());
+			Bullet->Fire();
+
+			CurrentAmmoSize--;
 		}
+	}
+
+	if (CurrentAmmoSize == 0)
+	{
+		Reload();
 	}
 }
 
@@ -324,7 +347,6 @@ void AAACharacterPlayer::EquipAmmo(UClass* NewAmmoClass)
 
 void AAACharacterPlayer::OnRep_PooledAmmoClass()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Call OnRep_PooledAmmoClass"));
 	EquipAmmo(PooledAmmoClass);
 }
 
@@ -338,4 +360,20 @@ void AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Implementation(UClass* NewA
 	PooledAmmoClass = NewAmmoClass;
 
 	OnRep_PooledAmmoClass();
+}
+
+void AAACharacterPlayer::Reload()
+{
+	PlayReloadAnimation();
+
+	//현재 bCanFire이 몽타주 재생 후 true로 돌아오지 않는 상황 발생. 추후 수정
+	//MulticastRPCPlayReloadAnimation();
+}
+
+void AAACharacterPlayer::MulticastRPCPlayReloadAnimation_Implementation()
+{
+	if (!IsLocallyControlled())
+	{
+		PlayReloadAnimation();
+	}
 }

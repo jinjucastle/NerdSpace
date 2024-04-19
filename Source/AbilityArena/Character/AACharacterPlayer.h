@@ -59,6 +59,11 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> RunAction;
+	
+	//ver 0.3.2a
+	//Add Reload Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> ReloadAction;
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
@@ -111,4 +116,13 @@ public:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCSetPooledAmmoClass(class UClass* NewAmmoClass);
+
+// ver 0.3.2a
+// Add Reload Action
+public:
+	void Reload();
+
+protected:
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastRPCPlayReloadAnimation();
 };

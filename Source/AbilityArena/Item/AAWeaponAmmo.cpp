@@ -32,9 +32,6 @@ AAAWeaponAmmo::AAAWeaponAmmo()
 	AmmoMovement->ProjectileGravityScale = 0.0f;
 
 	AmmoType = EAmmoType::Normal;
-
-	//ver 0.2.1JH shoot lifeSpan
-	//InitialLifeSpan = 3.0f;
 }
 
 // Called when the game starts or when spawned
@@ -120,7 +117,7 @@ void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimi
 	}
 }
 
-void AAAWeaponAmmo::Fire(const FVector& ShootDirection) const
+void AAAWeaponAmmo::Fire() const
 {
 	AmmoMovement->SetVelocityInLocalSpace(FVector::ForwardVector * AmmoMovement->InitialSpeed);
 }

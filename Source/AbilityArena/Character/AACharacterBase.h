@@ -81,4 +81,25 @@ protected:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCChangeWeapon(class UAAWeaponItemData* NewWeaponData);
+
+// ver 0.3.2a
+// AmmoSize
+	UPROPERTY(Replicated)
+	int32 MaxAmmoSize = 0;
+
+	UPROPERTY(Replicated)
+	int32 CurrentAmmoSize = 0;
+
+// ver 0.3.2a
+// Add Reload Motion
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UAnimMontage> ReloadMontage;
+
+	UPROPERTY(Replicated)
+	bool bCanFire;
+
+public:
+	void PlayReloadAnimation();
+	void ReloadActionEnded(UAnimMontage* Montage, bool IsEnded);
 };
