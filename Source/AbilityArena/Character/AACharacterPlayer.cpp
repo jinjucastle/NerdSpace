@@ -60,6 +60,14 @@ AAACharacterPlayer::AAACharacterPlayer()
 		FireAction = InputActionFireRef.Object;
 	}
 
+	// ver 0.3.3a
+	// Add FireStop Action
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionFireStopRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Action/IA_FireStop.IA_FireStop'"));
+	if (nullptr != InputActionFireStopRef.Object)
+	{
+		FireStopAction = InputActionFireStopRef.Object;
+	}
+
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionRunRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Action/IA_Run.IA_Run'"));
 	if (nullptr != InputActionRunRef.Object)
 	{
@@ -102,7 +110,8 @@ void AAACharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(ChangeZoomAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::ChangeZoom);
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Move);
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Look);
-	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Fire);
+	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::StartFire);
+	EnhancedInputComponent->BindAction(FireStopAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::StopFire);
 	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Run);
 	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &AAACharacterPlayer::StopRun);
 	EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Reload);
@@ -271,7 +280,7 @@ void AAACharacterPlayer::ClearPool()
 
 void AAACharacterPlayer::Fire()
 {
-	if (bCanFire)
+	if (bCanFire && CurrentAmmoSize > 0)
 	{
 		FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
 		FRotator MuzzleRotation = Weapon->GetSocketRotation(FName("BarrelEndSocket"));
@@ -280,6 +289,26 @@ void AAACharacterPlayer::Fire()
 
 		UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
 	}
+	else
+	{
+		StopFire();
+	}
+}
+
+void AAACharacterPlayer::StartFire()
+{
+	if (WeaponData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("StartFire"));
+		UE_LOG(LogTemp, Warning, TEXT("RPM : %f"), WeaponData->WeaponStat.RPM);
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutomaticFire, this, &AAACharacterPlayer::Fire, WeaponData->WeaponStat.RPM, true, 0.f);
+	}
+}
+
+void AAACharacterPlayer::StopFire()
+{
+	UE_LOG(LogTemp, Warning, TEXT("StopFire"));
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutomaticFire);
 }
 
 bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FRotator& NewRotation)

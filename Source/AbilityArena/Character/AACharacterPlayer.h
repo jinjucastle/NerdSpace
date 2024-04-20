@@ -58,6 +58,9 @@ protected:
 	TObjectPtr<class UInputAction> FireAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> FireStopAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> RunAction;
 	
 	//ver 0.3.2a
@@ -96,6 +99,15 @@ public:
 // Fire Action
 public:
 	void Fire();
+
+	// ver 0.3.3a
+	// Add Fire Rate System
+	void StartFire();
+	void StopFire();
+
+private:
+	FTimerHandle TimerHandle_AutomaticFire;
+	float FireRate;
 
 // ver 0.1.1a
 // Listen Server Projectile section
