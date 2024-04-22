@@ -102,4 +102,5 @@ protected:
 public:
 	void PlayReloadAnimation();
 	void ReloadActionEnded(UAnimMontage* Montage, bool IsEnded);
+	void ServerSetCanFire(bool NewCanFire);
 };

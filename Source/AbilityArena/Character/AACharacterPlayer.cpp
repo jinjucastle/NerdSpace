@@ -287,7 +287,6 @@ void AAACharacterPlayer::Fire()
 
 		ServerRPCFire(MuzzleLocation, MuzzleRotation);
 
-		UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
 	}
 	else
 	{
@@ -299,15 +298,12 @@ void AAACharacterPlayer::StartFire()
 {
 	if (WeaponData)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("StartFire"));
-		UE_LOG(LogTemp, Warning, TEXT("RPM : %f"), WeaponData->WeaponStat.RPM);
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutomaticFire, this, &AAACharacterPlayer::Fire, WeaponData->WeaponStat.RPM, true, 0.f);
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutomaticFire, this, &AAACharacterPlayer::Fire, WeaponData->WeaponStat.RPM + 0.01f, true, 0.f);
 	}
 }
 
 void AAACharacterPlayer::StopFire()
 {
-	UE_LOG(LogTemp, Warning, TEXT("StopFire"));
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutomaticFire);
 }
 
@@ -333,19 +329,49 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 			CurrentAmmoSize--;
 		}
 	}
-	// Other Weapon ObjectPool
+	else if (WeaponData->Type == EWeaponType::Shotgun)
+	{
+		float CurrentTime = GetWorld()->GetTimeSeconds();
+		if (CurrentTime >= NextFireTime)
+		{
+			for (int i = 0; i < WeaponData->AmmoPoolExpandSize / 2; i++)
+			{
+				AAAWeaponAmmo* Bullet = GetPooledAmmo();
+
+				if (Bullet != nullptr)
+				{
+					FRotator BulletRotation = NewRotation + GetRandomRotator();
+					Bullet->SetReplicatedRotation(BulletRotation);
+					Bullet->SetActorLocationAndRotation(NewLocation, BulletRotation);
+					Bullet->SetActive(true);
+					Bullet->Fire();
+
+					CurrentAmmoSize--;
+
+					NextFireTime = CurrentTime + WeaponData->WeaponStat.RPM;
+				}
+			}
+		}
+	}
 	else
 	{
-		AAAWeaponAmmo* Bullet = GetPooledAmmo();
-
-		if (Bullet != nullptr)
+		// Add Delay
+		float CurrentTime = GetWorld()->GetTimeSeconds();
+		if (CurrentTime >= NextFireTime)
 		{
-			Bullet->SetReplicatedRotation(NewRotation);
-			Bullet->SetActorLocationAndRotation(NewLocation, NewRotation);
-			Bullet->SetActive(true);
-			Bullet->Fire();
+			AAAWeaponAmmo* Bullet = GetPooledAmmo();
 
-			CurrentAmmoSize--;
+			if (Bullet != nullptr)
+			{
+				Bullet->SetReplicatedRotation(NewRotation);
+				Bullet->SetActorLocationAndRotation(NewLocation, NewRotation);
+				Bullet->SetActive(true);
+				Bullet->Fire();
+
+				CurrentAmmoSize--;
+
+				NextFireTime = CurrentTime + WeaponData->WeaponStat.RPM;
+			}
 		}
 	}
 
@@ -393,16 +419,27 @@ void AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Implementation(UClass* NewA
 
 void AAACharacterPlayer::Reload()
 {
-	PlayReloadAnimation();
+	if (HasAuthority())
+	{
+		PlayReloadAnimation();
+		MulticastRPCPlayReloadAnimation();
+	}
+}
 
-	//현재 bCanFire이 몽타주 재생 후 true로 돌아오지 않는 상황 발생. 추후 수정
-	//MulticastRPCPlayReloadAnimation();
+FRotator AAACharacterPlayer::GetRandomRotator()
+{
+	float RandomPitch = FMath::RandRange(-1.0f, 1.0f);
+	float RandomYaw = FMath::RandRange(-1.0f, 1.0f);
+	float RandomRoll = FMath::RandRange(-1.0f, 1.0f); 
+
+	return FRotator(RandomPitch, RandomYaw, RandomRoll);
 }
 
 void AAACharacterPlayer::MulticastRPCPlayReloadAnimation_Implementation()
 {
-	if (!IsLocallyControlled())
+	if (!HasAuthority())
 	{
+		UE_LOG(LogTemp, Error, TEXT("MulticastRPCPlayerReloadAnimation"));
 		PlayReloadAnimation();
 	}
 }

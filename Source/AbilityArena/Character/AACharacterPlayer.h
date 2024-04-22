@@ -137,4 +137,12 @@ public:
 protected:
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCPlayReloadAnimation();
+
+// ver 0.3.4a
+// Add Fire Delay
+	float NextFireTime;
+
+// ver 0.3.4a
+// Add Shotgun spread system
+	FRotator GetRandomRotator();
 };

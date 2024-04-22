@@ -181,24 +181,36 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 
 void AAACharacterBase::PlayReloadAnimation()
 {
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	AnimInstance->StopAllMontages(0.0f);
+	if (ReloadMontage)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			AnimInstance->StopAllMontages(0.0f);
+			AnimInstance->Montage_Play(ReloadMontage, 1.0f);
+			FOnMontageEnded EndDelegate;
+			EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
+			AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
 
+			ServerSetCanFire(false);
 
-	AnimInstance->Montage_Play(ReloadMontage, 1.0f);
-	FOnMontageEnded EndDelegate;
-	EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
-	AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
+			CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
 
-	bCanFire = false;
-
-	CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
-
-	UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
+			UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
+		}
+	}
 }
 
 void AAACharacterBase::ReloadActionEnded(UAnimMontage* Montage, bool IsEnded)
 {
 	ensure(!bCanFire);
-	bCanFire = true;
+	ServerSetCanFire(true);
+}
+
+void AAACharacterBase::ServerSetCanFire(bool NewCanFire)
+{
+	if (HasAuthority())
+	{
+		bCanFire = NewCanFire;
+	}
 }

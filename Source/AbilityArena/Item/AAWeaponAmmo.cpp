@@ -67,21 +67,27 @@ void AAAWeaponAmmo::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
-	GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Blue, FString::Printf(TEXT("Notify Begine Overlap")));
-	if (AmmoType == EAmmoType::Rocket)
+	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
 	{
-		Destroy();
-	}
-	else
-	{
-		ReturnSelf();
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Blue, FString::Printf(TEXT("Notify Begine Overlap")));
+		if (AmmoType == EAmmoType::Rocket)
+		{
+			Destroy();
+		}
+		else
+		{
+			ReturnSelf();
+		}
 	}
 }
 
 void AAAWeaponAmmo::NotifyActorEndOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorEndOverlap(OtherActor);
-	GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, FString::Printf(TEXT("Notify End Overlap")));
+	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, FString::Printf(TEXT("Notify End Overlap")));
+	}
 }
 
 void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
@@ -124,7 +130,10 @@ void AAAWeaponAmmo::Fire() const
 
 void AAAWeaponAmmo::SetOwnerPlayer(AAACharacterPlayer* InPlayer)
 {
-	Owner = InPlayer;
+	if (AmmoType != EAmmoType::Rocket)
+	{
+		Owner = InPlayer;
+	}
 	Damage = Owner->GetAmmoDamage();
 	AmmoMovement->InitialSpeed = Owner->GetAmmoSpeed();
 	AmmoMovement->MaxSpeed = Owner->GetAmmoSpeed() * 10;
