@@ -64,6 +64,7 @@ AAACharacterBase::AAACharacterBase()
 
 	Weapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon"));
 	Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("DEF-hand_RSocket"));
+	Weapon->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	// ver 0.3.2a
 	// Reload Montage

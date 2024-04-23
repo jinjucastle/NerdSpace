@@ -36,6 +36,6 @@ void UAAAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsJumping = bIsFalling & (Velocity.Z > JumpingThreshould);
 
 		FRotator ActorRotator = GetOwningActor()->GetActorRotation();
-		Direction=CalculateDirection(Velocity, ActorRotator);
+		Direction = CalculateDirection(Velocity, ActorRotator);
 	}
 }

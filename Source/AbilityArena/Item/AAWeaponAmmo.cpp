@@ -105,17 +105,6 @@ void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimi
 			FName BoonNameText = Hit.BoneName;
 			UE_LOG(LogTemp, Warning, TEXT("TestConllision: %s"), *BoonNameText.ToString());
 		}
-
-		// ver 0.3.1a
-		// Rocket Ammo Destroy
-		if (AmmoType == EAmmoType::Rocket)
-		{
-			Destroy();
-		}
-		else
-		{
-			ReturnSelf();
-		}
 	}
 	else
 	{
@@ -130,10 +119,7 @@ void AAAWeaponAmmo::Fire() const
 
 void AAAWeaponAmmo::SetOwnerPlayer(AAACharacterPlayer* InPlayer)
 {
-	if (AmmoType != EAmmoType::Rocket)
-	{
-		Owner = InPlayer;
-	}
+	Owner = InPlayer;
 	Damage = Owner->GetAmmoDamage();
 	AmmoMovement->InitialSpeed = Owner->GetAmmoSpeed();
 	AmmoMovement->MaxSpeed = Owner->GetAmmoSpeed() * 10;
