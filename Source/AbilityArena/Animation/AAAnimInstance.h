@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Item/AAWeaponItemData.h"
 #include "Animation/AnimInstance.h"
 #include "AAAnimInstance.generated.h"
 
@@ -19,6 +20,7 @@ public:
 
 	UAAAnimInstance();
 
+protected:
 	virtual void NativeInitializeAnimation() override;
 
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
@@ -55,5 +57,5 @@ public:
 	float Direction;
 
 protected:
-	
+
 };
