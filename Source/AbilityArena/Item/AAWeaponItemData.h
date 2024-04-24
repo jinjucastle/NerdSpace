@@ -35,6 +35,7 @@ public:
 		return FPrimaryAssetId("AAItemData", GetFName());
 	}
 
+
  //ver0.0.1a
  //Insert Weapon Mesh & Stat
 public:
@@ -59,4 +60,6 @@ public:
 	// Weapon Type;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Type)
 	EWeaponType Type;
+
+public:
 };

@@ -5,7 +5,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "GameData/AACharacterStat.h"
+#include "Interface/AACharacterItemInterface.h"
 #include "AACharacterBase.generated.h"
+
+DECLARE_LOG_CATEGORY_EXTERN(LogAACharacter, Log, All);
 
 UENUM()
 enum class ECharacterZoomType : uint8
@@ -14,8 +17,21 @@ enum class ECharacterZoomType : uint8
 	ZoomIn
 };
 
+//ver 0.3.0 C
+DECLARE_DELEGATE_OneParam(FOnTakeItemDelegate, class UAAItemData* /*InItemData*/);
+USTRUCT(BlueprintType)
+struct FTakeItemDelegateWrapper
+{
+	GENERATED_BODY()
+	FTakeItemDelegateWrapper() {}
+	FTakeItemDelegateWrapper(const FOnTakeItemDelegate& InItemDelegate) :ItemDelegate(InItemDelegate) {}
+
+	FOnTakeItemDelegate ItemDelegate;
+};
+
+
 UCLASS()
-class ABILITYARENA_API AAACharacterBase : public ACharacter
+class ABILITYARENA_API AAACharacterBase : public ACharacter,public IAACharacterItemInterface
 {
 	GENERATED_BODY()
 
@@ -59,6 +75,15 @@ protected:
 	// Set Replicated
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponData, EditAnywhere, BlueprintReadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAAWeaponItemData> WeaponData;
+
+// ver 0.3.0 C
+	UPROPERTY()
+	TArray<FTakeItemDelegateWrapper> TakeItemActions;
+
+	virtual void TakeItem(class UAAItemData* InItemData) override;
+	virtual void RecoverHealth(class UAAItemData* InItemData);
+	virtual void MakeShield(class UAAItemData* InItemData);
+	
 
 // ver 0.0.2a
 // WeaponData Get

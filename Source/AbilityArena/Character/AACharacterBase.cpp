@@ -9,6 +9,9 @@
 #include "Item/AAWeaponItemData.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Item/AAItemData.h"
+
+DEFINE_LOG_CATEGORY(LogAACharacter);
 
 // Sets default values
 AAACharacterBase::AAACharacterBase()
@@ -63,6 +66,12 @@ AAACharacterBase::AAACharacterBase()
 
 	Weapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon"));
 	Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("DEF-hand_RSocket"));
+
+	//ver 0.3.0 C
+	 //Item Actions
+	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AAACharacterBase::RecoverHealth)));
+	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AAACharacterBase::MakeShield)));
+	
 }
 
 void AAACharacterBase::PostInitializeComponents()
@@ -150,4 +159,22 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 	{
 		ServerRPCChangeWeapon(WeaponData);
 	}
+}
+
+void AAACharacterBase::TakeItem(UAAItemData* InItemData)
+{
+	/*if (InItemData)
+	{
+		TakeItemActions[(uint8)InItemData->Type].ItemDelegate.ExecuteIfBound(InItemData);
+	}*/
+}
+
+void AAACharacterBase::RecoverHealth(UAAItemData* InItemData)
+{
+	UE_LOG(LogAACharacter, Log, TEXT("Read Scroll"));
+}
+
+void AAACharacterBase::MakeShield(UAAItemData* InItemData)
+{
+	UE_LOG(LogAACharacter, Log, TEXT("Read Scroll"));
 }
