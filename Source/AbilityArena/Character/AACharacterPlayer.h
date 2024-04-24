@@ -58,7 +58,15 @@ protected:
 	TObjectPtr<class UInputAction> FireAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> FireStopAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> RunAction;
+	
+	//ver 0.3.2a
+	//Add Reload Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> ReloadAction;
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
@@ -92,14 +100,20 @@ public:
 public:
 	void Fire();
 
+	// ver 0.3.3a
+	// Add Fire Rate System
+	void StartFire();
+	void StopFire();
+
+private:
+	FTimerHandle TimerHandle_AutomaticFire;
+	float FireRate;
+
 // ver 0.1.1a
 // Listen Server Projectile section
 public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCFire(const FVector& NewLocation, const FRotator& NewRotation);
-
-	UFUNCTION(Client, UnReliable)
-	void ClientRPCFire(const FVector& NewLocation, const FRotator& NewRotation);
 
 // ver 0.1.3a
 // AmmoMesh & AmmoStat Replicate
@@ -114,4 +128,21 @@ public:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCSetPooledAmmoClass(class UClass* NewAmmoClass);
+
+// ver 0.3.2a
+// Add Reload Action
+public:
+	void Reload();
+
+protected:
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastRPCPlayReloadAnimation();
+
+// ver 0.3.4a
+// Add Fire Delay
+	float NextFireTime;
+
+// ver 0.3.4a
+// Add Shotgun spread system
+	FRotator GetRandomRotator();
 };
