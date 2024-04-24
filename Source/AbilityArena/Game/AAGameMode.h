@@ -16,5 +16,12 @@ class ABILITYARENA_API AAAGameMode : public AGameMode
 	
 public:
 	AAAGameMode();
+protected:
 
+	virtual void PostInitializeComponents() override;
+
+	virtual void DefaultGameTimer();
+
+	void FinishGame();
+	FTimerHandle GameTimerHandle;
 };
