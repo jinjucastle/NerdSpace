@@ -60,11 +60,28 @@ AAACharacterPlayer::AAACharacterPlayer()
 		FireAction = InputActionFireRef.Object;
 	}
 
+	// ver 0.3.3a
+	// Add FireStop Action
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionFireStopRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Action/IA_FireStop.IA_FireStop'"));
+	if (nullptr != InputActionFireStopRef.Object)
+	{
+		FireStopAction = InputActionFireStopRef.Object;
+	}
+
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionRunRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Action/IA_Run.IA_Run'"));
 	if (nullptr != InputActionRunRef.Object)
 	{
 		RunAction = InputActionRunRef.Object;
 	}
+
+	// ver 0.3.2a
+	// Add Reload Action
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionReloadRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Action/IA_Reload.IA_Reload'"));
+	if (nullptr != InputActionReloadRef.Object)
+	{
+		ReloadAction = InputActionReloadRef.Object;
+	}
+	
 
 	CurrentCharacterZoomType = ECharacterZoomType::ZoomOut;
 }
@@ -93,9 +110,12 @@ void AAACharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(ChangeZoomAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::ChangeZoom);
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Move);
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Look);
-	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Fire);
+	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::StartFire);
+	EnhancedInputComponent->BindAction(FireStopAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::StopFire);
 	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Run);
 	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &AAACharacterPlayer::StopRun);
+	EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Reload);
+
 }
 
 void AAACharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -201,7 +221,7 @@ void AAACharacterPlayer::StopRun()
 
 AAAWeaponAmmo* AAACharacterPlayer::GetPooledAmmo()
 {
-	if (AmmoPool.Num() == 0) Expand();
+	if (AmmoPool.IsEmpty()) Expand();
 	return AmmoPool.Pop();
 }
 
@@ -211,12 +231,17 @@ void AAACharacterPlayer::Expand()
 
 	for (int i = 0; i < AmmoExpandSize; i++)
 	{
-		AAAWeaponAmmo* PoolableActor = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, FVector().ZeroVector, FRotator().ZeroRotator);
-		PoolableActor->SetActive(false);
-		PoolableActor->SetOwnerPlayer(this);
-		AmmoPool.Push(PoolableActor);
+		// ver 0.3.1a
+		// Zero Location에서 spawn시 즉시 return되어 GetPooledAmmo에서 Data를 못가져오는 Bug fix
+		AAAWeaponAmmo* PoolableActor = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, FVector(0.0f, 0.0f, -5000.f), FRotator().ZeroRotator);
+		if (PoolableActor != nullptr)
+		{
+			PoolableActor->SetActive(false);
+			PoolableActor->SetOwnerPlayer(this);
+			AmmoPool.Push(PoolableActor);
+			AmmoPoolSize++;
+		}
 	}
-	AmmoPoolSize += AmmoExpandSize;
 }
 
 void AAACharacterPlayer::ReturnAmmo(AAAWeaponAmmo* InReturnAmmoActor)
@@ -234,7 +259,14 @@ void AAACharacterPlayer::ClearPool()
 		AAAWeaponAmmo* PickCurrentAmmo = Cast<AAAWeaponAmmo>(ActiveAmmo);
 		if (PickCurrentAmmo)
 		{
-			PickCurrentAmmo->ReturnSelf();
+			if (PickCurrentAmmo->AmmoType == EAmmoType::Rocket)
+			{
+				PickCurrentAmmo->Destroy();
+			}
+			else
+			{
+				PickCurrentAmmo->ReturnSelf();
+			}
 		}
 	}
 
@@ -243,25 +275,36 @@ void AAACharacterPlayer::ClearPool()
 		AmmoPool.Pop()->Destroy();
 		AmmoPoolSize--;
 	}
-	check(AmmoPool.IsEmpty() && AmmoPoolSize == 0);
+	//check(AmmoPool.IsEmpty() && AmmoPoolSize == 0);
 }
 
 void AAACharacterPlayer::Fire()
 {
-	FVector CameraStartLocation = FollowCamera->GetComponentLocation();
-	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 5000.0f;
-
-	FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
-	FRotator MuzzleRotation = Weapon->GetSocketRotation(FName("BarrelEndSocket"));
-
-	if (!HasAuthority())
+	if (bCanFire && CurrentAmmoSize > 0)
 	{
+		FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
+		FRotator MuzzleRotation = Weapon->GetSocketRotation(FName("BarrelEndSocket"));
+
 		ServerRPCFire(MuzzleLocation, MuzzleRotation);
+
 	}
 	else
 	{
-		ClientRPCFire(MuzzleLocation, MuzzleRotation);
+		StopFire();
 	}
+}
+
+void AAACharacterPlayer::StartFire()
+{
+	if (WeaponData)
+	{
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutomaticFire, this, &AAACharacterPlayer::Fire, WeaponData->WeaponStat.RPM + 0.01f, true, 0.f);
+	}
+}
+
+void AAACharacterPlayer::StopFire()
+{
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutomaticFire);
 }
 
 bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FRotator& NewRotation)
@@ -272,24 +315,70 @@ bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, cons
 
 void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation, const FRotator& NewRotation)
 {
-	AAAWeaponAmmo* Bullet = GetPooledAmmo();
+	// ver 0.3.1a
+	// Panzerfaust Spawn Actor Per Fire
+	if (WeaponData->Type == EWeaponType::Panzerfaust)
+	{
+		AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, NewRotation);
+		Rocket->SetOwnerPlayer(this);
+		Rocket->SetLifeSpan(2.0f);
+		Rocket->SetActive(true);
+		if (Rocket)
+		{
+			Rocket->Fire();
+			CurrentAmmoSize--;
+		}
+	}
+	else if (WeaponData->Type == EWeaponType::Shotgun)
+	{
+		float CurrentTime = GetWorld()->GetTimeSeconds();
+		if (CurrentTime >= NextFireTime)
+		{
+			for (int i = 0; i < WeaponData->AmmoPoolExpandSize / 2; i++)
+			{
+				AAAWeaponAmmo* Bullet = GetPooledAmmo();
 
-	Bullet->SetActorLocation(NewLocation);
-	Bullet->SetActorRotation(NewRotation);
+				if (Bullet != nullptr)
+				{
+					FRotator BulletRotation = NewRotation + GetRandomRotator();
+					Bullet->SetReplicatedRotation(BulletRotation);
+					Bullet->SetActorLocationAndRotation(NewLocation, BulletRotation);
+					Bullet->SetActive(true);
+					Bullet->Fire();
 
-	Bullet->SetActive(true);
-	Bullet->Fire();
-}
+					CurrentAmmoSize--;
 
-void AAACharacterPlayer::ClientRPCFire_Implementation(const FVector& NewLocation, const FRotator& NewRotation)
-{
-	AAAWeaponAmmo* Bullet = GetPooledAmmo();
+					NextFireTime = CurrentTime + WeaponData->WeaponStat.RPM;
+				}
+			}
+		}
+	}
+	else
+	{
+		// Add Delay
+		float CurrentTime = GetWorld()->GetTimeSeconds();
+		if (CurrentTime >= NextFireTime)
+		{
+			AAAWeaponAmmo* Bullet = GetPooledAmmo();
 
-	Bullet->SetActorLocation(NewLocation);
-	Bullet->SetActorRotation(NewRotation);
+			if (Bullet != nullptr)
+			{
+				Bullet->SetReplicatedRotation(NewRotation);
+				Bullet->SetActorLocationAndRotation(NewLocation, NewRotation);
+				Bullet->SetActive(true);
+				Bullet->Fire();
 
-	Bullet->SetActive(true);
-	Bullet->Fire();
+				CurrentAmmoSize--;
+
+				NextFireTime = CurrentTime + WeaponData->WeaponStat.RPM;
+			}
+		}
+	}
+
+	if (CurrentAmmoSize == 0)
+	{
+		Reload();
+	}
 }
 
 void AAACharacterPlayer::SetPooledAmmoClass(UClass* NewAmmoClass)
@@ -313,7 +402,6 @@ void AAACharacterPlayer::EquipAmmo(UClass* NewAmmoClass)
 
 void AAACharacterPlayer::OnRep_PooledAmmoClass()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Call OnRep_PooledAmmoClass"));
 	EquipAmmo(PooledAmmoClass);
 }
 
@@ -327,4 +415,31 @@ void AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Implementation(UClass* NewA
 	PooledAmmoClass = NewAmmoClass;
 
 	OnRep_PooledAmmoClass();
+}
+
+void AAACharacterPlayer::Reload()
+{
+	if (HasAuthority())
+	{
+		PlayReloadAnimation();
+		MulticastRPCPlayReloadAnimation();
+	}
+}
+
+FRotator AAACharacterPlayer::GetRandomRotator()
+{
+	float RandomPitch = FMath::RandRange(-1.0f, 1.0f);
+	float RandomYaw = FMath::RandRange(-1.0f, 1.0f);
+	float RandomRoll = FMath::RandRange(-1.0f, 1.0f); 
+
+	return FRotator(RandomPitch, RandomYaw, RandomRoll);
+}
+
+void AAACharacterPlayer::MulticastRPCPlayReloadAnimation_Implementation()
+{
+	if (!HasAuthority())
+	{
+		UE_LOG(LogTemp, Error, TEXT("MulticastRPCPlayerReloadAnimation"));
+		PlayReloadAnimation();
+	}
 }

@@ -9,6 +9,10 @@
 #include "Item/AAWeaponItemData.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Animation/AnimMontage.h"
+#include "Item/AAItemData.h"
+
+DEFINE_LOG_CATEGORY(LogAACharacter);
 
 // Sets default values
 AAACharacterBase::AAACharacterBase()
@@ -63,6 +67,23 @@ AAACharacterBase::AAACharacterBase()
 
 	Weapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon"));
 	Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("DEF-hand_RSocket"));
+	Weapon->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// ver 0.3.2a
+	// Reload Montage
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> ReloadMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/Action/AM_Reload.AM_Reload'"));
+	if (ReloadMontageRef.Object)
+	{
+		ReloadMontage = ReloadMontageRef.Object;
+	}
+
+	bCanFire = true;
+
+	//ver 0.3.0 C
+	 //Item Actions
+	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AAACharacterBase::RecoverHealth)));
+	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AAACharacterBase::MakeShield)));
+
 }
 
 void AAACharacterBase::PostInitializeComponents()
@@ -76,6 +97,9 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(AAACharacterBase, WeaponData);
+	DOREPLIFETIME(AAACharacterBase, MaxAmmoSize);
+	DOREPLIFETIME(AAACharacterBase, CurrentAmmoSize);
+	DOREPLIFETIME(AAACharacterBase, bCanFire);
 }
 
 // Called when the game starts or when spawned
@@ -145,9 +169,76 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 		}
 		Weapon->SetSkeletalMesh(WeaponData->WeaponMesh.Get());
 		Stat->SetWeaponStat(WeaponData->WeaponStat);
+
+		// ver 0.3.2a
+		// Set Ammo Size
+		if (WeaponData->Type == EWeaponType::Panzerfaust)
+		{
+			MaxAmmoSize = 1;
+		}
+		else
+		{
+			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
+		}
+		CurrentAmmoSize = MaxAmmoSize;
+
 	}
 	if(!HasAuthority())
 	{
 		ServerRPCChangeWeapon(WeaponData);
 	}
+}
+
+void AAACharacterBase::PlayReloadAnimation()
+{
+	if (ReloadMontage)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			AnimInstance->StopAllMontages(0.0f);
+			AnimInstance->Montage_Play(ReloadMontage, 1.0f);
+			FOnMontageEnded EndDelegate;
+			EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
+			AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
+
+			ServerSetCanFire(false);
+
+			CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
+
+			UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
+		}
+	}
+}
+
+void AAACharacterBase::ReloadActionEnded(UAnimMontage* Montage, bool IsEnded)
+{
+	ensure(!bCanFire);
+	ServerSetCanFire(true);
+}
+
+void AAACharacterBase::ServerSetCanFire(bool NewCanFire)
+{
+	if (HasAuthority())
+	{
+		bCanFire = NewCanFire;
+	}
+}
+
+void AAACharacterBase::TakeItem(UAAItemData* InItemData)
+{
+	/*if (InItemData)
+	{
+		TakeItemActions[(uint8)InItemData->Type].ItemDelegate.ExecuteIfBound(InItemData);
+	}*/
+}
+
+void AAACharacterBase::RecoverHealth(UAAItemData* InItemData)
+{
+	UE_LOG(LogAACharacter, Log, TEXT("Read Scroll"));
+}
+
+void AAACharacterBase::MakeShield(UAAItemData* InItemData)
+{
+	UE_LOG(LogAACharacter, Log, TEXT("Read Scroll"));
 }
