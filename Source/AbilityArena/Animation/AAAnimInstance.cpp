@@ -37,7 +37,7 @@ void UAAAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		//ver 0.1.0 C
 		FRotator ActorRotator = GetOwningActor()->GetActorRotation();
-		Direction=CalculateDirection(Velocity, ActorRotator);
+		Direction = CalculateDirection(Velocity, ActorRotator);
 	}
 
 }
