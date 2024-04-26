@@ -67,7 +67,7 @@ void AAAWeaponAmmo::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
-	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
+	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()) || !OtherActor->IsA(Owner.GetClass()))
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Blue, FString::Printf(TEXT("Notify Begine Overlap")));
 		if (AmmoType == EAmmoType::Rocket)
@@ -84,7 +84,7 @@ void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
 void AAAWeaponAmmo::NotifyActorEndOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorEndOverlap(OtherActor);
-	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
+	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()) || !OtherActor->IsA(Owner.GetClass()))
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, FString::Printf(TEXT("Notify End Overlap")));
 	}

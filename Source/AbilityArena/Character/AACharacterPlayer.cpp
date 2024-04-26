@@ -204,17 +204,57 @@ void AAACharacterPlayer::Look(const FInputActionValue& Value)
 void AAACharacterPlayer::Run()
 {
 	//feat: 달릴 때 줌인 되어있으면 리턴 ver 0.2.0 C
-	if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
+	if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn || bIsRun)
 	{
 		return;
 	}
+
+	bIsRun = true;
+
+	if (!HasAuthority())
+	{
+		float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = MovementSpeed + (MovementSpeed * 0.75f);
+	}
+
+	ServerRPCRun();
+}
+
+void AAACharacterPlayer::StopRun()
+{
+	bIsRun = false;
+
+	if (!HasAuthority())
+	{
+		float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
+	}
+
+	ServerRPCStopRun();
+}
+
+bool AAACharacterPlayer::ServerRPCRun_Validate()
+{
+	return true;
+}
+
+void AAACharacterPlayer::ServerRPCRun_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Run"));
 
 	float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed + (MovementSpeed * 0.75f);
 }
 
-void AAACharacterPlayer::StopRun()
+bool AAACharacterPlayer::ServerRPCStopRun_Validate()
 {
+	return true;
+}
+
+void AAACharacterPlayer::ServerRPCStopRun_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Stop Run"));
+
 	float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
 }

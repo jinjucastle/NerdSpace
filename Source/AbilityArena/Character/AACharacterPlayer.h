@@ -73,6 +73,14 @@ protected:
 	void Run();
 	void StopRun();
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCRun();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCStopRun();
+
+	bool bIsRun;
+
 	ECharacterZoomType CurrentCharacterZoomType;
 
 // ver 0.0.2a
