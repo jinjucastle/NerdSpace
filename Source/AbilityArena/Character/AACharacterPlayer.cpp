@@ -426,6 +426,7 @@ void AAACharacterPlayer::Reload()
 	}
 }
 
+
 FRotator AAACharacterPlayer::GetRandomRotator()
 {
 	float RandomPitch = FMath::RandRange(-1.0f, 1.0f);
