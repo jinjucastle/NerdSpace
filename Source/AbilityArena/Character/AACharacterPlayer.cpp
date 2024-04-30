@@ -82,8 +82,11 @@ AAACharacterPlayer::AAACharacterPlayer()
 		ReloadAction = InputActionReloadRef.Object;
 	}
 	
-
 	CurrentCharacterZoomType = ECharacterZoomType::ZoomOut;
+
+	//0.4.1.C
+	bIsRunning = false;
+	bIsFiring = false;
 }
 
 void AAACharacterPlayer::BeginPlay()
@@ -97,6 +100,7 @@ void AAACharacterPlayer::BeginPlay()
 	}
 
 	SetCharacterControl(CurrentCharacterZoomType);
+
 }
 
 void AAACharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -105,15 +109,16 @@ void AAACharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 
-	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+	//ver 0.4.1 C
+	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Run);
+	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &AAACharacterPlayer::StopRun);
+	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::StartJump);
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 	EnhancedInputComponent->BindAction(ChangeZoomAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::ChangeZoom);
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Move);
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Look);
 	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::StartFire);
 	EnhancedInputComponent->BindAction(FireStopAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::StopFire);
-	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Run);
-	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &AAACharacterPlayer::StopRun);
 	EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Reload);
 
 }
@@ -209,14 +214,51 @@ void AAACharacterPlayer::Run()
 		return;
 	}
 
+	//feat: 점프시 뛰지 않도록 ver 0.4.1 C
+	if (bPressedJump)
+	{
+		StopRun();
+		return;
+	}
+
+	//feat: 장전시 뛰지 않도록 ver 0.4.1 C
+	/*if (bIsReloading)
+	{
+		return;
+	}*/
+
+	//feat: 격발시 뛰지 않도록 ver 0.4.1 C
+	if (bIsFiring)
+	{
+		return;
+	}
+
+	//0.4.1.C
+	bIsRunning = true;
+
 	float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed + (MovementSpeed * 0.75f);
+
 }
 
 void AAACharacterPlayer::StopRun()
 {
+	//0.4.1.C
+	bIsRunning = false;
+	
 	float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
+}
+
+void AAACharacterPlayer::StartJump()
+{
+	ACharacter::Jump();
+
+	if (bIsRunning)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Start Jump While Running"));
+		StopRun();
+	}
 }
 
 AAAWeaponAmmo* AAACharacterPlayer::GetPooledAmmo()
@@ -280,6 +322,7 @@ void AAACharacterPlayer::ClearPool()
 
 void AAACharacterPlayer::Fire()
 {
+
 	if (bCanFire && CurrentAmmoSize > 0)
 	{
 		FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
@@ -296,6 +339,14 @@ void AAACharacterPlayer::Fire()
 
 void AAACharacterPlayer::StartFire()
 {
+	//ver 0.4.1 C
+	bIsFiring = true;
+
+	if (bIsRunning)
+	{
+		StopRun();
+	}
+
 	if (WeaponData)
 	{
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutomaticFire, this, &AAACharacterPlayer::Fire, WeaponData->WeaponStat.RPM + 0.01f, true, 0.f);
@@ -304,6 +355,9 @@ void AAACharacterPlayer::StartFire()
 
 void AAACharacterPlayer::StopFire()
 {
+	//ver 0.4.1 C
+	bIsFiring = false;
+
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutomaticFire);
 }
 
@@ -419,6 +473,12 @@ void AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Implementation(UClass* NewA
 
 void AAACharacterPlayer::Reload()
 {
+	/*if (bIsRunning)
+	{
+		StopRun();
+		bIsRunning = false;
+	}*/
+
 	if (HasAuthority())
 	{
 		PlayReloadAnimation();
@@ -434,6 +494,7 @@ FRotator AAACharacterPlayer::GetRandomRotator()
 
 	return FRotator(RandomPitch, RandomYaw, RandomRoll);
 }
+
 
 void AAACharacterPlayer::MulticastRPCPlayReloadAnimation_Implementation()
 {

@@ -10,7 +10,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Animation/AnimMontage.h"
-#include "Item/AAItemData.h"
+#include "Item/AAFieldItemData.h"
+#include "Item/AARecoveryItem.h"
+#include "Item/AAShieldItem.h"
 
 DEFINE_LOG_CATEGORY(LogAACharacter);
 
@@ -84,6 +86,8 @@ AAACharacterBase::AAACharacterBase()
 	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AAACharacterBase::RecoverHealth)));
 	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AAACharacterBase::MakeShield)));
 
+	//ver 0.4.1 C
+	bIsReloading = false;
 }
 
 void AAACharacterBase::PostInitializeComponents()
@@ -206,9 +210,14 @@ void AAACharacterBase::PlayReloadAnimation()
 
 			CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
 
-			UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
+			UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);		
+			
 		}
+
+		//ver 0.4.1 C
+		//bIsReloading = true;
 	}
+
 }
 
 void AAACharacterBase::ReloadActionEnded(UAnimMontage* Montage, bool IsEnded)
@@ -227,18 +236,32 @@ void AAACharacterBase::ServerSetCanFire(bool NewCanFire)
 
 void AAACharacterBase::TakeItem(UAAItemData* InItemData)
 {
-	/*if (InItemData)
+	UAAFieldItemData* AAFieldItemData = Cast<UAAFieldItemData>(InItemData);
+
+	if (AAFieldItemData)
 	{
-		TakeItemActions[(uint8)InItemData->Type].ItemDelegate.ExecuteIfBound(InItemData);
-	}*/
+		TakeItemActions[(uint8)AAFieldItemData->Type].ItemDelegate.ExecuteIfBound(InItemData);
+	}
 }
 
 void AAACharacterBase::RecoverHealth(UAAItemData* InItemData)
 {
-	UE_LOG(LogAACharacter, Log, TEXT("Read Scroll"));
+	UAARecoveryItem* AARecoveryItem = Cast<UAARecoveryItem>(InItemData);
+
+	if (AARecoveryItem)
+	{
+		UE_LOG(LogAACharacter, Log, TEXT("Recover Health"));
+	}
+
 }
 
 void AAACharacterBase::MakeShield(UAAItemData* InItemData)
 {
-	UE_LOG(LogAACharacter, Log, TEXT("Read Scroll"));
+	UAAShieldItem* AAShieldItem = Cast<UAAShieldItem>(InItemData);
+
+	if (AAShieldItem)
+	{
+		UE_LOG(LogAACharacter, Log, TEXT("Make Shield"));
+	}
+
 }

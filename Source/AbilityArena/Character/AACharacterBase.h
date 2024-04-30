@@ -123,6 +123,8 @@ protected:
 
 	UPROPERTY(Replicated)
 	bool bCanFire;
+	//ver 0.4.0 C
+	bool bIsReloading;
 
 public:
 	void PlayReloadAnimation();
