@@ -170,6 +170,14 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 		Weapon->SetSkeletalMesh(WeaponData->WeaponMesh.Get());
 		Stat->SetWeaponStat(WeaponData->WeaponStat);
 
+		// ver 0.4.2a
+		// Replace Attach Weapon
+		FTransform SocketWorldTransform = Weapon->GetSocketTransform("Hand_R_Pos", RTS_World);
+		FTransform ComponentWorldTransform = Weapon->GetComponentTransform();
+		FTransform SocketRelativeTransform = SocketWorldTransform.GetRelativeTransform(ComponentWorldTransform);
+		Weapon->SetRelativeLocation(SocketRelativeTransform.GetLocation());
+
+
 		// ver 0.3.2a
 		// Set Ammo Size
 		if (WeaponData->Type == EWeaponType::Panzerfaust)
