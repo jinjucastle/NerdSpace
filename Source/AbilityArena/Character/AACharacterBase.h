@@ -75,7 +75,11 @@ protected:
 	// Set Replicated
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponData, EditAnywhere, BlueprintReadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAAWeaponItemData> WeaponData;
+	//ver 0.4.0
 
+	//ver 0.4.2b
+	//GameInstance 
+	TObjectPtr<class UAAGameInstance> GameInstance;
 // ver 0.3.0 C
 	UPROPERTY()
 	TArray<FTakeItemDelegateWrapper> TakeItemActions;
@@ -100,6 +104,7 @@ public:
 protected:
 	UFUNCTION()
 	void OnRep_WeaponData();
+	
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCChangeWeapon(class UAAWeaponItemData* NewWeaponData);
@@ -123,6 +128,8 @@ protected:
 
 	UPROPERTY(Replicated)
 	bool bCanFire;
+	//ver 0.4.0 C
+	bool bIsReloading;
 
 public:
 	void PlayReloadAnimation();
