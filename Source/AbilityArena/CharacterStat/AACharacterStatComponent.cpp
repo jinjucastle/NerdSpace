@@ -35,6 +35,7 @@ void UAACharacterStatComponent::OnRep_BaseStat()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Called OnRep_BaseStat"));
 	OnStatChanged.Broadcast(BaseStat, WeaponStat);
+
 }
 
 void UAACharacterStatComponent::OnRep_WeaponStat()

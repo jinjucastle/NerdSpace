@@ -76,6 +76,14 @@ protected:
 	//ver 0.4.1 C
 	void StartJump();
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCRun();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCStopRun();
+
+	bool bIsRun;
+
 	ECharacterZoomType CurrentCharacterZoomType;
 
 // ver 0.0.2a

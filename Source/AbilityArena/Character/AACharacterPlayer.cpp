@@ -134,7 +134,7 @@ void AAACharacterPlayer::ChangeZoom()
 {
 	if (CurrentCharacterZoomType == ECharacterZoomType::ZoomOut)
 	{
-		//feat: ÁÜÀÎ ÇÒ ¶§ °È±â·Î ÃÊ±âÈ­ ver 0.2.0 C
+		//feat: ì¤Œì¸ í•  ë•Œ ê±·ê¸°ë¡œ ì´ˆê¸°í™” ver 0.2.0 C
 		StopRun();
 
 		SetCharacterControl(ECharacterZoomType::ZoomIn);
@@ -208,26 +208,26 @@ void AAACharacterPlayer::Look(const FInputActionValue& Value)
 
 void AAACharacterPlayer::Run()
 {
-	//feat: ´Þ¸± ¶§ ÁÜÀÎ µÇ¾îÀÖÀ¸¸é ¸®ÅÏ ver 0.2.0 C
-	if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
+	//feat: ë‹¬ë¦´ ë•Œ ì¤Œì¸ ë˜ì–´ìžˆìœ¼ë©´ ë¦¬í„´ ver 0.2.0 C
+	if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn || bIsRun)
 	{
 		return;
 	}
 
-	//feat: Á¡ÇÁ½Ã ¶ÙÁö ¾Êµµ·Ï ver 0.4.1 C
+	//feat: ì í”„ì‹œ ë›°ì§€ ì•Šë„ë¡ ver 0.4.1 C
 	if (bPressedJump)
 	{
 		StopRun();
 		return;
 	}
 
-	//feat: ÀåÀü½Ã ¶ÙÁö ¾Êµµ·Ï ver 0.4.1 C
+	//feat: ìž¥ì „ì‹œ ë›°ì§€ ì•Šë„ë¡ ver 0.4.1 C
 	/*if (bIsReloading)
 	{
 		return;
 	}*/
 
-	//feat: °Ý¹ß½Ã ¶ÙÁö ¾Êµµ·Ï ver 0.4.1 C
+	//feat: ê²©ë°œì‹œ ë›°ì§€ ì•Šë„ë¡ ver 0.4.1 C
 	if (bIsFiring)
 	{
 		return;
@@ -235,17 +235,56 @@ void AAACharacterPlayer::Run()
 
 	//0.4.1.C
 	bIsRunning = true;
+	bIsRun = true;
+
+	if (!HasAuthority())
+	{
+		float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = MovementSpeed + (MovementSpeed * 0.75f);
+	}
+
+	ServerRPCRun();
+}
+
+void AAACharacterPlayer::StopRun()
+{
+	bIsRun = false;
+
+	if (!HasAuthority())
+	{
+		float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
+	}
+
+	ServerRPCStopRun();
+}
+
+bool AAACharacterPlayer::ServerRPCRun_Validate()
+{
+	return true;
+}
+
+void AAACharacterPlayer::ServerRPCRun_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Run"));
 
 	float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed + (MovementSpeed * 0.75f);
 
 }
 
-void AAACharacterPlayer::StopRun()
+bool AAACharacterPlayer::ServerRPCStopRun_Validate()
 {
 	//0.4.1.C
 	bIsRunning = false;
 	
+	return true;
+}
+
+void AAACharacterPlayer::ServerRPCStopRun_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Stop Run"));
+
 	float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
 }
@@ -274,7 +313,7 @@ void AAACharacterPlayer::Expand()
 	for (int i = 0; i < AmmoExpandSize; i++)
 	{
 		// ver 0.3.1a
-		// Zero Location¿¡¼­ spawn½Ã Áï½Ã returnµÇ¾î GetPooledAmmo¿¡¼­ Data¸¦ ¸ø°¡Á®¿À´Â Bug fix
+		// Zero Locationì—ì„œ spawnì‹œ ì¦‰ì‹œ returnë˜ì–´ GetPooledAmmoì—ì„œ Dataë¥¼ ëª»ê°€ì ¸ì˜¤ëŠ” Bug fix
 		AAAWeaponAmmo* PoolableActor = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, FVector(0.0f, 0.0f, -5000.f), FRotator().ZeroRotator);
 		if (PoolableActor != nullptr)
 		{
@@ -369,11 +408,19 @@ bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, cons
 
 void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation, const FRotator& NewRotation)
 {
+	// ver 0.4.2a
+	// Fix Fire Direction
+	FVector CameraStartLocation = FollowCamera->GetComponentLocation();
+	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 5000.f;
+	FVector Direction = CameraEndLocation - CameraStartLocation;
+
+	FRotator FireDirection = Direction.Rotation();
+
 	// ver 0.3.1a
 	// Panzerfaust Spawn Actor Per Fire
 	if (WeaponData->Type == EWeaponType::Panzerfaust)
 	{
-		AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, NewRotation);
+		AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, FireDirection);
 		Rocket->SetOwnerPlayer(this);
 		Rocket->SetLifeSpan(2.0f);
 		Rocket->SetActive(true);
@@ -394,8 +441,8 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 
 				if (Bullet != nullptr)
 				{
-					FRotator BulletRotation = NewRotation + GetRandomRotator();
-					Bullet->SetReplicatedRotation(BulletRotation);
+					FRotator BulletRotation = FireDirection + GetRandomRotator();
+					//Bullet->SetReplicatedRotation(BulletRotation);
 					Bullet->SetActorLocationAndRotation(NewLocation, BulletRotation);
 					Bullet->SetActive(true);
 					Bullet->Fire();
@@ -417,8 +464,8 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 
 			if (Bullet != nullptr)
 			{
-				Bullet->SetReplicatedRotation(NewRotation);
-				Bullet->SetActorLocationAndRotation(NewLocation, NewRotation);
+				//Bullet->SetReplicatedRotation(NewRotation);
+				Bullet->SetActorLocationAndRotation(NewLocation, FireDirection);
 				Bullet->SetActive(true);
 				Bullet->Fire();
 
@@ -485,6 +532,7 @@ void AAACharacterPlayer::Reload()
 		MulticastRPCPlayReloadAnimation();
 	}
 }
+
 
 FRotator AAACharacterPlayer::GetRandomRotator()
 {

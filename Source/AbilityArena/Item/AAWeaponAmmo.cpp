@@ -61,15 +61,39 @@ void AAAWeaponAmmo::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AAAWeaponAmmo, ReplicatedRotation);
+	//DOREPLIFETIME(AAAWeaponAmmo, ReplicatedRotation);
 }
 
 void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
+
+	if (OtherActor == Owner)
+	{
+		return;
+	}
+
 	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Blue, FString::Printf(TEXT("Notify Begine Overlap")));
+		FString RoleName;
+		if (OtherActor->GetLocalRole() == ROLE_Authority)
+		{
+			RoleName = TEXT("Server");
+		}
+		else if (OtherActor->GetLocalRole() == ROLE_AutonomousProxy)
+		{
+			RoleName = TEXT("Client (Autonomous Proxy)");
+		}
+		else if (OtherActor->GetLocalRole() == ROLE_SimulatedProxy)
+		{
+			RoleName = TEXT("Client (Simulated Proxy)");
+		}
+		else
+		{
+			RoleName = TEXT("Unknown Role");
+		}
+
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Blue, FString::Printf(TEXT("ActorName : %s | Role : %s"), *OtherActor->GetName(), *RoleName));
 		if (AmmoType == EAmmoType::Rocket)
 		{
 			Destroy();
@@ -84,6 +108,12 @@ void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
 void AAAWeaponAmmo::NotifyActorEndOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorEndOverlap(OtherActor);
+
+	if (OtherActor == Owner)
+	{
+		return;
+	}
+
 	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, FString::Printf(TEXT("Notify End Overlap")));
@@ -149,7 +179,7 @@ void AAAWeaponAmmo::SetActive(bool InIsActive)
 	}
 }
 
-void AAAWeaponAmmo::OnRep_RotationUpdated()
-{
-	SetActorRotation(ReplicatedRotation);
-}
+//void AAAWeaponAmmo::OnRep_RotationUpdated()
+//{
+//	SetActorRotation(ReplicatedRotation);
+//}
