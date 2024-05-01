@@ -10,6 +10,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Animation/AnimMontage.h"
+#include "CharacterStat/AACharacterPlayerState.h"
+#include "GameData/AAGameInstance.h"
 #include "Item/AAItemData.h"
 
 DEFINE_LOG_CATEGORY(LogAACharacter);
@@ -100,13 +102,44 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(AAACharacterBase, MaxAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, CurrentAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, bCanFire);
+	
 }
 
 // Called when the game starts or when spawned
 void AAACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+	//ver 0.4.2b 
+	//Casting GameInstance
+	GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+
 	
+	//ver 0.4.2b
+	// GameInstace OperaterPart when beginPlay(initial stage)
+	/*if (GameInstance->GetsetWeaponItemData() == nullptr)
+	{
+		if (!HasAuthority())
+		{
+			EquipWeapon(WeaponData);
+		}
+		else
+		{
+			EquipWeapon(WeaponData);
+		}
+	}
+	else
+	{
+		if (!HasAuthority())
+		{
+			EquipWeapon(GameInstance->GetsetWeaponItemData());
+		}
+		else
+		{
+			EquipWeapon(GameInstance->GetsetWeaponItemData());
+		}
+		
+	}*/
+
 	//test
 	EquipWeapon(WeaponData);
 }
@@ -126,7 +159,13 @@ void AAACharacterBase::OnRep_WeaponData()
 {
 	UE_LOG(LogTemp, Error, TEXT("Called OnRep_WeaponData"));
 	EquipWeapon(WeaponData);
+	
 }
+
+
+	
+	
+
 
 bool AAACharacterBase::ServerRPCChangeWeapon_Validate(UAAWeaponItemData* NewWeaponData)
 {
@@ -159,7 +198,8 @@ void AAACharacterBase::ApplyStat(const FAACharacterStat& BaseStat, const FAAChar
 void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 {
 	UAAWeaponItemData* WeaponItemData = Cast<UAAWeaponItemData>(InItemData);
-
+	
+	
 	if (WeaponItemData)
 	{
 		WeaponData = WeaponItemData;
@@ -169,6 +209,14 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 		}
 		Weapon->SetSkeletalMesh(WeaponData->WeaponMesh.Get());
 		Stat->SetWeaponStat(WeaponData->WeaponStat);
+		// ver 0.4.2b
+		//feat: gameInstance data Storage
+		/*if (GameInstance)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Find GameInstace"));
+			GameInstance->SetWeaponItemData(WeaponData);
+		}
+		*/
 
 		// ver 0.4.2a
 		// Replace Attach Weapon

@@ -3,6 +3,10 @@
 
 #include "Game/AAGameMode.h"
 #include "Game/AAGameStateT.h"
+#include "GameData/AAGameInstance.h"
+#include "Player/AAPlayerController.h"
+#include "Character/AACharacterPlayer.h"
+#include "Item/AAWeaponItemData.h"
 #include "Player/AAPlayerController.h"
 
 
@@ -21,24 +25,27 @@ void AAAGameMode::PostInitializeComponents()
 void AAAGameMode::DefaultGameTimer()
 {
 	AAAGameStateT* const AAGameStateT = Cast<AAAGameStateT>(GameState);
+	
+
 	if (AAGameStateT && AAGameStateT->RemainingTime > 0)
 	{
 		AAGameStateT->RemainingTime--;
 		//0.3.3b LogMessage
-		//UE_LOG(LogTemp, Warning, TEXT("RemainingTime: %d"),AAGameStateT->RemainingTime);
+		UE_LOG(LogTemp, Warning, TEXT("RemainingTime: %d"),AAGameStateT->RemainingTime);
 		if (AAGameStateT->RemainingTime <= 0)
 		{
 			if (GetMatchState() == MatchState::InProgress)
 			{
 				FinishGame();
+				
 			}
 			else if(GetMatchState()==MatchState::WaitingPostMatch)
 			{
 				
 				// Level Change part
-				GetWorld()->ServerTravel(TEXT("/Game/Maps/Test1"));
+				GetWorld()->ServerTravel(TEXT("/Game/Maps/Test"));
 				
-				//UE_LOG(LogTemp, Warning, TEXT("ChangeLevel"));
+				
 			}
 		}
 	}
