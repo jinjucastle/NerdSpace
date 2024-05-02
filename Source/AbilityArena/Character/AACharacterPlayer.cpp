@@ -83,10 +83,6 @@ AAACharacterPlayer::AAACharacterPlayer()
 	}
 	
 	CurrentCharacterZoomType = ECharacterZoomType::ZoomOut;
-
-	//0.4.1.C
-	bIsRunning = false;
-	bIsFiring = false;
 }
 
 void AAACharacterPlayer::BeginPlay()
@@ -209,32 +205,13 @@ void AAACharacterPlayer::Look(const FInputActionValue& Value)
 void AAACharacterPlayer::Run()
 {
 	//feat: 달릴 때 줌인 되어있으면 리턴 ver 0.2.0 C
-	if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn || bIsRun)
+	// ver 0.5.1a
+	// fix CanRun Logic
+	if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn || bIsRun || bIsFiring || !bCanFire || GetCharacterMovement()->IsFalling())
 	{
 		return;
 	}
 
-	//feat: 점프시 뛰지 않도록 ver 0.4.1 C
-	if (bPressedJump)
-	{
-		StopRun();
-		return;
-	}
-
-	//feat: 장전시 뛰지 않도록 ver 0.4.1 C
-	/*if (bIsReloading)
-	{
-		return;
-	}*/
-
-	//feat: 격발시 뛰지 않도록 ver 0.4.1 C
-	if (bIsFiring)
-	{
-		return;
-	}
-
-	//0.4.1.C
-	bIsRunning = true;
 	bIsRun = true;
 
 	if (!HasAuthority())
@@ -275,9 +252,6 @@ void AAACharacterPlayer::ServerRPCRun_Implementation()
 
 bool AAACharacterPlayer::ServerRPCStopRun_Validate()
 {
-	//0.4.1.C
-	bIsRunning = false;
-	
 	return true;
 }
 
@@ -291,13 +265,13 @@ void AAACharacterPlayer::ServerRPCStopRun_Implementation()
 
 void AAACharacterPlayer::StartJump()
 {
-	ACharacter::Jump();
-
-	if (bIsRunning)
+	if (bIsRun)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Start Jump While Running"));
 		StopRun();
 	}
+
+	ACharacter::Jump();
 }
 
 AAAWeaponAmmo* AAACharacterPlayer::GetPooledAmmo()
@@ -381,7 +355,7 @@ void AAACharacterPlayer::StartFire()
 	//ver 0.4.1 C
 	bIsFiring = true;
 
-	if (bIsRunning)
+	if (bIsRun)
 	{
 		StopRun();
 	}
@@ -520,11 +494,10 @@ void AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Implementation(UClass* NewA
 
 void AAACharacterPlayer::Reload()
 {
-	/*if (bIsRunning)
+	if (bIsRun)
 	{
 		StopRun();
-		bIsRunning = false;
-	}*/
+	}
 
 	if (HasAuthority())
 	{

@@ -88,9 +88,6 @@ AAACharacterBase::AAACharacterBase()
 	 //Item Actions
 	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AAACharacterBase::RecoverHealth)));
 	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AAACharacterBase::MakeShield)));
-
-	//ver 0.4.1 C
-	bIsReloading = false;
 }
 
 void AAACharacterBase::PostInitializeComponents()
@@ -270,9 +267,6 @@ void AAACharacterBase::PlayReloadAnimation()
 			UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);		
 			
 		}
-
-		//ver 0.4.1 C
-		//bIsReloading = true;
 	}
 
 }

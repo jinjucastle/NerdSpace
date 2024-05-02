@@ -160,6 +160,5 @@ protected:
 //ver 0.4.1 C
 //is running?
 protected:
-	bool bIsRunning;
 	bool bIsFiring;
 };
