@@ -5,13 +5,14 @@
 #include "CoreMinimal.h"
 #include "Character/AACharacterBase.h"
 #include "InputActionValue.h"
+#include "Interface/AACharacterHUDInterface.h"
 #include "AACharacterPlayer.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ABILITYARENA_API AAACharacterPlayer : public AAACharacterBase
+class ABILITYARENA_API AAACharacterPlayer : public AAACharacterBase, public IAACharacterHUDInterface
 {
 	GENERATED_BODY()
 	
@@ -161,4 +162,9 @@ protected:
 //is running?
 protected:
 	bool bIsFiring;
+
+//ver 0.5.1 C
+//UI Section
+protected:
+	virtual void SetupHUDWidget(class UAAHUDWidget* InHUDWidget) override;
 };
