@@ -87,7 +87,7 @@ protected:
 	virtual void TakeItem(class UAAItemData* InItemData) override;
 	virtual void RecoverHealth(class UAAItemData* InItemData);
 	virtual void MakeShield(class UAAItemData* InItemData);
-	
+
 
 // ver 0.0.2a
 // WeaponData Get
