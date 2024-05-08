@@ -7,18 +7,22 @@
 #include "Player/AAPlayerController.h"
 #include "Character/AACharacterPlayer.h"
 #include "Item/AAWeaponItemData.h"
+#include "CharacterStat/AACharacterPlayerState.h"
 #include "Player/AAPlayerController.h"
 
 
 AAAGameMode::AAAGameMode()
 {
-
+	//ver 0.5.1b
+	//feat: playerStateID가 seamlessTravel에는 변경 X
+	bUseSeamlessTravel = true;
 }
 
 void AAAGameMode::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	//라운드 활동 부분 0.3.3B
+	// 충돌가능성으로 인한 주석처리
 	//GetWorldTimerManager().SetTimer(GameTimerHandle, this, &AAAGameMode::DefaultGameTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
 }
 
@@ -42,8 +46,9 @@ void AAAGameMode::DefaultGameTimer()
 			else if(GetMatchState()==MatchState::WaitingPostMatch)
 			{
 				
-				// Level Change part
-				GetWorld()->ServerTravel(TEXT("/Game/Maps/Test"));
+				// 0.5.1b
+				//feat: change function Servertravel->SeamlessTravel
+				GetWorld()->SeamlessTravel(TEXT("/Game/Maps/Test"),true);
 				
 				
 			}
@@ -53,6 +58,26 @@ void AAAGameMode::DefaultGameTimer()
 
 }
 
+//다른 곳과 충돌가능성이 있기 때문에 주석 처리
+/*void AAAGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+	
+	UAAGameInstance* GI = Cast<UAAGameInstance>(GetGameInstance());
+	AAACharacterPlayerState* PlayerState = Cast<AAACharacterPlayerState>(NewPlayer->PlayerState);
+	//ver 0.5.1b
+	//feat: PlayerID를 클라이언트가 생성되면 받아옴
+	if (GI)
+	{
+	
+		FPlayerInfo NewInfo;
+		NewInfo.PlayerID = PlayerState->GetPlayerId();
+		GI->AddPlayerInfo(NewInfo);
+		
+	}
+	
+}
+*/
 void AAAGameMode::FinishGame()
 {
 	AAAGameStateT* const AAGameStateT = Cast<AAAGameStateT>(GameState);

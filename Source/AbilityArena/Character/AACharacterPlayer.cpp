@@ -96,7 +96,8 @@ void AAACharacterPlayer::BeginPlay()
 	}
 
 	SetCharacterControl(CurrentCharacterZoomType);
-
+	
+	
 }
 
 void AAACharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -163,7 +164,7 @@ void AAACharacterPlayer::SetCharacterControl(ECharacterZoomType NewCharacterZoom
 			Subsystem->AddMappingContext(NewMappingContext, 0);
 		}
 	}
-
+	
 	CurrentCharacterZoomType = NewCharacterZoomType;
 }
 

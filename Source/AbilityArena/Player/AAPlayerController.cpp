@@ -5,6 +5,7 @@
 
 AAAPlayerController::AAAPlayerController()
 {
+
 }
 
 void AAAPlayerController::BeginPlay()
@@ -13,4 +14,6 @@ void AAAPlayerController::BeginPlay()
 
 	FInputModeGameOnly GameOnlyInputMode;
 	SetInputMode(GameOnlyInputMode);
+	
+	
 }

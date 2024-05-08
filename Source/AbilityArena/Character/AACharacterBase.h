@@ -80,6 +80,7 @@ protected:
 	//ver 0.4.2b
 	//GameInstance 
 	TObjectPtr<class UAAGameInstance> GameInstance;
+	TObjectPtr<class AAACharacterPlayerState>playerState;
 // ver 0.3.0 C
 	UPROPERTY()
 	TArray<FTakeItemDelegateWrapper> TakeItemActions;

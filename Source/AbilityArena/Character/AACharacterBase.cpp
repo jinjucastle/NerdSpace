@@ -114,36 +114,21 @@ void AAACharacterBase::BeginPlay()
 	//ver 0.4.2b 
 	//Casting GameInstance
 	GameInstance = Cast<UAAGameInstance>(GetGameInstance());
-
+	//ver 0.5.1b
+	//check playerState->PlayerID()
+	//충돌가능성 농후 주석처리
+	//playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
 	
-	//ver 0.4.2b
-	// GameInstace OperaterPart when beginPlay(initial stage)
-	/*if (GameInstance->GetsetWeaponItemData() == nullptr)
+	
+	//ver 0.5.1b
+	// check PlayerState playerID() and stay WeaponData;
+	/*if (playerState->GetPlayerId() == GameInstance->PlayerInfos[0].PlayerID)
 	{
-		if (!HasAuthority())
-		{
-			EquipWeapon(WeaponData);
-		}
-		else
-		{
-			EquipWeapon(WeaponData);
-		}
-	}
-	else
-	{
-		if (!HasAuthority())
-		{
-			EquipWeapon(GameInstance->GetsetWeaponItemData());
-		}
-		else
-		{
-			EquipWeapon(GameInstance->GetsetWeaponItemData());
-		}
-		
-	}*/
-
+		EquipWeapon(GameInstance->GetsetWeaponItemData());
+	 }
+	*/
 	//test
-	EquipWeapon(WeaponData);
+	//EquipWeapon(WeaponData);
 }
 
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
@@ -213,12 +198,12 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 		Stat->SetWeaponStat(WeaponData->WeaponStat);
 		// ver 0.4.2b
 		//feat: gameInstance data Storage
-		/*if (GameInstance)
+		if (GameInstance)
 		{
 			UE_LOG(LogTemp, Error, TEXT("Find GameInstace"));
 			GameInstance->SetWeaponItemData(WeaponData);
 		}
-		*/
+		
 
 		// ver 0.4.2a
 		// Replace Attach Weapon
