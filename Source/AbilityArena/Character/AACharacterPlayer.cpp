@@ -15,6 +15,7 @@
 #include "Net/UnrealNetwork.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/AAHUDWidget.h"
 
 AAACharacterPlayer::AAACharacterPlayer()
 {
@@ -514,6 +515,18 @@ FRotator AAACharacterPlayer::GetRandomRotator()
 	float RandomRoll = FMath::RandRange(-1.0f, 1.0f); 
 
 	return FRotator(RandomPitch, RandomYaw, RandomRoll);
+}
+
+void AAACharacterPlayer::SetupHUDWidget(UAAHUDWidget* InHUDWidget)
+{
+	if (InHUDWidget)
+	{
+		InHUDWidget->UpdateStat(Stat->GetTotalStat(), *WeaponData);
+		InHUDWidget->UpdateHpBar(Stat->GetCurrentHp());
+
+		//Stat->OnStatChanged.AddUObject(InHUDWidget, &UAAHUDWidget::UpdateStat);
+		//Stat->OnHpChanged.AddUObject(InHUDWidget, &UAAHUDWidget::UpdateHpBar);
+	}
 }
 
 

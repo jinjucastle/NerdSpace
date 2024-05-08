@@ -11,6 +11,10 @@ UAACharacterStatComponent::UAACharacterStatComponent()
 	CurrentLevel = 1;
 
 	bWantsInitializeComponent = true;
+
+	//ver 0.5.1C
+	MaxHp = 200.0f;
+	CurrentHp = MaxHp;
 }
 
 void UAACharacterStatComponent::InitializeComponent()
