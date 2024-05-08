@@ -9,6 +9,19 @@
 /**
  * 
  */
+//ver 0.5.1b
+//feat: playerId ÀúÀå¿ë struct
+USTRUCT(BlueprintType)
+struct FPlayerInfo {
+
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY(VisibleAnywhere, Category = State)
+		int32 PlayerID;
+};
+
 UCLASS()
 class ABILITYARENA_API UAAGameInstance : public UGameInstance
 {
@@ -23,6 +36,7 @@ private:
 	// initial stage of storing Waepondata
 	UPROPERTY(Transient, VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 		TObjectPtr<class UAAWeaponItemData> PresentWeapon;
+	
 public:
 	//ver 0.4.2b
 	// Set Save weaponData
@@ -31,4 +45,9 @@ public:
 	//Get Weapondata
 	TObjectPtr<class UAAWeaponItemData> GetsetWeaponItemData();
 
+	void AddPlayerInfo(const FPlayerInfo& newPlayerInfo);
+	int32 GetPlayerInfoNum() { return PlayerInfos.Num(); }
+
+	UPROPERTY(Transient, VisibleAnywhere)
+		TArray <FPlayerInfo>PlayerInfos;
 };

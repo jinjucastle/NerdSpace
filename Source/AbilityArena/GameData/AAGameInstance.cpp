@@ -25,3 +25,8 @@ TObjectPtr<class UAAWeaponItemData> UAAGameInstance::GetsetWeaponItemData()
 {
 	return PresentWeapon;
 }
+
+void UAAGameInstance::AddPlayerInfo(const FPlayerInfo& newPlayerInfo)
+{
+	PlayerInfos.Add(newPlayerInfo);
+}

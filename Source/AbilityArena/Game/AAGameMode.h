@@ -21,7 +21,14 @@ protected:
 	virtual void PostInitializeComponents() override;
 
 	virtual void DefaultGameTimer();
+	
+	//ver 0.5.1b 
+	//feat:check User UniqueID in Generate client using playerController
+	//virtual void PostLogin(APlayerController* NewPlayer) override;
+
+	
 
 	void FinishGame();
 	FTimerHandle GameTimerHandle;
+
 };

@@ -10,9 +10,7 @@ AAAPlayerController::AAAPlayerController()
 	if (AAHUDWidgetRef.Class)
 	{
 		AAHUDWidgetClass = AAHUDWidgetRef.Class;
-	}
-	
-
+  }
 }
 
 void AAAPlayerController::BeginPlay()

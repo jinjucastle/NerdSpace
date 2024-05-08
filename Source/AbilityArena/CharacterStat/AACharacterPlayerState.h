@@ -17,14 +17,12 @@ class ABILITYARENA_API AAACharacterPlayerState : public APlayerState
 
 public:
 	
-
-	void SetWeaponState(TObjectPtr<class UAAWeaponItemData> SetPresentWeapon );
 	
-	
-	TObjectPtr<class UAAWeaponItemData>GetWeapon() { return PresentWeapon; }
 	
 private:
 
 	UPROPERTY(Transient,VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 		TObjectPtr<class UAAWeaponItemData> PresentWeapon;
+	UPROPERTY(Transient, VisibleInstanceOnly)
+		FString TestGUID;
 };
