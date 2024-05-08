@@ -62,4 +62,5 @@ public:
 	EWeaponType Type;
 
 public:
+
 };

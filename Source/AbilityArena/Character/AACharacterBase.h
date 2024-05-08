@@ -62,6 +62,12 @@ protected:
 public:
 	void ApplyStat(const FAACharacterStat& BaseStat, const FAACharacterStat& WeaponStat);
 
+// ver 0.5.1 C
+//UI Widget Section
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Widget, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UAAWidgetComponent> HpBar;
+
 // ver 0.0.1a
 // Item Section
 protected:
@@ -75,7 +81,7 @@ protected:
 	// Set Replicated
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponData, EditAnywhere, BlueprintReadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAAWeaponItemData> WeaponData;
-	//ver 0.4.0
+	//ver 0.5.1 C
 
 	//ver 0.4.2b
 	//GameInstance 
@@ -135,4 +141,5 @@ public:
 	void PlayReloadAnimation();
 	void ReloadActionEnded(UAnimMontage* Montage, bool IsEnded);
 	void ServerSetCanFire(bool NewCanFire);
+
 };

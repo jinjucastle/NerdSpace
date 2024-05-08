@@ -5,9 +5,11 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameData/AACharacterStat.h"
+#include "Item/AAWeaponItemData.h"
 #include "AACharacterStatComponent.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnStatChangedDelegate, const FAACharacterStat& /*BaseStat*/, const FAACharacterStat& /*WeaponStat*/);	// ver0.0.1a Stat Delegate
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ABILITYARENA_API UAACharacterStatComponent : public UActorComponent
@@ -32,6 +34,8 @@ public:
 	FORCEINLINE void SetBaseStat(const FAACharacterStat& InAddBaseStat) { BaseStat = InAddBaseStat; OnStatChanged.Broadcast(GetBaseStat(), GetWeaponStat()); }
 	FORCEINLINE void SetWeaponStat(const FAACharacterStat& InAddWeaponStat) { WeaponStat = InAddWeaponStat; OnStatChanged.Broadcast(GetBaseStat(), GetWeaponStat()); }
 
+//ver0.0.1a
+//Stat Component Base Work
 protected:
 	UPROPERTY(Transient, ReplicatedUsing = OnRep_BaseStat, VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	FAACharacterStat BaseStat;
@@ -52,4 +56,16 @@ protected:
 
 	UFUNCTION()
 	void OnRep_WeaponStat();
+
+//ver 0.5.1 C
+public:
+	FORCEINLINE float GetMaxHp() { return MaxHp; }
+	FORCEINLINE float GetCurrentHp() { return CurrentHp; }
+
+protected:
+	UPROPERTY(VisibleInstanceOnly, Category = Stat)
+	float MaxHp;
+
+	UPROPERTY(Transient, VisibleInstanceOnly, Category = Stat)
+	float CurrentHp;
 };
