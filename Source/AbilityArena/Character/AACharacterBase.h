@@ -114,10 +114,10 @@ protected:
 
 // ver 0.3.2a
 // AmmoSize
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated, BlueprintReadOnly)
 	int32 MaxAmmoSize = 0;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated, BlueprintReadOnly)
 	int32 CurrentAmmoSize = 0;
 
 // ver 0.3.2a

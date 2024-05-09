@@ -26,7 +26,7 @@ AAACharacterPlayer::AAACharacterPlayer()
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	FollowCamera->SetRelativeLocation(FVector(0.0f, 45.0f, 85.0f));
+	FollowCamera->SetRelativeLocation(FVector(0.0f, 45.0f, 35.0f));
 	FollowCamera->bUsePawnControlRotation = false;
 
 	//Input
@@ -385,7 +385,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 	// ver 0.4.2a
 	// Fix Fire Direction
 	FVector CameraStartLocation = FollowCamera->GetComponentLocation();
-	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 5000.f;
+	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 500.f;
 	FVector Direction = CameraEndLocation - CameraStartLocation;
 
 	FRotator FireDirection = Direction.Rotation();

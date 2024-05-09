@@ -61,7 +61,6 @@ void AAAWeaponAmmo::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	//DOREPLIFETIME(AAAWeaponAmmo, ReplicatedRotation);
 }
 
 void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
@@ -178,8 +177,3 @@ void AAAWeaponAmmo::SetActive(bool InIsActive)
 		GetWorld()->GetTimerManager().SetTimer(ActiveHandle, this, &AAAWeaponAmmo::ReturnSelf, 2.0f, false);
 	}
 }
-
-//void AAAWeaponAmmo::OnRep_RotationUpdated()
-//{
-//	SetActorRotation(ReplicatedRotation);
-//}

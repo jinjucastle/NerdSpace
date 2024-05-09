@@ -13,7 +13,7 @@ enum class EWeaponType : uint8
 	Pistol = 0,
 	Shotgun,
 	Rifle,
-	SniferRifle,
+	SniperRifle,
 	Panzerfaust,
 	Funny
 };
@@ -42,15 +42,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = Weapon)
 	TSoftObjectPtr<USkeletalMesh> WeaponMesh;
 
-	UPROPERTY(EditAnywhere, Category = Stat)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Stat)
 	FAACharacterStat WeaponStat;
 
 	// ver 0.0.2a
 	// Add Ammo
-	UPROPERTY(EditAnywhere, Category = Stat)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Stat)
 	float AmmoDamage;
 
-	UPROPERTY(EditAnywhere, Category = Stat)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Stat)
 	float AmmoSpeed;
 
 	UPROPERTY(EditAnywhere, Category = Stat)

@@ -282,6 +282,7 @@ void AAACharacterBase::RecoverHealth(UAAItemData* InItemData)
 	if (AARecoveryItem)
 	{
 		UE_LOG(LogAACharacter, Log, TEXT("Recover Health"));
+		Stat->HealHp(AARecoveryItem->RecoveryAmount);
 	}
 
 }

@@ -78,16 +78,4 @@ private:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Type)
 	EAmmoType AmmoType;
-
-// ver 0.3.1a
-// Add Ammo Location & Rotation Info
-//protected:
-//	UPROPERTY(ReplicatedUsing = OnRep_RotationUpdated)
-//	FRotator ReplicatedRotation;
-//
-//public:
-//	UFUNCTION()
-//	void OnRep_RotationUpdated();
-//
-//	FORCEINLINE void SetReplicatedRotation(const FRotator NewRotation) { ReplicatedRotation = NewRotation; };
 };
