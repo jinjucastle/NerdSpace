@@ -20,13 +20,4 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
-//ver. 0.5.1 C
-//HUD Section
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
-	TSubclassOf<class UAAHUDWidget> AAHUDWidgetClass;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = HUD)
-	TObjectPtr<class UAAHUDWidget> AAHUDWidget;
 };

@@ -15,7 +15,6 @@
 #include "Net/UnrealNetwork.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
-#include "UI/AAHUDWidget.h"
 
 AAACharacterPlayer::AAACharacterPlayer()
 {
@@ -249,7 +248,6 @@ void AAACharacterPlayer::ServerRPCRun_Implementation()
 
 	float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed + (MovementSpeed * 0.75f);
-
 }
 
 bool AAACharacterPlayer::ServerRPCStopRun_Validate()
@@ -516,18 +514,6 @@ FRotator AAACharacterPlayer::GetRandomRotator()
 	float RandomRoll = FMath::RandRange(-1.0f, 1.0f); 
 
 	return FRotator(RandomPitch, RandomYaw, RandomRoll);
-}
-
-void AAACharacterPlayer::SetupHUDWidget(UAAHUDWidget* InHUDWidget)
-{
-	if (InHUDWidget)
-	{
-		InHUDWidget->UpdateStat(Stat->GetTotalStat(), *WeaponData);
-		InHUDWidget->UpdateHpBar(Stat->GetCurrentHp());
-
-		//Stat->OnStatChanged.AddUObject(InHUDWidget, &UAAHUDWidget::UpdateStat);
-		//Stat->OnHpChanged.AddUObject(InHUDWidget, &UAAHUDWidget::UpdateHpBar);
-	}
 }
 
 

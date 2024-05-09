@@ -125,10 +125,10 @@ void AAACharacterBase::BeginPlay()
 	/*if (playerState->GetPlayerId() == GameInstance->PlayerInfos[0].PlayerID)
 	{
 		EquipWeapon(GameInstance->GetsetWeaponItemData());
-	 }
-	*/
+	 }*/
+	
 	//test
-	//EquipWeapon(WeaponData);
+	EquipWeapon(WeaponData);
 }
 
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
@@ -148,11 +148,6 @@ void AAACharacterBase::OnRep_WeaponData()
 	EquipWeapon(WeaponData);
 	
 }
-
-
-	
-	
-
 
 bool AAACharacterBase::ServerRPCChangeWeapon_Validate(UAAWeaponItemData* NewWeaponData)
 {
