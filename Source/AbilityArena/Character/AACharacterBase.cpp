@@ -171,10 +171,11 @@ void AAACharacterBase::MulticastRPCChangeWeapon_Implementation(UAAWeaponItemData
 // Equip Weapon & Apply Stat
 void AAACharacterBase::ApplyStat(const FAACharacterStat& BaseStat, const FAACharacterStat& WeaponStat)
 {
-	float MovementSpeed = (BaseStat + WeaponStat).MovementSpeed;
-	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
+	BaseMovementSpeed = (BaseStat + WeaponStat).MovementSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
 	AmmoDamage = WeaponData->AmmoDamage;
 	AmmoSpeed = WeaponData->AmmoSpeed;
+	RPM = WeaponData->WeaponStat.RPM;
 }
 
 void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
@@ -219,7 +220,6 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
 		}
 		CurrentAmmoSize = MaxAmmoSize;
-
 	}
 	if(!HasAuthority())
 	{

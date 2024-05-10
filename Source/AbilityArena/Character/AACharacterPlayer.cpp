@@ -217,8 +217,7 @@ void AAACharacterPlayer::Run()
 
 	if (!HasAuthority())
 	{
-		float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
-		GetCharacterMovement()->MaxWalkSpeed = MovementSpeed + (MovementSpeed * 0.75f);
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.75f);
 	}
 
 	ServerRPCRun();
@@ -230,8 +229,7 @@ void AAACharacterPlayer::StopRun()
 
 	if (!HasAuthority())
 	{
-		float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
-		GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
 	}
 
 	ServerRPCStopRun();
@@ -246,8 +244,7 @@ void AAACharacterPlayer::ServerRPCRun_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Run"));
 
-	float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
-	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed + (MovementSpeed * 0.75f);
+	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.75f);
 }
 
 bool AAACharacterPlayer::ServerRPCStopRun_Validate()
@@ -259,8 +256,7 @@ void AAACharacterPlayer::ServerRPCStopRun_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Stop Run"));
 
-	float MovementSpeed = Stat->GetBaseStat().MovementSpeed + Stat->GetWeaponStat().MovementSpeed;
-	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
 }
 
 void AAACharacterPlayer::StartJump()
@@ -362,7 +358,7 @@ void AAACharacterPlayer::StartFire()
 
 	if (WeaponData)
 	{
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutomaticFire, this, &AAACharacterPlayer::Fire, WeaponData->WeaponStat.RPM + 0.01f, true, 0.f);
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutomaticFire, this, &AAACharacterPlayer::Fire, RPM + 0.01f, true, 0.f);
 	}
 }
 
@@ -423,7 +419,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 
 					CurrentAmmoSize--;
 
-					NextFireTime = CurrentTime + WeaponData->WeaponStat.RPM;
+					NextFireTime = CurrentTime + RPM;
 				}
 			}
 		}
@@ -445,7 +441,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 
 				CurrentAmmoSize--;
 
-				NextFireTime = CurrentTime + WeaponData->WeaponStat.RPM;
+				NextFireTime = CurrentTime + RPM;
 			}
 		}
 	}
@@ -516,7 +512,6 @@ FRotator AAACharacterPlayer::GetRandomRotator()
 	return FRotator(RandomPitch, RandomYaw, RandomRoll);
 }
 
-
 void AAACharacterPlayer::MulticastRPCPlayReloadAnimation_Implementation()
 {
 	if (!HasAuthority())
@@ -524,4 +519,23 @@ void AAACharacterPlayer::MulticastRPCPlayReloadAnimation_Implementation()
 		UE_LOG(LogTemp, Error, TEXT("MulticastRPCPlayerReloadAnimation"));
 		PlayReloadAnimation();
 	}
+}
+
+void AAACharacterPlayer::ApplyAbility()
+{
+	Stat->SetNewMaxHp(Stat->GetMaxHp() * Stat->GetAbilityStat().MaxHp);
+
+	BaseMovementSpeed *= Stat->GetAbilityStat().MovementSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+
+	RPM *= Stat->GetAbilityStat().RPM;
+	AmmoDamage *= Stat->GetAbilityStat().Damage;
+	AmmoSpeed *= Stat->GetAbilityStat().AmmoSpeed;
+	AmmoScale = Stat->GetAbilityStat().AmmoScale;
+	Acceleration = Stat->GetAbilityStat().Acceleration;
+
+	ReloadSpeed = Stat->GetAbilityStat().ReloadSpeed;
+	SplashRound = Stat->GetAbilityStat().SplashRound;
+
+	ClearPool();
 }

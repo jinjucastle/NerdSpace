@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "GameData/AACharacterStat.h"
+#include "GameData/AAAbilityStat.h"
 #include "Interface/AACharacterItemInterface.h"
 #include "AACharacterBase.generated.h"
 
@@ -96,7 +97,10 @@ protected:
 	float AmmoSpeed;
 
 public:
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetAmmoDamage() const { return AmmoDamage; }
+
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetAmmoSpeed() const { return AmmoSpeed; }
 
 // ver 0.1.2a
@@ -134,4 +138,13 @@ public:
 	void ReloadActionEnded(UAnimMontage* Montage, bool IsEnded);
 	void ServerSetCanFire(bool NewCanFire);
 
+// ver 0.6.2a
+// Add MovementSpeed & RPM Storage
+protected:
+	float BaseMovementSpeed;
+	float RPM = 1.f;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetRPM() const { return RPM; }
 };

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameData/AACharacterStat.h"
+#include "GameData/AAAbilityStat.h"
 #include "Item/AAWeaponItemData.h"
 #include "AACharacterStatComponent.generated.h"
 
@@ -86,4 +87,21 @@ protected:
 	
 	UFUNCTION()
 	void OnRep_CurrentHp();
+
+// ver 0.6.2a
+// AbilityStat Section
+protected:
+	UPROPERTY(ReplicatedUsing = OnRep_SelectedAbility, VisibleInstanceOnly, Category = Ability, Meta = (AllowPrivateAccess = "true"))
+	FAAAbilityStat SelectedAbility;
+
+	UFUNCTION(BlueprintCallable)
+	void OnRep_SelectedAbility();
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void SetAbility(const FAAAbilityStat& InAddAbility);
+
+	FORCEINLINE const FAAAbilityStat& GetAbilityStat() const { return SelectedAbility; }
+
+	void SetNewMaxHp(const float NewMaxHp);
 };

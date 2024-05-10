@@ -161,4 +161,22 @@ protected:
 //is running?
 protected:
 	bool bIsFiring;
+
+// ver 0.6.2a
+// Apply Ability
+public:
+	UFUNCTION(BlueprintCallable)
+	void ApplyAbility();
+
+//Add extra stat
+protected:
+	float AmmoScale = 1.f;
+	float Acceleration;
+	float ReloadSpeed = 1.f;
+	float SplashRound = 1.f;
+	bool bBloodDrain;
+
+public:
+	FORCEINLINE const float GetAcceleration() const { return Acceleration; }
+	FORCEINLINE const float GetAmmoScale() const { return AmmoScale; }
 };

@@ -47,12 +47,15 @@ void AAAWeaponAmmo::Tick(float DeltaTime)
 
 	// ver 0.1.3a
 	// Rocket Acceleration
-	if (bIsActive)
+	if (Owner)
 	{
-		if (AmmoType == EAmmoType::Rocket)
+		if (bIsActive)
 		{
-			FVector NewVelocity = AmmoMovement->Velocity * 1.03f;
-			AmmoMovement->Velocity = NewVelocity;
+			if (AmmoType == EAmmoType::Rocket)
+			{
+				FVector NewVelocity = AmmoMovement->Velocity * Owner->GetAcceleration();
+				AmmoMovement->Velocity = NewVelocity;
+			}
 		}
 	}
 }
