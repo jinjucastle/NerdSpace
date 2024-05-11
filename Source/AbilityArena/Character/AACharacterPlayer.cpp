@@ -96,8 +96,6 @@ void AAACharacterPlayer::BeginPlay()
 	}
 
 	SetCharacterControl(CurrentCharacterZoomType);
-	
-	
 }
 
 void AAACharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -327,7 +325,6 @@ void AAACharacterPlayer::ClearPool()
 		AmmoPool.Pop()->Destroy();
 		AmmoPoolSize--;
 	}
-	//check(AmmoPool.IsEmpty() && AmmoPoolSize == 0);
 }
 
 void AAACharacterPlayer::Fire()
@@ -413,7 +410,6 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 				if (Bullet != nullptr)
 				{
 					FRotator BulletRotation = FireDirection + GetRandomRotator();
-					//Bullet->SetReplicatedRotation(BulletRotation);
 					Bullet->SetActorLocationAndRotation(NewLocation, BulletRotation);
 					Bullet->SetActive(true);
 					Bullet->Fire();
@@ -435,7 +431,6 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 
 			if (Bullet != nullptr)
 			{
-				//Bullet->SetReplicatedRotation(NewRotation);
 				Bullet->SetActorLocationAndRotation(NewLocation, FireDirection);
 				Bullet->SetActive(true);
 				Bullet->Fire();
@@ -540,6 +535,8 @@ void AAACharacterPlayer::ApplyAbility()
 	AmmoSpeed = WeaponData->AmmoSpeed * AllAbility.AmmoSpeed;
 	AmmoScale = AllAbility.AmmoScale;
 	Acceleration = AllAbility.Acceleration;
+	MaxAmmoSize = WeaponData->AmmoPoolExpandSize * AllAbility.AmmoSize;
+	CurrentAmmoSize = MaxAmmoSize;
 
 	ReloadSpeed = AllAbility.ReloadSpeed;
 	SplashRound = AllAbility.SplashRound;
@@ -554,6 +551,8 @@ void AAACharacterPlayer::ApplyAbility()
 
 void AAACharacterPlayer::ServerRPCApplyAbility_Implementation(const FAAAbilityStat& NewAbilityStat)
 {
+	UE_LOG(LogTemp, Warning, TEXT("ServerRPCApplyAbility: New MaxHp = %f, Applied by %s"), NewAbilityStat.MaxHp, *GetNameSafe(this));
+
 	SelectedAbility = NewAbilityStat;
 
 	OnRep_SelectedAbility();
@@ -561,6 +560,7 @@ void AAACharacterPlayer::ServerRPCApplyAbility_Implementation(const FAAAbilitySt
 
 void AAACharacterPlayer::OnRep_SelectedAbility()
 {
+	SetAbility(SelectedAbility);
 	ApplyAbility();
 
 	UE_LOG(LogTemp, Log, TEXT("OnRep_SelectedAbility"));
