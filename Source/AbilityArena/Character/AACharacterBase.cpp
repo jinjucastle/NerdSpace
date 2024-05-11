@@ -253,7 +253,6 @@ void AAACharacterBase::PlayReloadAnimation()
 
 void AAACharacterBase::ReloadActionEnded(UAnimMontage* Montage, bool IsEnded)
 {
-	ensure(!bCanFire);
 	ServerSetCanFire(true);
 }
 

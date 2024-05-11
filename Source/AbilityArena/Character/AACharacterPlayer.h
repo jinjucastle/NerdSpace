@@ -163,10 +163,28 @@ protected:
 	bool bIsFiring;
 
 // ver 0.6.2a
-// Apply Ability
+// AbilityStat Section
+protected:
+	UPROPERTY()
+	TArray<FAAAbilityStat> SelectedAbilityArray;
+
+	UPROPERTY(ReplicatedUsing = OnRep_SelectedAbility, VisibleInstanceOnly, Category = Ability, Meta = (AllowPrivateAccess = "true"))
+	FAAAbilityStat SelectedAbility;
+
+	UFUNCTION(BlueprintCallable)
+	void OnRep_SelectedAbility();
+
 public:
 	UFUNCTION(BlueprintCallable)
+	void SetAbility(const FAAAbilityStat& InAddAbility);
+
+	FORCEINLINE const FAAAbilityStat& GetAbilityStat() const { return SelectedAbility; }
+
+	UFUNCTION(BlueprintCallable)
 	void ApplyAbility();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCApplyAbility(const FAAAbilityStat& NewAbilityStat);
 
 //Add extra stat
 protected:

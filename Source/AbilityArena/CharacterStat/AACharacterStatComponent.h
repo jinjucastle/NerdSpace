@@ -74,6 +74,7 @@ public:
 	float ApplyDamage(float InDamage);
 	void SetHp(float NewHp);
 	void ResetStat();
+	void SetNewMaxHp(const float NewMaxHp);
 
 protected:
 	UPROPERTY(ReplicatedUsing = OnRep_MaxHp, Transient, VisibleInstanceOnly, BlueprintReadOnly, Category = Stat)
@@ -87,21 +88,4 @@ protected:
 	
 	UFUNCTION()
 	void OnRep_CurrentHp();
-
-// ver 0.6.2a
-// AbilityStat Section
-protected:
-	UPROPERTY(ReplicatedUsing = OnRep_SelectedAbility, VisibleInstanceOnly, Category = Ability, Meta = (AllowPrivateAccess = "true"))
-	FAAAbilityStat SelectedAbility;
-
-	UFUNCTION(BlueprintCallable)
-	void OnRep_SelectedAbility();
-
-public:
-	UFUNCTION(BlueprintCallable)
-	void SetAbility(const FAAAbilityStat& InAddAbility);
-
-	FORCEINLINE const FAAAbilityStat& GetAbilityStat() const { return SelectedAbility; }
-
-	void SetNewMaxHp(const float NewMaxHp);
 };

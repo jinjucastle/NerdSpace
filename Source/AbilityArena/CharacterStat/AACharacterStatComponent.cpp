@@ -31,7 +31,6 @@ void UAACharacterStatComponent::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 	DOREPLIFETIME(UAACharacterStatComponent, MaxHp);
 	DOREPLIFETIME_CONDITION(UAACharacterStatComponent, BaseStat, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(UAACharacterStatComponent, WeaponStat, COND_OwnerOnly);
-	DOREPLIFETIME(UAACharacterStatComponent, SelectedAbility);
 }
 
 void UAACharacterStatComponent::OnRep_BaseStat()
@@ -72,7 +71,6 @@ void UAACharacterStatComponent::ResetStat()
 	SetBaseStat(UAAGameSingleton::Get().GetCharacterStat(CurrentLevel));
 	MaxHp = BaseStat.MaxHp;
 	SetHp(MaxHp);
-	OnRep_SelectedAbility();
 }
 
 void UAACharacterStatComponent::OnRep_MaxHp()
@@ -98,16 +96,4 @@ void UAACharacterStatComponent::SetNewMaxHp(const float NewMaxHp)
 		SetHp(MaxHp);
 		OnHpChanged.Broadcast(CurrentHp, MaxHp);
 	}
-}
-
-void UAACharacterStatComponent::OnRep_SelectedAbility()
-{
-	SetAbility(SelectedAbility);
-
-	UE_LOG(LogTemp, Log, TEXT("OnRep_SelectedAbility"));
-}
-
-void UAACharacterStatComponent::SetAbility(const FAAAbilityStat& InAddAbility)
-{
-	SelectedAbility = InAddAbility;
 }

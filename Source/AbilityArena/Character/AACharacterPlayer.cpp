@@ -125,6 +125,7 @@ void AAACharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AAACharacterPlayer, PooledAmmoClass);
+	DOREPLIFETIME(AAACharacterPlayer, SelectedAbility);
 }
 
 void AAACharacterPlayer::ChangeZoom()
@@ -523,19 +524,50 @@ void AAACharacterPlayer::MulticastRPCPlayReloadAnimation_Implementation()
 
 void AAACharacterPlayer::ApplyAbility()
 {
-	Stat->SetNewMaxHp(Stat->GetMaxHp() * Stat->GetAbilityStat().MaxHp);
+	FAAAbilityStat AllAbility;
+	for (int i = 0; i < SelectedAbilityArray.Num(); i++)
+	{
+		AllAbility = AllAbility + SelectedAbilityArray[i];
+	}
 
-	BaseMovementSpeed *= Stat->GetAbilityStat().MovementSpeed;
+	Stat->SetNewMaxHp(Stat->GetBaseStat().MaxHp * AllAbility.MaxHp);
+
+	BaseMovementSpeed = Stat->GetTotalStat().MovementSpeed * AllAbility.MovementSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
 
-	RPM *= Stat->GetAbilityStat().RPM;
-	AmmoDamage *= Stat->GetAbilityStat().Damage;
-	AmmoSpeed *= Stat->GetAbilityStat().AmmoSpeed;
-	AmmoScale = Stat->GetAbilityStat().AmmoScale;
-	Acceleration = Stat->GetAbilityStat().Acceleration;
+	RPM = WeaponData->WeaponStat.RPM + (WeaponData->WeaponStat.RPM * AllAbility.RPM);
+	AmmoDamage = WeaponData->AmmoDamage * AllAbility.Damage;
+	AmmoSpeed = WeaponData->AmmoSpeed * AllAbility.AmmoSpeed;
+	AmmoScale = AllAbility.AmmoScale;
+	Acceleration = AllAbility.Acceleration;
 
-	ReloadSpeed = Stat->GetAbilityStat().ReloadSpeed;
-	SplashRound = Stat->GetAbilityStat().SplashRound;
+	ReloadSpeed = AllAbility.ReloadSpeed;
+	SplashRound = AllAbility.SplashRound;
 
 	ClearPool();
+
+	if (!HasAuthority())
+	{
+		ServerRPCApplyAbility(SelectedAbility);
+	}
+}
+
+void AAACharacterPlayer::ServerRPCApplyAbility_Implementation(const FAAAbilityStat& NewAbilityStat)
+{
+	SelectedAbility = NewAbilityStat;
+
+	OnRep_SelectedAbility();
+}
+
+void AAACharacterPlayer::OnRep_SelectedAbility()
+{
+	ApplyAbility();
+
+	UE_LOG(LogTemp, Log, TEXT("OnRep_SelectedAbility"));
+}
+
+void AAACharacterPlayer::SetAbility(const FAAAbilityStat& InAddAbility)
+{
+	SelectedAbility = InAddAbility;
+	SelectedAbilityArray.Add(SelectedAbility);
 }
