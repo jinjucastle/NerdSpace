@@ -211,14 +211,7 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 
 		// ver 0.3.2a
 		// Set Ammo Size
-		if (WeaponData->Type == EWeaponType::Panzerfaust)
-		{
-			MaxAmmoSize = 1;
-		}
-		else
-		{
-			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
-		}
+		MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
 		CurrentAmmoSize = MaxAmmoSize;
 	}
 	if(!HasAuthority())

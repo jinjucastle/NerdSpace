@@ -535,6 +535,7 @@ void AAACharacterPlayer::ApplyAbility()
 	AmmoSpeed = WeaponData->AmmoSpeed * AllAbility.AmmoSpeed;
 	AmmoScale = AllAbility.AmmoScale;
 	Acceleration = AllAbility.Acceleration;
+
 	MaxAmmoSize = WeaponData->AmmoPoolExpandSize * AllAbility.AmmoSize;
 	CurrentAmmoSize = MaxAmmoSize;
 

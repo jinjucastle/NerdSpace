@@ -147,4 +147,9 @@ protected:
 public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetRPM() const { return RPM; }
+
+// ver 0.6.4a
+// UI Section
+public:
+	FORCEINLINE class UAAWeaponItemData* GetWeaponData() const { return WeaponData; }
 };
