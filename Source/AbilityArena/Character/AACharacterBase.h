@@ -74,7 +74,7 @@ protected:
 
 	// ver 0.1.2a
 	// Set Replicated
-	UPROPERTY(ReplicatedUsing = OnRep_WeaponData, EditAnywhere, BlueprintReadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAAWeaponItemData> WeaponData;
 
 	//ver 0.4.2b
@@ -106,15 +106,13 @@ public:
 // ver 0.1.2a
 // Replicated
 protected:
-	UFUNCTION()
-	void OnRep_WeaponData();
-	
-
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCChangeWeapon(class UAAWeaponItemData* NewWeaponData);
 
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastRPCChangeWeapon(class UAAWeaponItemData* NewWeaponData);
+	UFUNCTION(Client, Reliable)
+	void ClientRPCChangeWeapon(AAACharacterBase* CharacterToPlay, class UAAWeaponItemData* NewWeaponData);
+
+	void SetWeaponMesh(class UAAWeaponItemData* NewWeaponData);
 
 // ver 0.3.2a
 // AmmoSize

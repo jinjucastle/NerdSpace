@@ -26,7 +26,7 @@ AAACharacterPlayer::AAACharacterPlayer()
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	FollowCamera->SetRelativeLocation(FVector(0.0f, 45.0f, 35.0f));
+	FollowCamera->SetRelativeLocation(FVector(0.0f, 65.0f, 65.0f));
 	FollowCamera->bUsePawnControlRotation = false;
 
 	//Input
@@ -356,7 +356,7 @@ void AAACharacterPlayer::StartFire()
 
 	if (WeaponData)
 	{
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutomaticFire, this, &AAACharacterPlayer::Fire, RPM + 0.01f, true, 0.f);
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutomaticFire, this, &AAACharacterPlayer::Fire, RPM + 0.015f, true, 0.f);
 	}
 }
 
@@ -371,7 +371,7 @@ void AAACharacterPlayer::StopFire()
 bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FRotator& NewRotation)
 {
 	// add validation logic later
-	return true;
+	return bCanFire && (CurrentAmmoSize > 0);
 }
 
 void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation, const FRotator& NewRotation)
@@ -379,7 +379,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 	// ver 0.4.2a
 	// Fix Fire Direction
 	FVector CameraStartLocation = FollowCamera->GetComponentLocation();
-	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 500.f;
+	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 5000.f;
 	FVector Direction = CameraEndLocation - CameraStartLocation;
 
 	FRotator FireDirection = Direction.Rotation();
@@ -444,7 +444,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 
 	if (CurrentAmmoSize == 0)
 	{
-		Reload();
+		ServerRPCPlayReloadAnimation();
 	}
 }
 
@@ -457,19 +457,16 @@ void AAACharacterPlayer::EquipAmmo(UClass* NewAmmoClass)
 {
 	if (NewAmmoClass)
 	{
-		SetPooledAmmoClass(NewAmmoClass);
-
 		if (!HasAuthority())
+		{
+			SetPooledAmmoClass(NewAmmoClass);
+		}
+		if (IsLocallyControlled())
 		{
 			ServerRPCSetPooledAmmoClass(NewAmmoClass);
 		}
 	}
 	ClearPool();
-}
-
-void AAACharacterPlayer::OnRep_PooledAmmoClass()
-{
-	EquipAmmo(PooledAmmoClass);
 }
 
 bool AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Validate(UClass* NewAmmoClass)
@@ -479,9 +476,30 @@ bool AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Validate(UClass* NewAmmoCla
 
 void AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Implementation(UClass* NewAmmoClass)
 {
-	PooledAmmoClass = NewAmmoClass;
+	SetPooledAmmoClass(NewAmmoClass);
 
-	OnRep_PooledAmmoClass();
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				AAACharacterPlayer* OtherPlayer = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
+				if (OtherPlayer)
+				{
+					OtherPlayer->ClientRPCSetPooledAmmoClass(this, NewAmmoClass);
+				}
+			}
+		}
+	}
+}
+
+void AAACharacterPlayer::ClientRPCSetPooledAmmoClass_Implementation(AAACharacterPlayer* CharacterToPlay, UClass* NewAmmoClass)
+{
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->SetPooledAmmoClass(NewAmmoClass);
+	}
 }
 
 void AAACharacterPlayer::Reload()
@@ -491,30 +509,34 @@ void AAACharacterPlayer::Reload()
 		StopRun();
 	}
 
-	if (HasAuthority())
+	if (IsLocallyControlled())
 	{
-		PlayReloadAnimation();
-		MulticastRPCPlayReloadAnimation();
+		ServerRPCPlayReloadAnimation();
 	}
 }
 
+bool AAACharacterPlayer::ServerRPCPlayReloadAnimation_Validate()
+{
+	return bCanFire;
+}
+
+void AAACharacterPlayer::ServerRPCPlayReloadAnimation_Implementation()
+{
+	MulticastRPCPlayReloadAnimation();
+}
+
+void AAACharacterPlayer::MulticastRPCPlayReloadAnimation_Implementation()
+{
+	PlayReloadAnimation();
+}
 
 FRotator AAACharacterPlayer::GetRandomRotator()
 {
 	float RandomPitch = FMath::RandRange(-1.0f, 1.0f);
 	float RandomYaw = FMath::RandRange(-1.0f, 1.0f);
-	float RandomRoll = FMath::RandRange(-1.0f, 1.0f); 
+	float RandomRoll = FMath::RandRange(-1.0f, 1.0f);
 
 	return FRotator(RandomPitch, RandomYaw, RandomRoll);
-}
-
-void AAACharacterPlayer::MulticastRPCPlayReloadAnimation_Implementation()
-{
-	if (!HasAuthority())
-	{
-		UE_LOG(LogTemp, Error, TEXT("MulticastRPCPlayerReloadAnimation"));
-		PlayReloadAnimation();
-	}
 }
 
 void AAACharacterPlayer::ApplyAbility()
@@ -525,50 +547,70 @@ void AAACharacterPlayer::ApplyAbility()
 		AllAbility = AllAbility + SelectedAbilityArray[i];
 	}
 
-	Stat->SetNewMaxHp(Stat->GetBaseStat().MaxHp * AllAbility.MaxHp);
-
-	BaseMovementSpeed = Stat->GetTotalStat().MovementSpeed * AllAbility.MovementSpeed;
-	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
-
-	RPM = WeaponData->WeaponStat.RPM + (WeaponData->WeaponStat.RPM * AllAbility.RPM);
-	AmmoDamage = WeaponData->AmmoDamage * AllAbility.Damage;
-	AmmoSpeed = WeaponData->AmmoSpeed * AllAbility.AmmoSpeed;
-	AmmoScale = AllAbility.AmmoScale;
-	Acceleration = AllAbility.Acceleration;
-
-	MaxAmmoSize = WeaponData->AmmoPoolExpandSize * AllAbility.AmmoSize;
-	CurrentAmmoSize = MaxAmmoSize;
-
-	ReloadSpeed = AllAbility.ReloadSpeed;
-	SplashRound = AllAbility.SplashRound;
-
-	ClearPool();
-
 	if (!HasAuthority())
 	{
-		ServerRPCApplyAbility(SelectedAbility);
+		SetAllAbility(AllAbility);
+	}
+	if (IsLocallyControlled())
+	{
+		ServerRPCApplyAbility(AllAbility);
 	}
 }
 
 void AAACharacterPlayer::ServerRPCApplyAbility_Implementation(const FAAAbilityStat& NewAbilityStat)
 {
-	UE_LOG(LogTemp, Warning, TEXT("ServerRPCApplyAbility: New MaxHp = %f, Applied by %s"), NewAbilityStat.MaxHp, *GetNameSafe(this));
+	SetAllAbility(NewAbilityStat);
 
-	SelectedAbility = NewAbilityStat;
+	ClearPool();
 
-	OnRep_SelectedAbility();
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				AAACharacterPlayer* OtherPlayer = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
+				if (OtherPlayer)
+				{
+					OtherPlayer->ClientRPCApplyAbility(this, NewAbilityStat);
+				}
+			}
+		}
+	}
 }
 
-void AAACharacterPlayer::OnRep_SelectedAbility()
+void AAACharacterPlayer::ClientRPCApplyAbility_Implementation(AAACharacterPlayer* CharacterToPlay, const FAAAbilityStat& NewAbilityStat)
 {
-	SetAbility(SelectedAbility);
-	ApplyAbility();
-
-	UE_LOG(LogTemp, Log, TEXT("OnRep_SelectedAbility"));
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->SetAllAbility(NewAbilityStat);
+	}
 }
 
 void AAACharacterPlayer::SetAbility(const FAAAbilityStat& InAddAbility)
 {
 	SelectedAbility = InAddAbility;
 	SelectedAbilityArray.Add(SelectedAbility);
+}
+
+void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
+{
+	Stat->SetNewMaxHp(Stat->GetBaseStat().MaxHp * NewAbilityStat.MaxHp);
+
+	UE_LOG(LogTemp, Warning, TEXT("ServerRPCApplyAbility: New MaxHp = %f, Applied by %s"), Stat->GetMaxHp(), *GetNameSafe(this));
+
+	BaseMovementSpeed = Stat->GetTotalStat().MovementSpeed * NewAbilityStat.MovementSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+
+	RPM = WeaponData->WeaponStat.RPM + (WeaponData->WeaponStat.RPM * NewAbilityStat.RPM);
+	AmmoDamage = WeaponData->AmmoDamage * NewAbilityStat.Damage;
+	AmmoSpeed = WeaponData->AmmoSpeed * NewAbilityStat.AmmoSpeed;
+	AmmoScale = NewAbilityStat.AmmoScale;
+	Acceleration = NewAbilityStat.Acceleration;
+
+	MaxAmmoSize = WeaponData->AmmoPoolExpandSize * NewAbilityStat.AmmoSize;
+	CurrentAmmoSize = MaxAmmoSize;
+
+	ReloadSpeed = NewAbilityStat.ReloadSpeed;
+	SplashRound = NewAbilityStat.SplashRound;
 }

@@ -92,7 +92,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AmmoPool, Meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<class AAAWeaponAmmo>> AmmoPool;
 
-	UPROPERTY(ReplicatedUsing = OnRep_PooledAmmoClass, EditAnywhere, BlueprintReadWrite, Category = AmmoPool, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = AmmoPool, Meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class AAAWeaponAmmo> PooledAmmoClass;
 
 	int32 AmmoPoolSize = 0;
@@ -134,11 +134,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void EquipAmmo(class UClass* NewAmmoClass);
 
-	UFUNCTION()
-	void OnRep_PooledAmmoClass();
-
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCSetPooledAmmoClass(class UClass* NewAmmoClass);
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCSetPooledAmmoClass(AAACharacterPlayer* CharacterToPlay, UClass* NewAmmoClass);
 
 // ver 0.3.2a
 // Add Reload Action
@@ -146,6 +146,9 @@ public:
 	void Reload();
 
 protected:
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCPlayReloadAnimation();
+
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCPlayReloadAnimation();
 
@@ -168,11 +171,8 @@ protected:
 	UPROPERTY()
 	TArray<FAAAbilityStat> SelectedAbilityArray;
 
-	UPROPERTY(ReplicatedUsing = OnRep_SelectedAbility, VisibleInstanceOnly, Category = Ability, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, VisibleInstanceOnly, Category = Ability, Meta = (AllowPrivateAccess = "true"))
 	FAAAbilityStat SelectedAbility;
-
-	UFUNCTION(BlueprintCallable)
-	void OnRep_SelectedAbility();
 
 public:
 	UFUNCTION(BlueprintCallable)
@@ -185,6 +185,11 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPCApplyAbility(const FAAAbilityStat& NewAbilityStat);
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCApplyAbility(AAACharacterPlayer* CharacterToPlay, const FAAAbilityStat& NewAbilityStat);
+
+	void SetAllAbility(const FAAAbilityStat& NewAbilityStat);
 
 //Add extra stat
 protected:
