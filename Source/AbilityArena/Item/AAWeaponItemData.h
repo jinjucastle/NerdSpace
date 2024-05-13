@@ -39,7 +39,7 @@ public:
  //ver0.0.1a
  //Insert Weapon Mesh & Stat
 public:
-	UPROPERTY(EditAnywhere, Category = Weapon)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Weapon)
 	TSoftObjectPtr<USkeletalMesh> WeaponMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Stat)

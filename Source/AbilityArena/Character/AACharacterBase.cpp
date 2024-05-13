@@ -16,6 +16,7 @@
 #include "CharacterStat/AACharacterPlayerState.h"
 #include "GameData/AAGameInstance.h"
 #include "Item/AAItemData.h"
+#include "EngineUtils.h"
 
 DEFINE_LOG_CATEGORY(LogAACharacter);
 
@@ -71,7 +72,8 @@ AAACharacterBase::AAACharacterBase()
 	Stat = CreateDefaultSubobject<UAACharacterStatComponent>(TEXT("Stat"));
 
 	Weapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon"));
-	Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("DEF-hand_RSocket"));
+	Weapon->SetRelativeScale3D(FVector(1.25f, 1.f, 1.25f));
+	Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform);
 	Weapon->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	// ver 0.3.2a
@@ -131,6 +133,11 @@ void AAACharacterBase::BeginPlay()
 	EquipWeapon(WeaponData);
 }
 
+void AAACharacterBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+}
+
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
 {
 	//Pawn
@@ -140,31 +147,6 @@ void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* Ch
 	GetCharacterMovement()->bOrientRotationToMovement = CharacterControlData->bOrientRotationToMovement;
 	GetCharacterMovement()->bUseControllerDesiredRotation = CharacterControlData->bUseControllerDesiredRotation;
 	GetCharacterMovement()->RotationRate = CharacterControlData->RotationRate;
-}
-
-void AAACharacterBase::OnRep_WeaponData()
-{
-	UE_LOG(LogTemp, Error, TEXT("Called OnRep_WeaponData"));
-	EquipWeapon(WeaponData);
-	
-}
-
-bool AAACharacterBase::ServerRPCChangeWeapon_Validate(UAAWeaponItemData* NewWeaponData)
-{
-	return true;
-}
-
-void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* NewWeaponData)
-{
-	WeaponData = NewWeaponData;
-
-	OnRep_WeaponData();
-}
-
-void AAACharacterBase::MulticastRPCChangeWeapon_Implementation(UAAWeaponItemData* NewWeaponData)
-{
-	UE_LOG(LogTemp, Error, TEXT("Client : Called ServerRPCChangeWeapon"));
-	WeaponData = NewWeaponData;
 }
 
 // ver0.0.1a
@@ -182,42 +164,87 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 {
 	UAAWeaponItemData* WeaponItemData = Cast<UAAWeaponItemData>(InItemData);
 	
-	
 	if (WeaponItemData)
 	{
-		WeaponData = WeaponItemData;
-		if (WeaponData->WeaponMesh.IsPending())
+		if (!HasAuthority())
 		{
-			WeaponData->WeaponMesh.LoadSynchronous();
+			WeaponData = WeaponItemData;
+			
+			SetWeaponMesh(WeaponData);
+			
+			// ver 0.4.2b
+			//feat: gameInstance data Storage
+			if (GameInstance)
+			{
+				UE_LOG(LogTemp, Error, TEXT("Find GameInstace"));
+				GameInstance->SetWeaponItemData(WeaponData);
+			}
 		}
-		Weapon->SetSkeletalMesh(WeaponData->WeaponMesh.Get());
+
+		if (IsLocallyControlled())
+		{
+			ServerRPCChangeWeapon(WeaponItemData);
+		}
+	}
+}
+
+bool AAACharacterBase::ServerRPCChangeWeapon_Validate(UAAWeaponItemData* NewWeaponData)
+{
+	return true;
+}
+
+void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* NewWeaponData)
+{
+	if (NewWeaponData)
+	{
+		WeaponData = NewWeaponData;
+		SetWeaponMesh(WeaponData);
 		Stat->SetWeaponStat(WeaponData->WeaponStat);
-		// ver 0.4.2b
-		//feat: gameInstance data Storage
-		if (GameInstance)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Find GameInstace"));
-			GameInstance->SetWeaponItemData(WeaponData);
-		}
+
 		
-
-		// ver 0.4.2a
-		// Replace Attach Weapon
-		FTransform SocketWorldTransform = Weapon->GetSocketTransform("Hand_R_Pos", RTS_World);
-		FTransform ComponentWorldTransform = Weapon->GetComponentTransform();
-		FTransform SocketRelativeTransform = SocketWorldTransform.GetRelativeTransform(ComponentWorldTransform);
-		Weapon->SetRelativeLocation(SocketRelativeTransform.GetLocation());
-
-
 		// ver 0.3.2a
 		// Set Ammo Size
 		MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
 		CurrentAmmoSize = MaxAmmoSize;
 	}
-	if(!HasAuthority())
+
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
 	{
-		ServerRPCChangeWeapon(WeaponData);
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(PlayerController->GetPawn());
+				if (OtherPlayer)
+				{
+					OtherPlayer->ClientRPCChangeWeapon(this, WeaponData);
+				}
+			}
+		}
 	}
+}
+
+void AAACharacterBase::ClientRPCChangeWeapon_Implementation(AAACharacterBase* CharacterToPlay, UAAWeaponItemData* NewWeaponData)
+{
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->EquipWeapon(NewWeaponData);
+	}
+}
+
+void AAACharacterBase::SetWeaponMesh(UAAWeaponItemData* NewWeaponData)
+{
+	if (WeaponData->WeaponMesh.IsPending())
+	{
+		WeaponData->WeaponMesh.LoadSynchronous();
+	}
+	Weapon->SetSkeletalMesh(WeaponData->WeaponMesh.Get());
+
+	Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("DEF-hand_RSocket"));
+	FTransform SocketWorldTransform = Weapon->GetSocketTransform("Hand_R_Pos", RTS_World);
+	FTransform ComponentWorldTransform = Weapon->GetComponentTransform();
+	FTransform SocketRelativeTransform = SocketWorldTransform.GetRelativeTransform(ComponentWorldTransform);
+	Weapon->SetRelativeLocation(SocketRelativeTransform.GetLocation());
 }
 
 void AAACharacterBase::PlayReloadAnimation()
@@ -235,8 +262,6 @@ void AAACharacterBase::PlayReloadAnimation()
 
 			ServerSetCanFire(false);
 
-			CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
-
 			UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);		
 			
 		}
@@ -247,6 +272,8 @@ void AAACharacterBase::PlayReloadAnimation()
 void AAACharacterBase::ReloadActionEnded(UAnimMontage* Montage, bool IsEnded)
 {
 	ServerSetCanFire(true);
+
+	CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
 }
 
 void AAACharacterBase::ServerSetCanFire(bool NewCanFire)

@@ -4,7 +4,6 @@
 #include "Item/AAWeaponAmmo.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Character/AACharacterPlayer.h"
-#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AAAWeaponAmmo::AAAWeaponAmmo()
@@ -58,12 +57,6 @@ void AAAWeaponAmmo::Tick(float DeltaTime)
 			}
 		}
 	}
-}
-
-void AAAWeaponAmmo::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
 }
 
 void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
@@ -177,6 +170,6 @@ void AAAWeaponAmmo::SetActive(bool InIsActive)
 
 	if (bIsActive && AmmoType != EAmmoType::Rocket)
 	{
-		GetWorld()->GetTimerManager().SetTimer(ActiveHandle, this, &AAAWeaponAmmo::ReturnSelf, 2.0f, false);
+		GetWorld()->GetTimerManager().SetTimer(ActiveHandle, this, &AAAWeaponAmmo::ReturnSelf, 4.0f, false);
 	}
 }
