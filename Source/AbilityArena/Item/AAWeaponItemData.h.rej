@@ -1,9 +1,0 @@
-diff a/Source/AbilityArena/Item/AAWeaponItemData.h b/Source/AbilityArena/Item/AAWeaponItemData.h	(rejected hunks)
-@@ -44,6 +44,7 @@
- 
- 	UPROPERTY(EditAnywhere, Category = Weapon)
- 	TSoftObjectPtr<UStaticMesh> MagMesh;
-+
- 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Stat)
- 	FAACharacterStat WeaponStat;
- 
