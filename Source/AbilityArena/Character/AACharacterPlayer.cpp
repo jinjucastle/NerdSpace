@@ -14,6 +14,7 @@
 #include "Item/AAWeaponItemData.h"
 #include "Net/UnrealNetwork.h"
 #include "EngineUtils.h"
+#include "CharacterStat/AACharacterPlayerState.h"
 #include "Kismet/GameplayStatics.h"
 
 AAACharacterPlayer::AAACharacterPlayer()
@@ -93,6 +94,8 @@ void AAACharacterPlayer::BeginPlay()
 	if (PlayerController)
 	{
 		EnableInput(PlayerController);
+		
+		
 	}
 
 	SetCharacterControl(CurrentCharacterZoomType);
@@ -466,7 +469,7 @@ void AAACharacterPlayer::EquipAmmo(UClass* NewAmmoClass)
 	if (NewAmmoClass)
 	{
 		SetPooledAmmoClass(NewAmmoClass);
-
+	
 		if (!HasAuthority())
 		{
 			ServerRPCSetPooledAmmoClass(NewAmmoClass);

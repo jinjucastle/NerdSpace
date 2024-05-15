@@ -112,6 +112,10 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCChangeWeapon(class UAAWeaponItemData* NewWeaponData);
 
+	
+	
+
+
 // ver 0.3.2a
 // AmmoSize
 	UPROPERTY(Replicated)
@@ -133,5 +137,5 @@ public:
 	void PlayReloadAnimation();
 	void ReloadActionEnded(UAnimMontage* Montage, bool IsEnded);
 	void ServerSetCanFire(bool NewCanFire);
-
+	int32 TestNum;
 };

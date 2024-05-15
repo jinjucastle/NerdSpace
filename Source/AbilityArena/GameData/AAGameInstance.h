@@ -47,7 +47,10 @@ public:
 
 	void AddPlayerInfo(const FPlayerInfo& newPlayerInfo);
 	int32 GetPlayerInfoNum() { return PlayerInfos.Num(); }
-
+	
 	UPROPERTY(Transient, VisibleAnywhere)
 		TArray <FPlayerInfo>PlayerInfos;
+
+
+	int16 testNum = 0;
 };

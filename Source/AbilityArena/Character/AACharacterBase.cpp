@@ -16,6 +16,7 @@
 #include "CharacterStat/AACharacterPlayerState.h"
 #include "GameData/AAGameInstance.h"
 #include "Item/AAItemData.h"
+#include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(LogAACharacter);
 
@@ -113,7 +114,35 @@ void AAACharacterBase::BeginPlay()
 	Super::BeginPlay();
 	//ver 0.4.2b 
 	//Casting GameInstance
-	GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+	GameInstance = Cast<UAAGameInstance>(UGameplayStatics::GetGameInstance(this));
+	playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
+	//ver 0.6.1b
+	//stay weapon
+		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		{
+			APlayerController* PC = It->Get();
+			if (PC)
+			{
+				APlayerState* PS = PC->PlayerState;
+				if (PS)
+				{
+					AAACharacterPlayerState* TestPS = Cast<AAACharacterPlayerState>(PS);
+					if (TestPS)
+					{
+						UAAGameInstance* point= Cast<UAAGameInstance>(PC->GetGameInstance());
+						if (!(point->GetsetWeaponItemData()==nullptr))
+						{
+							EquipWeapon(point->GetsetWeaponItemData());
+						}
+						else
+						{
+							EquipWeapon(WeaponData);
+						}
+					}
+				}
+			}
+		}
+	
 	//ver 0.5.1b
 	//check playerState->PlayerID()
 	//충돌가능성 농후 주석처리
@@ -128,7 +157,7 @@ void AAACharacterBase::BeginPlay()
 	 }*/
 	
 	//test
-	EquipWeapon(WeaponData);
+	//EquipWeapon(WeaponData);
 }
 
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
@@ -145,9 +174,12 @@ void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* Ch
 void AAACharacterBase::OnRep_WeaponData()
 {
 	UE_LOG(LogTemp, Error, TEXT("Called OnRep_WeaponData"));
+	
 	EquipWeapon(WeaponData);
 	
 }
+
+
 
 bool AAACharacterBase::ServerRPCChangeWeapon_Validate(UAAWeaponItemData* NewWeaponData)
 {
@@ -157,7 +189,26 @@ bool AAACharacterBase::ServerRPCChangeWeapon_Validate(UAAWeaponItemData* NewWeap
 void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* NewWeaponData)
 {
 	WeaponData = NewWeaponData;
+	//ver 0.6.1b
+	//client Set Weapondata
+	APlayerController* PC = Cast<APlayerController>(GetOwner());
+	if (PC)
+	{
+		APlayerState* PS = PC->PlayerState;
+		AAACharacterPlayerState* TestPS = Cast<AAACharacterPlayerState>(PS);
+		TestNum = TestPS->GetPlayerId();
+		if (TestPS->GetPlayerId()==TestNum)
+		{
 
+			
+			UE_LOG(LogTemp, Error, TEXT("PlayerID: %d"), TestNum);
+			
+			TestPS->SetPresentWeaponData(WeaponData);
+			UE_LOG(LogTemp, Error, TEXT("Called %s"), *TestPS->GetWeaponDat()->GetName());
+
+		}
+	}
+	
 	OnRep_WeaponData();
 }
 
@@ -191,15 +242,9 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 		}
 		Weapon->SetSkeletalMesh(WeaponData->WeaponMesh.Get());
 		Stat->SetWeaponStat(WeaponData->WeaponStat);
-		// ver 0.4.2b
-		//feat: gameInstance data Storage
-		if (GameInstance)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Find GameInstace"));
-			GameInstance->SetWeaponItemData(WeaponData);
-		}
 		
-
+		
+		
 		// ver 0.4.2a
 		// Replace Attach Weapon
 		FTransform SocketWorldTransform = Weapon->GetSocketTransform("Hand_R_Pos", RTS_World);
@@ -220,11 +265,15 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 		}
 		CurrentAmmoSize = MaxAmmoSize;
 
+		
 	}
 	if(!HasAuthority())
 	{
+
 		ServerRPCChangeWeapon(WeaponData);
+		
 	}
+	
 }
 
 void AAACharacterBase::PlayReloadAnimation()
