@@ -17,7 +17,7 @@ void UAACharacterStatComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 
-	SetBaseStat(UAAGameSingleton::Get().GetCharacterStat(CurrentLevel));
+	ResetStat();
 	check(BaseStat.MaxHp > 0.0f);
 
 	SetIsReplicated(true);
@@ -27,6 +27,8 @@ void UAACharacterStatComponent::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(UAACharacterStatComponent, CurrentHp);
+	DOREPLIFETIME(UAACharacterStatComponent, MaxHp);
 	DOREPLIFETIME_CONDITION(UAACharacterStatComponent, BaseStat, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(UAACharacterStatComponent, WeaponStat, COND_OwnerOnly);
 }
@@ -35,11 +37,63 @@ void UAACharacterStatComponent::OnRep_BaseStat()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Called OnRep_BaseStat"));
 	OnStatChanged.Broadcast(BaseStat, WeaponStat);
-
 }
 
 void UAACharacterStatComponent::OnRep_WeaponStat()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Called OnRep_WeaponStat"));
 	OnStatChanged.Broadcast(BaseStat, WeaponStat);
+}
+
+float UAACharacterStatComponent::ApplyDamage(float InDamage)
+{
+	const float PrevHp = CurrentHp;
+	const float ActualDamage = FMath::Clamp<float>(InDamage, 0, InDamage);
+
+	SetHp(PrevHp - ActualDamage);
+	if (CurrentHp <= KINDA_SMALL_NUMBER)
+	{
+		OnHpZero.Broadcast();
+	}
+
+	return ActualDamage;
+}
+
+void UAACharacterStatComponent::SetHp(float NewHp)
+{
+	CurrentHp = FMath::Clamp<float>(NewHp, 0.0f, MaxHp);
+
+	OnHpChanged.Broadcast(CurrentHp, MaxHp);
+}
+
+void UAACharacterStatComponent::ResetStat()
+{
+	SetBaseStat(UAAGameSingleton::Get().GetCharacterStat(CurrentLevel));
+	MaxHp = BaseStat.MaxHp;
+	SetHp(MaxHp);
+}
+
+void UAACharacterStatComponent::OnRep_MaxHp()
+{
+	OnHpChanged.Broadcast(CurrentHp, MaxHp);
+}
+
+void UAACharacterStatComponent::OnRep_CurrentHp()
+{
+	OnHpChanged.Broadcast(CurrentHp, MaxHp);
+	if (CurrentHp <= 0.0f)
+	{
+		OnHpZero.Broadcast();
+	}
+}
+
+void UAACharacterStatComponent::SetNewMaxHp(const float NewMaxHp)
+{
+	float PrevMaxHp = MaxHp;
+	MaxHp = NewMaxHp;
+	if (PrevMaxHp != MaxHp)
+	{
+		SetHp(MaxHp);
+		OnHpChanged.Broadcast(CurrentHp, MaxHp);
+	}
 }

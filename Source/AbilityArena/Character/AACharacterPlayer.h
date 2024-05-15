@@ -92,7 +92,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AmmoPool, Meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<class AAAWeaponAmmo>> AmmoPool;
 
-	UPROPERTY(ReplicatedUsing = OnRep_PooledAmmoClass, EditAnywhere, BlueprintReadWrite, Category = AmmoPool, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = AmmoPool, Meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class AAAWeaponAmmo> PooledAmmoClass;
 
 	int32 AmmoPoolSize = 0;
@@ -134,11 +134,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void EquipAmmo(class UClass* NewAmmoClass);
 
-	UFUNCTION()
-	void OnRep_PooledAmmoClass();
-
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCSetPooledAmmoClass(class UClass* NewAmmoClass);
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCSetPooledAmmoClass(AAACharacterPlayer* CharacterToPlay, UClass* NewAmmoClass);
 
 // ver 0.3.2a
 // Add Reload Action
@@ -146,6 +146,9 @@ public:
 	void Reload();
 
 protected:
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCPlayReloadAnimation();
+
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCPlayReloadAnimation();
 
@@ -161,4 +164,42 @@ protected:
 //is running?
 protected:
 	bool bIsFiring;
+
+// ver 0.6.2a
+// AbilityStat Section
+protected:
+	UPROPERTY()
+	TArray<FAAAbilityStat> SelectedAbilityArray;
+
+	UPROPERTY(Replicated, VisibleInstanceOnly, Category = Ability, Meta = (AllowPrivateAccess = "true"))
+	FAAAbilityStat SelectedAbility;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void SetAbility(const FAAAbilityStat& InAddAbility);
+
+	FORCEINLINE const FAAAbilityStat& GetAbilityStat() const { return SelectedAbility; }
+
+	UFUNCTION(BlueprintCallable)
+	void ApplyAbility();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCApplyAbility(const FAAAbilityStat& NewAbilityStat);
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCApplyAbility(AAACharacterPlayer* CharacterToPlay, const FAAAbilityStat& NewAbilityStat);
+
+	void SetAllAbility(const FAAAbilityStat& NewAbilityStat);
+
+//Add extra stat
+protected:
+	float AmmoScale = 1.f;
+	float Acceleration;
+	float ReloadSpeed = 1.f;
+	float SplashRound = 1.f;
+	bool bBloodDrain;
+
+public:
+	FORCEINLINE const float GetAcceleration() const { return Acceleration; }
+	FORCEINLINE const float GetAmmoScale() const { return AmmoScale; }
 };

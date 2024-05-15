@@ -4,7 +4,6 @@
 #include "Item/AAWeaponAmmo.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Character/AACharacterPlayer.h"
-#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AAAWeaponAmmo::AAAWeaponAmmo()
@@ -47,21 +46,17 @@ void AAAWeaponAmmo::Tick(float DeltaTime)
 
 	// ver 0.1.3a
 	// Rocket Acceleration
-	if (bIsActive)
+	if (Owner)
 	{
-		if (AmmoType == EAmmoType::Rocket)
+		if (bIsActive)
 		{
-			FVector NewVelocity = AmmoMovement->Velocity * 1.03f;
-			AmmoMovement->Velocity = NewVelocity;
+			if (AmmoType == EAmmoType::Rocket)
+			{
+				FVector NewVelocity = AmmoMovement->Velocity * Owner->GetAcceleration();
+				AmmoMovement->Velocity = NewVelocity;
+			}
 		}
 	}
-}
-
-void AAAWeaponAmmo::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	//DOREPLIFETIME(AAAWeaponAmmo, ReplicatedRotation);
 }
 
 void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
@@ -175,11 +170,6 @@ void AAAWeaponAmmo::SetActive(bool InIsActive)
 
 	if (bIsActive && AmmoType != EAmmoType::Rocket)
 	{
-		GetWorld()->GetTimerManager().SetTimer(ActiveHandle, this, &AAAWeaponAmmo::ReturnSelf, 2.0f, false);
+		GetWorld()->GetTimerManager().SetTimer(ActiveHandle, this, &AAAWeaponAmmo::ReturnSelf, 4.0f, false);
 	}
 }
-
-//void AAAWeaponAmmo::OnRep_RotationUpdated()
-//{
-//	SetActorRotation(ReplicatedRotation);
-//}

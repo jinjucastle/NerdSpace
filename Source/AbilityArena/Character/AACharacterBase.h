@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "GameData/AACharacterStat.h"
+#include "GameData/AAAbilityStat.h"
 #include "Interface/AACharacterItemInterface.h"
 #include "AACharacterBase.generated.h"
 
@@ -47,6 +48,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	virtual void Tick(float DeltaSeconds) override;
+
 	virtual void SetCharacterControlData(const class UAACharacterControlData* CharacterControlData);
 
 
@@ -73,7 +76,7 @@ protected:
 
 	// ver 0.1.2a
 	// Set Replicated
-	UPROPERTY(ReplicatedUsing = OnRep_WeaponData, EditAnywhere, BlueprintReadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAAWeaponItemData> WeaponData;
 
 	//ver 0.4.2b
@@ -96,28 +99,29 @@ protected:
 	float AmmoSpeed;
 
 public:
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetAmmoDamage() const { return AmmoDamage; }
+
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetAmmoSpeed() const { return AmmoSpeed; }
 
 // ver 0.1.2a
 // Replicated
 protected:
-	UFUNCTION()
-	void OnRep_WeaponData();
-	
-
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCChangeWeapon(class UAAWeaponItemData* NewWeaponData);
 
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastRPCChangeWeapon(class UAAWeaponItemData* NewWeaponData);
+	UFUNCTION(Client, Reliable)
+	void ClientRPCChangeWeapon(AAACharacterBase* CharacterToPlay, class UAAWeaponItemData* NewWeaponData);
+
+	void SetWeaponMesh(class UAAWeaponItemData* NewWeaponData);
 
 // ver 0.3.2a
 // AmmoSize
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated, BlueprintReadOnly)
 	int32 MaxAmmoSize = 0;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated, BlueprintReadOnly)
 	int32 CurrentAmmoSize = 0;
 
 // ver 0.3.2a
@@ -134,4 +138,18 @@ public:
 	void ReloadActionEnded(UAnimMontage* Montage, bool IsEnded);
 	void ServerSetCanFire(bool NewCanFire);
 
+// ver 0.6.2a
+// Add MovementSpeed & RPM Storage
+protected:
+	float BaseMovementSpeed;
+	float RPM = 1.f;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetRPM() const { return RPM; }
+
+// ver 0.6.4a
+// UI Section
+public:
+	FORCEINLINE class UAAWeaponItemData* GetWeaponData() const { return WeaponData; }
 };
