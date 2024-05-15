@@ -5,9 +5,12 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameData/AACharacterStat.h"
+#include "GameData/AAAbilityStat.h"
 #include "Item/AAWeaponItemData.h"
 #include "AACharacterStatComponent.generated.h"
 
+DECLARE_MULTICAST_DELEGATE(FOnHpZeroDelegate);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHpChangedDelegate, float /*CurrentHp*/, float /*MaxHp*/);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnStatChangedDelegate, const FAACharacterStat& /*BaseStat*/, const FAACharacterStat& /*WeaponStat*/);	// ver0.0.1a Stat Delegate
 
 
@@ -24,6 +27,11 @@ public:
 
  //ver0.0.1a
  //Stat Component Base Work
+
+	// ver 0.6.1a
+	// add hp delegate
+	FOnHpZeroDelegate OnHpZero;
+	FOnHpChangedDelegate OnHpChanged;
 	FOnStatChangedDelegate OnStatChanged;
 
 	FORCEINLINE const FAACharacterStat& GetBaseStat() const { return BaseStat; }
@@ -57,15 +65,27 @@ protected:
 	UFUNCTION()
 	void OnRep_WeaponStat();
 
-//ver 0.5.1 C
+// ver 0.6.1a
+// Replicate Hp
 public:
-	FORCEINLINE float GetMaxHp() { return MaxHp; }
-	FORCEINLINE float GetCurrentHp() { return CurrentHp; }
+	FORCEINLINE float GetMaxHp() const { return MaxHp; }
+	FORCEINLINE float GetCurrentHp() const { return CurrentHp; }
+	FORCEINLINE void HealHp(float InHealAmount) { CurrentHp = FMath::Clamp(CurrentHp + InHealAmount, 0, MaxHp); OnHpChanged.Broadcast(CurrentHp, MaxHp); }
+	float ApplyDamage(float InDamage);
+	void SetHp(float NewHp);
+	void ResetStat();
+	void SetNewMaxHp(const float NewMaxHp);
 
 protected:
-	UPROPERTY(VisibleInstanceOnly, Category = Stat)
+	UPROPERTY(ReplicatedUsing = OnRep_MaxHp, Transient, VisibleInstanceOnly, BlueprintReadOnly, Category = Stat)
 	float MaxHp;
 
-	UPROPERTY(Transient, VisibleInstanceOnly, Category = Stat)
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentHp, Transient, VisibleInstanceOnly, BlueprintReadOnly, Category = Stat)
 	float CurrentHp;
+
+	UFUNCTION()
+	void OnRep_MaxHp();
+	
+	UFUNCTION()
+	void OnRep_CurrentHp();
 };
