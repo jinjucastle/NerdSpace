@@ -116,6 +116,10 @@ protected:
 
 	void SetWeaponMesh(class UAAWeaponItemData* NewWeaponData);
 
+	
+	
+
+
 // ver 0.3.2a
 // AmmoSize
 	UPROPERTY(Replicated, BlueprintReadOnly)
@@ -137,6 +141,9 @@ public:
 	void PlayReloadAnimation();
 	void ReloadActionEnded(UAnimMontage* Montage, bool IsEnded);
 	void ServerSetCanFire(bool NewCanFire);
+  
+  //TODO : Delete
+	int32 TestNum;
 
 // ver 0.6.2a
 // Add MovementSpeed & RPM Storage

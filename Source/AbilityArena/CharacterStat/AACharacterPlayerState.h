@@ -17,12 +17,22 @@ class ABILITYARENA_API AAACharacterPlayerState : public APlayerState
 
 public:
 	
+	AAACharacterPlayerState();
+
+	void SetPresentWeaponData(TObjectPtr<class UAAWeaponItemData>& Weapondata);
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
+	TObjectPtr<class UAAWeaponItemData> WeaponData;
 	
-	
+	TObjectPtr<class UAAWeaponItemData> GetWeaponDat() { return PresentWeapon; }
+
+	UFUNCTION()
+		void OnRep_SetWeapon();
+
 private:
 
-	UPROPERTY(Transient,VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(ReplicatedUsing = OnRep_SetWeapon, VisibleAnywhere, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 		TObjectPtr<class UAAWeaponItemData> PresentWeapon;
-	UPROPERTY(Transient, VisibleInstanceOnly)
-		FString TestGUID;
+
+	TObjectPtr<class UAAGameInstance> GameInstance;
+	
 };

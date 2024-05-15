@@ -16,6 +16,7 @@
 #include "CharacterStat/AACharacterPlayerState.h"
 #include "GameData/AAGameInstance.h"
 #include "Item/AAItemData.h"
+#include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 
 DEFINE_LOG_CATEGORY(LogAACharacter);
@@ -115,10 +116,38 @@ void AAACharacterBase::BeginPlay()
 	Super::BeginPlay();
 	//ver 0.4.2b 
 	//Casting GameInstance
-	GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+	GameInstance = Cast<UAAGameInstance>(UGameplayStatics::GetGameInstance(this));
+	playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
+	//ver 0.6.1b
+	//stay weapon
+		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		{
+			APlayerController* PC = It->Get();
+			if (PC)
+			{
+				APlayerState* PS = PC->PlayerState;
+				if (PS)
+				{
+					AAACharacterPlayerState* TestPS = Cast<AAACharacterPlayerState>(PS);
+					if (TestPS)
+					{
+						UAAGameInstance* point= Cast<UAAGameInstance>(PC->GetGameInstance());
+						if (!(point->GetsetWeaponItemData()==nullptr))
+						{
+							EquipWeapon(point->GetsetWeaponItemData());
+						}
+						else
+						{
+							EquipWeapon(WeaponData);
+						}
+					}
+				}
+			}
+		}
+	
 	//ver 0.5.1b
 	//check playerState->PlayerID()
-	//√Êµπ∞°¥…º∫ ≥Û»ƒ ¡÷ºÆ√≥∏Æ
+	//Ï∂©ÎèåÍ∞ÄÎä•ÏÑ± ÎÜçÌõÑ Ï£ºÏÑùÏ≤òÎ¶¨
 	//playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
 	
 	
@@ -130,7 +159,7 @@ void AAACharacterBase::BeginPlay()
 	 }*/
 	
 	//test
-	EquipWeapon(WeaponData);
+	//EquipWeapon(WeaponData);
 }
 
 void AAACharacterBase::Tick(float DeltaSeconds)
@@ -172,6 +201,22 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 			
 			SetWeaponMesh(WeaponData);
 			
+      //0.6.1b
+      APlayerController* PC = Cast<APlayerController>(GetOwner());
+	    if (PC)
+	    {
+		    APlayerState* PS = PC->PlayerState;
+		    AAACharacterPlayerState* TestPS = Cast<AAACharacterPlayerState>(PS);
+		    TestNum = TestPS->GetPlayerId();
+		    if (TestPS->GetPlayerId()==TestNum)
+		    {
+			    UE_LOG(LogTemp, Error, TEXT("PlayerID: %d"), TestNum);
+			
+			    TestPS->SetPresentWeaponData(WeaponData);
+			    UE_LOG(LogTemp, Error, TEXT("Called %s"), *TestPS->GetWeaponDat()->GetName());
+		    }
+	    }
+      
 			// ver 0.4.2b
 			//feat: gameInstance data Storage
 			if (GameInstance)
