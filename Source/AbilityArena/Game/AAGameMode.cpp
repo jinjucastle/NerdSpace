@@ -23,7 +23,7 @@ void AAAGameMode::PostInitializeComponents()
 	Super::PostInitializeComponents();
 	//라운드 활동 부분 0.3.3B
 	// 충돌가능성으로 인한 주석처리
-	GetWorldTimerManager().SetTimer(GameTimerHandle, this, &AAAGameMode::DefaultGameTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
+	//GetWorldTimerManager().SetTimer(GameTimerHandle, this, &AAAGameMode::DefaultGameTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
 }
 
 void AAAGameMode::DefaultGameTimer()

@@ -11,7 +11,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "CharacterStat/AACharacterStatComponent.h"
 #include "Item/AAWeaponAmmo.h"
-#include "Item/AAWeaponItemData.h"
+#include "Item/AAWeaponitemData.h"
 #include "Net/UnrealNetwork.h"
 #include "EngineUtils.h"
 #include "CharacterStat/AACharacterPlayerState.h"
@@ -27,7 +27,7 @@ AAACharacterPlayer::AAACharacterPlayer()
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	FollowCamera->SetRelativeLocation(FVector(0.0f, 65.0f, 65.0f));
+	FollowCamera->SetRelativeLocation(FVector(0.0f, 30.0f, 85.0f));
 	FollowCamera->bUsePawnControlRotation = false;
 
 	//Input
@@ -94,8 +94,6 @@ void AAACharacterPlayer::BeginPlay()
 	if (PlayerController)
 	{
 		EnableInput(PlayerController);
-		
-		
 	}
 
 	SetCharacterControl(CurrentCharacterZoomType);
@@ -333,14 +331,24 @@ void AAACharacterPlayer::ClearPool()
 
 void AAACharacterPlayer::Fire()
 {
-
 	if (bCanFire && CurrentAmmoSize > 0)
 	{
-		FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
-		FRotator MuzzleRotation = Weapon->GetSocketRotation(FName("BarrelEndSocket"));
+		// Add Delay
+		float CurrentTime = GetWorld()->GetTimeSeconds();
+		if (CurrentTime >= NextFireTime)
+		{
+			FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
+			FRotator MuzzleRotation = Weapon->GetSocketRotation(FName("BarrelEndSocket"));
 
-		ServerRPCFire(MuzzleLocation, MuzzleRotation);
+			ServerRPCFire(MuzzleLocation, MuzzleRotation);
 
+			if (WeaponData->Type != EWeaponType::Panzerfaust && WeaponData->Type != EWeaponType::Shotgun)
+			{
+				FTransform ShellTransform = Weapon->GetSocketTransform(FName("ShellSocket"));
+				SpawnShell(ShellTransform);
+			}
+			NextFireTime = CurrentTime + RPM;
+		}
 	}
 	else
 	{
@@ -383,7 +391,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 	// ver 0.4.2a
 	// Fix Fire Direction
 	FVector CameraStartLocation = FollowCamera->GetComponentLocation();
-	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 5000.f;
+	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 500.f;
 	FVector Direction = CameraEndLocation - CameraStartLocation;
 
 	FRotator FireDirection = Direction.Rotation();
@@ -404,45 +412,33 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 	}
 	else if (WeaponData->Type == EWeaponType::Shotgun)
 	{
-		float CurrentTime = GetWorld()->GetTimeSeconds();
-		if (CurrentTime >= NextFireTime)
-		{
-			for (int i = 0; i < WeaponData->AmmoPoolExpandSize / 2; i++)
-			{
-				AAAWeaponAmmo* Bullet = GetPooledAmmo();
-
-				if (Bullet != nullptr)
-				{
-					FRotator BulletRotation = FireDirection + GetRandomRotator();
-					Bullet->SetActorLocationAndRotation(NewLocation, BulletRotation);
-					Bullet->SetActive(true);
-					Bullet->Fire();
-
-					CurrentAmmoSize--;
-
-					NextFireTime = CurrentTime + RPM;
-				}
-			}
-		}
-	}
-	else
-	{
-		// Add Delay
-		float CurrentTime = GetWorld()->GetTimeSeconds();
-		if (CurrentTime >= NextFireTime)
+		for (int i = 0; i < WeaponData->AmmoPoolExpandSize / 2; i++)
 		{
 			AAAWeaponAmmo* Bullet = GetPooledAmmo();
 
 			if (Bullet != nullptr)
 			{
-				Bullet->SetActorLocationAndRotation(NewLocation, FireDirection);
+				FRotator BulletRotation = FireDirection + GetRandomRotator();
+				Bullet->SetActorLocationAndRotation(NewLocation, BulletRotation);
 				Bullet->SetActive(true);
 				Bullet->Fire();
 
 				CurrentAmmoSize--;
 
-				NextFireTime = CurrentTime + RPM;
 			}
+		}
+	}
+	else
+	{
+		AAAWeaponAmmo* Bullet = GetPooledAmmo();
+
+		if (Bullet != nullptr)
+		{
+			Bullet->SetActorLocationAndRotation(NewLocation, FireDirection);
+			Bullet->SetActive(true);
+			Bullet->Fire();
+
+			CurrentAmmoSize--;
 		}
 	}
 

@@ -42,6 +42,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Weapon)
 	TSoftObjectPtr<USkeletalMesh> WeaponMesh;
 
+	UPROPERTY(EditAnywhere, Category = Bullet)
+	TSoftObjectPtr<UStaticMesh> ShellMesh;
+
+	UPROPERTY(EditAnywhere, Category = Bullet)
+	TSoftObjectPtr<UStaticMesh> MagMesh;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Stat)
 	FAACharacterStat WeaponStat;
 

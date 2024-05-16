@@ -3,19 +3,14 @@
 
 #include "Character/AACharacterBase.h"
 #include "Components/CapsuleComponent.h"
-#include "AACharacterBase.h"
 #include "AACharacterControlData.h"
 #include "CharacterStat/AACharacterStatComponent.h"
-#include "Item/AAWeaponItemData.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Animation/AnimMontage.h"
-#include "Item/AAFieldItemData.h"
-#include "Item/AARecoveryItem.h"
-#include "Item/AAShieldItem.h"
+#include "Item/AAItemHeader.h"
 #include "CharacterStat/AACharacterPlayerState.h"
 #include "GameData/AAGameInstance.h"
-#include "Item/AAItemData.h"
 #include "Kismet/GameplayStatics.h"
 #include "EngineUtils.h"
 
@@ -91,6 +86,17 @@ AAACharacterBase::AAACharacterBase()
 	 //Item Actions
 	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AAACharacterBase::RecoverHealth)));
 	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AAACharacterBase::MakeShield)));
+
+	// ver 0.7.1a
+	MagMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MagMesh"));
+	MagMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform);
+	MagMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	MagMeshComponent->SetHiddenInGame(true);
+
+	MagInHandComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MagInHandMesh"));
+	MagInHandComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform);
+	MagInHandComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	MagInHandComponent->SetHiddenInGame(true);
 }
 
 void AAACharacterBase::PostInitializeComponents()
@@ -118,53 +124,9 @@ void AAACharacterBase::BeginPlay()
 	//Casting GameInstance
 	GameInstance = Cast<UAAGameInstance>(UGameplayStatics::GetGameInstance(this));
 	playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
-	//ver 0.6.1b
-	//stay weapon
-		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-		{
-			APlayerController* PC = It->Get();
-			if (PC)
-			{
-				APlayerState* PS = PC->PlayerState;
-				if (PS)
-				{
-					AAACharacterPlayerState* TestPS = Cast<AAACharacterPlayerState>(PS);
-					if (TestPS)
-					{
-						UAAGameInstance* point= Cast<UAAGameInstance>(PC->GetGameInstance());
-						if (!(point->GetsetWeaponItemData()==nullptr))
-						{
-							EquipWeapon(point->GetsetWeaponItemData());
-						}
-						else
-						{
-							EquipWeapon(WeaponData);
-						}
-					}
-				}
-			}
-		}
-	
-	//ver 0.5.1b
-	//check playerState->PlayerID()
-	//충돌가능성 농후 주석처리
-	//playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
-	
-	
-	//ver 0.5.1b
-	// check PlayerState playerID() and stay WeaponData;
-	/*if (playerState->GetPlayerId() == GameInstance->PlayerInfos[0].PlayerID)
-	{
-		EquipWeapon(GameInstance->GetsetWeaponItemData());
-	 }*/
 	
 	//test
-	//EquipWeapon(WeaponData);
-}
-
-void AAACharacterBase::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
+	EquipWeapon(WeaponData);
 }
 
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
@@ -200,22 +162,6 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 			WeaponData = WeaponItemData;
 			
 			SetWeaponMesh(WeaponData);
-			
-      //0.6.1b
-      APlayerController* PC = Cast<APlayerController>(GetOwner());
-	    if (PC)
-	    {
-		    APlayerState* PS = PC->PlayerState;
-		    AAACharacterPlayerState* TestPS = Cast<AAACharacterPlayerState>(PS);
-		    TestNum = TestPS->GetPlayerId();
-		    if (TestPS->GetPlayerId()==TestNum)
-		    {
-			    UE_LOG(LogTemp, Error, TEXT("PlayerID: %d"), TestNum);
-			
-			    TestPS->SetPresentWeaponData(WeaponData);
-			    UE_LOG(LogTemp, Error, TEXT("Called %s"), *TestPS->GetWeaponDat()->GetName());
-		    }
-	    }
       
 			// ver 0.4.2b
 			//feat: gameInstance data Storage
@@ -246,7 +192,6 @@ void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* N
 		SetWeaponMesh(WeaponData);
 		Stat->SetWeaponStat(WeaponData->WeaponStat);
 
-		
 		// ver 0.3.2a
 		// Set Ammo Size
 		MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
@@ -290,6 +235,29 @@ void AAACharacterBase::SetWeaponMesh(UAAWeaponItemData* NewWeaponData)
 	FTransform ComponentWorldTransform = Weapon->GetComponentTransform();
 	FTransform SocketRelativeTransform = SocketWorldTransform.GetRelativeTransform(ComponentWorldTransform);
 	Weapon->SetRelativeLocation(SocketRelativeTransform.GetLocation());
+
+	if (WeaponData->ShellMesh.IsPending())
+	{
+		WeaponData->ShellMesh.LoadSynchronous();
+	}
+
+	if (WeaponData->MagMesh.IsPending())
+	{
+		WeaponData->MagMesh.LoadSynchronous();
+	}
+	MagMeshComponent->SetStaticMesh(WeaponData->MagMesh.Get());
+	MagMeshComponent->AttachToComponent(Weapon, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("MagSocket"));
+	if (WeaponData->Type != EWeaponType::Shotgun)
+	{
+		MagMeshComponent->SetHiddenInGame(false);
+	}
+	else
+	{
+		MagMeshComponent->SetHiddenInGame(true);
+	}
+
+	MagInHandComponent->SetStaticMesh(WeaponData->MagMesh.Get());
+	MagInHandComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("DEF-hand_LSocket"));
 }
 
 void AAACharacterBase::PlayReloadAnimation()
@@ -300,7 +268,7 @@ void AAACharacterBase::PlayReloadAnimation()
 		if (AnimInstance)
 		{
 			AnimInstance->StopAllMontages(0.0f);
-			AnimInstance->Montage_Play(ReloadMontage, 1.0f);
+			AnimInstance->Montage_Play(ReloadMontage, ReloadSpeed);
 			FOnMontageEnded EndDelegate;
 			EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
 			AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
@@ -316,9 +284,12 @@ void AAACharacterBase::PlayReloadAnimation()
 
 void AAACharacterBase::ReloadActionEnded(UAnimMontage* Montage, bool IsEnded)
 {
-	ServerSetCanFire(true);
+	if (HasAuthority())
+	{
+		ServerSetCanFire(true);
 
-	CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
+		CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
+	}
 }
 
 void AAACharacterBase::ServerSetCanFire(bool NewCanFire)
@@ -360,4 +331,80 @@ void AAACharacterBase::MakeShield(UAAItemData* InItemData)
 		UE_LOG(LogAACharacter, Log, TEXT("Make Shield"));
 	}
 
+}
+
+void AAACharacterBase::SpawnShell(FTransform InSocketTransform)
+{
+	if (ShellClass)
+	{
+		AAAWeaponShell* Shell = GetWorld()->SpawnActor<AAAWeaponShell>(ShellClass, InSocketTransform);
+		Shell->SetMesh(WeaponData->ShellMesh.Get());
+		Shell->SetLifeSpan(2.0f);
+		Shell->ShellMesh->SetSimulatePhysics(true);
+
+		FVector ImpulseForward = Shell->GetActorForwardVector() * FMath::RandRange(1.f, 3.f);
+		FVector ImpulseRight = Shell->GetActorRightVector() * FMath::RandRange(-3.f, -9.f);
+		FVector ImpulseResult = ImpulseForward + ImpulseRight;
+
+		Shell->ShellMesh->AddImpulse(ImpulseResult);
+	}
+}
+
+void AAACharacterBase::ChangeMagazine()
+{
+	if (WeaponData && WeaponData->MagMesh.IsValid() && MagClass)
+	{
+		MagInHandComponent->SetHiddenInGame(false);
+	}
+}
+
+void AAACharacterBase::DropMagazine()
+{
+	if (WeaponData && WeaponData->MagMesh.IsValid() && MagClass)
+	{
+		FTransform MagSocketTransForm = Weapon->GetSocketTransform(TEXT("MagSocket"));
+
+		if (WeaponData->Type == EWeaponType::Panzerfaust)
+		{
+			//TODO : Add RPG Reload Motion
+		}
+		else if (WeaponData->Type == EWeaponType::Shotgun)
+		{
+			MagMeshComponent->SetHiddenInGame(true);
+
+			for (int i = 0; i < 2; i++)
+			{
+				AAAWeaponMag* DropMag = GetWorld()->SpawnActor<AAAWeaponMag>(MagClass, MagSocketTransForm);
+				DropMag->SetMesh(WeaponData->MagMesh.Get());
+				DropMag->SetLifeSpan(2.0f);
+				DropMag->MagMesh->SetSimulatePhysics(true);
+				FVector ImpulseForward = DropMag->GetActorForwardVector() * FMath::RandRange(1.f, 3.f);
+				FVector ImpulseRight = DropMag->GetActorRightVector() * FMath::RandRange(-3.f, -9.f);
+				FVector ImpulseResult = ImpulseForward + ImpulseRight;
+				DropMag->MagMesh->AddImpulse(ImpulseResult);
+			}
+		}
+		else
+		{
+			MagMeshComponent->SetHiddenInGame(true);
+
+			AAAWeaponMag* DropMag = GetWorld()->SpawnActor<AAAWeaponMag>(MagClass, MagSocketTransForm);
+			DropMag->SetMesh(WeaponData->MagMesh.Get());
+			DropMag->SetLifeSpan(2.0f);
+			DropMag->MagMesh->SetSimulatePhysics(true);
+			DropMag->MagMesh->AddImpulse(FVector::ZeroVector);
+		}
+	}
+}
+
+void AAACharacterBase::AttachNewMagazine()
+{
+	if (WeaponData && WeaponData->MagMesh.IsValid() && MagClass)
+	{
+		if (WeaponData->Type != EWeaponType::Shotgun)
+		{
+			MagMeshComponent->SetHiddenInGame(false);
+		}
+		MagInHandComponent->SetHiddenInGame(true);
+	}
 }

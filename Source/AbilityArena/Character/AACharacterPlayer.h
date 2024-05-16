@@ -195,7 +195,6 @@ public:
 protected:
 	float AmmoScale = 1.f;
 	float Acceleration;
-	float ReloadSpeed = 1.f;
 	float SplashRound = 1.f;
 	bool bBloodDrain;
 

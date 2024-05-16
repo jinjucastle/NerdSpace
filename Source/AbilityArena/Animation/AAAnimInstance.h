@@ -55,7 +55,4 @@ protected:
 	//회전 방향
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character)
 	float Direction;
-
-protected:
-
 };
