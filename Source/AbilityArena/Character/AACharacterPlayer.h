@@ -126,6 +126,9 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCFire(const FVector& NewLocation, const FRotator& NewRotation);
 
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastRPCFire(class AAAWeaponAmmo* InAmmoClass, const FVector& NewLocation, const FRotator& NewRotation);
+
 // ver 0.1.3a
 // AmmoMesh & AmmoStat Replicate
 public:

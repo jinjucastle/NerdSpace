@@ -34,9 +34,6 @@ public:
 // ver 0.0.2a
 // Create Ammo Actior
 protected:
-	UPROPERTY()
-	TObjectPtr<USceneComponent> Root;
-
 	UPROPERTY(EditAnywhere, Category = Properties, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> AmmoMesh;
 
@@ -47,9 +44,11 @@ protected:
 
 	//test function
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
-	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
+
 	virtual void NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other, class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit) override;
 
+	UFUNCTION()
+	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 // ver 0.0.2a
 // Fire Action 

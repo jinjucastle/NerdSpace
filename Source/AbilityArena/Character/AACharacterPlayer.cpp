@@ -273,6 +273,7 @@ void AAACharacterPlayer::StartJump()
 AAAWeaponAmmo* AAACharacterPlayer::GetPooledAmmo()
 {
 	if (AmmoPool.IsEmpty()) Expand();
+
 	return AmmoPool.Pop();
 }
 
@@ -290,15 +291,18 @@ void AAACharacterPlayer::Expand()
 		{
 			PoolableActor->SetActive(false);
 			PoolableActor->SetOwnerPlayer(this);
-			AmmoPool.Push(PoolableActor);
-			AmmoPoolSize++;
+			AmmoPool.Add(PoolableActor);
 		}
 	}
+	AmmoPoolSize += AmmoExpandSize;
 }
 
 void AAACharacterPlayer::ReturnAmmo(AAAWeaponAmmo* InReturnAmmoActor)
 {
-	AmmoPool.Push(InReturnAmmoActor);
+	{
+		InReturnAmmoActor->SetActive(false);
+		AmmoPool.Add(InReturnAmmoActor);
+	}
 }
 
 void AAACharacterPlayer::ClearPool()
@@ -409,6 +413,8 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 			Rocket->Fire();
 			CurrentAmmoSize--;
 		}
+
+		MulticastRPCFire(Rocket, NewLocation, FireDirection);
 	}
 	else if (WeaponData->Type == EWeaponType::Shotgun)
 	{
@@ -425,6 +431,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 
 				CurrentAmmoSize--;
 
+				MulticastRPCFire(Bullet, NewLocation, BulletRotation);
 			}
 		}
 	}
@@ -439,12 +446,24 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 			Bullet->Fire();
 
 			CurrentAmmoSize--;
+
+			MulticastRPCFire(Bullet, NewLocation, FireDirection);
 		}
 	}
 
 	if (CurrentAmmoSize == 0)
 	{
 		ServerRPCPlayReloadAnimation();
+	}
+}
+
+void AAACharacterPlayer::MulticastRPCFire_Implementation(AAAWeaponAmmo* InAmmoClass, const FVector& NewLocation, const FRotator& NewRotation)
+{
+	if (InAmmoClass)
+	{
+		InAmmoClass->SetActorLocationAndRotation(NewLocation, NewRotation);
+		InAmmoClass->SetActive(true);
+		InAmmoClass->Fire();
 	}
 }
 
@@ -509,7 +528,7 @@ void AAACharacterPlayer::Reload()
 		StopRun();
 	}
 
-	if (IsLocallyControlled())
+	if (IsLocallyControlled() && bCanFire)
 	{
 		ServerRPCPlayReloadAnimation();
 	}

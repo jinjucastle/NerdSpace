@@ -14,17 +14,16 @@ AAAWeaponAmmo::AAAWeaponAmmo()
 	bReplicates = true;
 	SetReplicateMovement(true);
 
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Root;
-
 	AmmoMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("AmmoMesh"));
-	AmmoMesh->SetupAttachment(Root);
 	AmmoMesh->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
-	//test setting
-	AmmoMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	AmmoMesh->SetNotifyRigidBodyCollision(true);
+
+	RootComponent = AmmoMesh;
+
+	AmmoMesh->OnComponentBeginOverlap.AddDynamic(this, &AAAWeaponAmmo::OnOverlapBegin);
 
 	AmmoMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("AmmoMovement"));
-	AmmoMovement->SetUpdatedComponent(Root);
+	AmmoMovement->SetUpdatedComponent(AmmoMesh);
 	AmmoMovement->bRotationFollowsVelocity = true;
 	AmmoMovement->bShouldBounce = false;
 
@@ -62,24 +61,63 @@ void AAAWeaponAmmo::Tick(float DeltaTime)
 void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
+	
+}
 
-	if (OtherActor == Owner)
+void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor->StaticClass() == Owner->StaticClass())
 	{
-		return;
+		UE_LOG(LogTemp, Warning, TEXT("Error"));
 	}
 
 	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
 	{
-		FString RoleName;
 		if (OtherActor->GetLocalRole() == ROLE_Authority)
 		{
-			RoleName = TEXT("Server");
+			USkeletalMeshComponent* TestCom = OtherActor->FindComponentByClass<USkeletalMeshComponent>();
+			if (TestCom)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Overlap Begin")));
+				FName BoneName = SweepResult.BoneName;
+				UE_LOG(LogTemp, Warning, TEXT("TestConllision: %s"), *BoneName.ToString());
+			}
 		}
-		else if (OtherActor->GetLocalRole() == ROLE_AutonomousProxy)
+
+		if (AmmoType == EAmmoType::Rocket)
+		{
+			Destroy();
+			UE_LOG(LogTemp, Log, TEXT("Destroy"));
+		}
+		else
+		{
+			ReturnSelf();
+			UE_LOG(LogTemp, Log, TEXT("Return"));
+		}
+	}
+}
+
+void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
+{
+	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
+
+	if (Other->StaticClass() == Owner->StaticClass())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Error"));
+	}
+
+	if (!Other->IsA(AAAWeaponAmmo::StaticClass()))
+	{
+		FString RoleName;
+		if (Other->GetLocalRole() == ROLE_Authority)
+		{
+			RoleName = TEXT("Server (Autonomous Proxy)");
+		}
+		else if (Other->GetLocalRole() == ROLE_AutonomousProxy)
 		{
 			RoleName = TEXT("Client (Autonomous Proxy)");
 		}
-		else if (OtherActor->GetLocalRole() == ROLE_SimulatedProxy)
+		else if (Other->GetLocalRole() == ROLE_SimulatedProxy)
 		{
 			RoleName = TEXT("Client (Simulated Proxy)");
 		}
@@ -88,7 +126,7 @@ void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
 			RoleName = TEXT("Unknown Role");
 		}
 
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Blue, FString::Printf(TEXT("ActorName : %s | Role : %s"), *OtherActor->GetName(), *RoleName));
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Hit : %s | Role : %s"), *Other->GetName(), *RoleName));
 		if (AmmoType == EAmmoType::Rocket)
 		{
 			Destroy();
@@ -100,46 +138,13 @@ void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
 	}
 }
 
-void AAAWeaponAmmo::NotifyActorEndOverlap(AActor* OtherActor)
-{
-	Super::NotifyActorEndOverlap(OtherActor);
-
-	if (OtherActor == Owner)
-	{
-		return;
-	}
-
-	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, FString::Printf(TEXT("Notify End Overlap")));
-	}
-}
-
-void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
-{
-	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
-	//ver 0.2.1JH Change Log 
-
-
-	if (Other)
-	{
-		USkeletalMeshComponent* TestCom = Other->FindComponentByClass<USkeletalMeshComponent>();
-		if (TestCom)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Notify Hit")));
-			FName BoonNameText = Hit.BoneName;
-			UE_LOG(LogTemp, Warning, TEXT("TestConllision: %s"), *BoonNameText.ToString());
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("this is not Actor"));
-	}
-}
-
 void AAAWeaponAmmo::Fire() const
 {
-	AmmoMovement->SetVelocityInLocalSpace(FVector::ForwardVector * AmmoMovement->InitialSpeed);
+	if (AmmoMovement)
+	{
+		FVector FireDirection = GetActorForwardVector();
+		AmmoMovement->Velocity = FireDirection * AmmoMovement->InitialSpeed;
+	}
 }
 
 void AAAWeaponAmmo::SetOwnerPlayer(AAACharacterPlayer* InPlayer)
@@ -159,7 +164,6 @@ void AAAWeaponAmmo::ReturnSelf()
 	}
 	if (!bIsActive) return;
 	Owner->ReturnAmmo(this);
-	SetActive(false);
 }
 
 void AAAWeaponAmmo::SetActive(bool InIsActive)
@@ -167,6 +171,7 @@ void AAAWeaponAmmo::SetActive(bool InIsActive)
 	bIsActive = InIsActive;
 	SetActorHiddenInGame(!bIsActive);
 	SetActorEnableCollision(bIsActive);
+	SetActorTickEnabled(bIsActive);
 
 	if (bIsActive && AmmoType != EAmmoType::Rocket)
 	{

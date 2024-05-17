@@ -23,7 +23,8 @@ AAACharacterBase::AAACharacterBase()
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationYaw = true;
 
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
+	GetCapsuleComponent()->SetCapsuleSize(43.f, 95.f);
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
@@ -34,9 +35,9 @@ AAACharacterBase::AAACharacterBase()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 
 	// Mesh
-	GetMesh()->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -98.0f), FRotator(0.0f, -90.0f, 0.0f));
+	GetMesh()->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -95.0f), FRotator(0.0f, -90.0f, 0.0f));
 	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
+	GetMesh()->SetCollisionProfileName(TEXT("PhysicsActor"));
 
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> CharacterMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/Model/Character/0/0.0'"));
 	if (CharacterMeshRef.Object)
@@ -367,6 +368,7 @@ void AAACharacterBase::DropMagazine()
 		if (WeaponData->Type == EWeaponType::Panzerfaust)
 		{
 			//TODO : Add RPG Reload Motion
+			MagMeshComponent->SetHiddenInGame(true);
 		}
 		else if (WeaponData->Type == EWeaponType::Shotgun)
 		{
