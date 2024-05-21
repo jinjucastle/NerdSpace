@@ -179,4 +179,14 @@ public:
 	void ChangeMagazine();
 	void DropMagazine();
 	void AttachNewMagazine();
+
+// ver 0.7.3a
+// Damage Section
+public:
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+	void BloodDrain(const float Damage);
+
+// ver 0.7.4a
+// Dead Section
+	virtual void SetDead();
 };

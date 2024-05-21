@@ -104,6 +104,7 @@ void AAACharacterBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	Stat->OnStatChanged.AddUObject(this, &AAACharacterBase::ApplyStat);
+	Stat->OnHpZero.AddUObject(this, &AAACharacterBase::SetDead);
 }
 
 void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -268,7 +269,7 @@ void AAACharacterBase::PlayReloadAnimation()
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance)
 		{
-			AnimInstance->StopAllMontages(0.0f);
+			AnimInstance->StopAllMontages(0.1f);
 			AnimInstance->Montage_Play(ReloadMontage, ReloadSpeed);
 			FOnMontageEnded EndDelegate;
 			EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
@@ -409,4 +410,37 @@ void AAACharacterBase::AttachNewMagazine()
 		}
 		MagInHandComponent->SetHiddenInGame(true);
 	}
+}
+
+float AAACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (ActualDamage > 0.f)
+	{
+		Stat->ApplyDamage(ActualDamage);
+	}
+
+	return ActualDamage;
+}
+
+void AAACharacterBase::BloodDrain(const float Damage)
+{
+	int32 NewHp = (int32)(Stat->GetCurrentHp() + Damage * 0.1);
+
+	if (NewHp <= 0) NewHp = 1;
+
+	Stat->SetHp(NewHp);
+}
+
+void AAACharacterBase::SetDead()
+{
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->SetEnableGravity(true);
+	GetMesh()->WakeAllRigidBodies();
+	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }

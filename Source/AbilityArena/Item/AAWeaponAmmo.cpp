@@ -4,6 +4,7 @@
 #include "Item/AAWeaponAmmo.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Character/AACharacterPlayer.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AAAWeaponAmmo::AAAWeaponAmmo()
@@ -15,8 +16,6 @@ AAAWeaponAmmo::AAAWeaponAmmo()
 	SetReplicateMovement(true);
 
 	AmmoMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("AmmoMesh"));
-	AmmoMesh->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
-	AmmoMesh->SetNotifyRigidBodyCollision(true);
 
 	RootComponent = AmmoMesh;
 
@@ -26,6 +25,7 @@ AAAWeaponAmmo::AAAWeaponAmmo()
 	AmmoMovement->SetUpdatedComponent(AmmoMesh);
 	AmmoMovement->bRotationFollowsVelocity = true;
 	AmmoMovement->bShouldBounce = false;
+	AmmoMovement->StopMovementImmediately();
 
 	AmmoMovement->ProjectileGravityScale = 0.0f;
 
@@ -58,39 +58,61 @@ void AAAWeaponAmmo::Tick(float DeltaTime)
 	}
 }
 
-void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
-{
-	Super::NotifyActorBeginOverlap(OtherActor);
-	
-}
-
 void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor->StaticClass() == Owner->StaticClass())
+	if (OtherActor == Owner && AmmoType == EAmmoType::Rocket)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Error"));
 	}
 
 	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
 	{
-		if (OtherActor->GetLocalRole() == ROLE_Authority)
+		if (HasAuthority())
 		{
-			USkeletalMeshComponent* TestCom = OtherActor->FindComponentByClass<USkeletalMeshComponent>();
-			if (TestCom)
+			//Character Damage
+			if (OtherActor->IsA(AAACharacterPlayer::StaticClass()))
 			{
-				GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Overlap Begin")));
+				AAACharacterPlayer* OwnerCharacter = Cast<AAACharacterPlayer>(Owner);
 				FName BoneName = SweepResult.BoneName;
+				int32 AppliedDamage;
 				UE_LOG(LogTemp, Warning, TEXT("TestConllision: %s"), *BoneName.ToString());
-			}
-		}
 
-		if (AmmoType == EAmmoType::Rocket)
-		{
-			Destroy();
-			UE_LOG(LogTemp, Log, TEXT("Destroy"));
-		}
-		else
-		{
+				if (!BoneName.IsNone())
+				{
+					if (BoneName.ToString().Contains(TEXT("DEF-spine"), ESearchCase::CaseSensitive))
+					{
+						if (BoneName.ToString().Contains(TEXT("_006"), ESearchCase::CaseSensitive, ESearchDir::FromEnd))
+						{
+							AppliedDamage = (int32)(Damage * 1.5f);
+						}
+						else
+						{
+							AppliedDamage = (int32)(Damage);
+						}
+					}
+					else
+					{
+						AppliedDamage = (int32)(Damage * 0.5f);
+					}
+				}
+
+				UGameplayStatics::ApplyDamage(OtherActor, (float)AppliedDamage, Owner->GetController(), this, UDamageType::StaticClass());
+
+				if (OwnerCharacter->GetCanBloodDrain())
+				{
+					OwnerCharacter->BloodDrain(AppliedDamage);
+				}
+			}
+			//Impulse Physics Actor
+			else if(UPrimitiveComponent * OtherCompPrimitive = Cast<UPrimitiveComponent>(OtherComp))
+			{
+				FVector ImpulseDirection = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+				FVector Impulse = ImpulseDirection * Damage * 50;
+
+				OtherCompPrimitive->AddImpulse(Impulse, NAME_None, true);
+				UE_LOG(LogTemp, Log, TEXT("Impulse"));
+			}
+
 			ReturnSelf();
 			UE_LOG(LogTemp, Log, TEXT("Return"));
 		}
@@ -101,56 +123,33 @@ void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimi
 {
 	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
 
-	if (Other->StaticClass() == Owner->StaticClass())
+	if (Other == Owner && AmmoType != EAmmoType::Rocket)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Error"));
 	}
 
 	if (!Other->IsA(AAAWeaponAmmo::StaticClass()))
 	{
-		FString RoleName;
-		if (Other->GetLocalRole() == ROLE_Authority)
+		if (HasAuthority())
 		{
-			RoleName = TEXT("Server (Autonomous Proxy)");
-		}
-		else if (Other->GetLocalRole() == ROLE_AutonomousProxy)
-		{
-			RoleName = TEXT("Client (Autonomous Proxy)");
-		}
-		else if (Other->GetLocalRole() == ROLE_SimulatedProxy)
-		{
-			RoleName = TEXT("Client (Simulated Proxy)");
-		}
-		else
-		{
-			RoleName = TEXT("Unknown Role");
-		}
+			ApplySplashDamage();
 
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Hit : %s | Role : %s"), *Other->GetName(), *RoleName));
-		if (AmmoType == EAmmoType::Rocket)
-		{
 			Destroy();
-		}
-		else
-		{
-			ReturnSelf();
+			UE_LOG(LogTemp, Log, TEXT("Destroy"));
 		}
 	}
 }
 
-void AAAWeaponAmmo::Fire() const
+void AAAWeaponAmmo::Fire(const FVector& FireDirection) const
 {
-	if (AmmoMovement)
-	{
-		FVector FireDirection = GetActorForwardVector();
-		AmmoMovement->Velocity = FireDirection * AmmoMovement->InitialSpeed;
-	}
+	AmmoMovement->Velocity = FireDirection * AmmoMovement->InitialSpeed;
 }
 
 void AAAWeaponAmmo::SetOwnerPlayer(AAACharacterPlayer* InPlayer)
 {
 	Owner = InPlayer;
 	Damage = Owner->GetAmmoDamage();
+	SplashRound = Owner->GetSplashRound();
 	AmmoMovement->InitialSpeed = Owner->GetAmmoSpeed();
 	AmmoMovement->MaxSpeed = Owner->GetAmmoSpeed() * 10;
 }
@@ -163,6 +162,10 @@ void AAAWeaponAmmo::ReturnSelf()
 		return;
 	}
 	if (!bIsActive) return;
+
+	SetActive(false);
+	AmmoMovement->StopMovementImmediately();
+	SetActorLocation(Owner->GetActorLocation());
 	Owner->ReturnAmmo(this);
 }
 
@@ -171,10 +174,36 @@ void AAAWeaponAmmo::SetActive(bool InIsActive)
 	bIsActive = InIsActive;
 	SetActorHiddenInGame(!bIsActive);
 	SetActorEnableCollision(bIsActive);
-	SetActorTickEnabled(bIsActive);
 
 	if (bIsActive && AmmoType != EAmmoType::Rocket)
 	{
 		GetWorld()->GetTimerManager().SetTimer(ActiveHandle, this, &AAAWeaponAmmo::ReturnSelf, 4.0f, false);
 	}
+}
+
+void AAAWeaponAmmo::ApplySplashDamage()
+{
+	TArray<AActor*> IgnoredActors;
+	IgnoredActors.Add(this);
+
+	float BaseDamage = Damage;
+	float MinimumDamage = Damage / 10;
+	float DamageInnerRadius = 100.f * SplashRound;
+	float DamageOuterRadius = 300.0f * SplashRound;
+	float DamageFalloff = 5.0f;
+
+	UGameplayStatics::ApplyRadialDamageWithFalloff(
+		this,
+		BaseDamage,
+		MinimumDamage,
+		GetActorLocation(),
+		DamageInnerRadius,
+		DamageOuterRadius,
+		DamageFalloff,
+		UDamageType::StaticClass(),
+		IgnoredActors,
+		this,
+		Owner->GetController(),
+		ECC_Visibility
+	);
 }

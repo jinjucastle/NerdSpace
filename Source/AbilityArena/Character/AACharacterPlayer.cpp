@@ -16,6 +16,8 @@
 #include "EngineUtils.h"
 #include "CharacterStat/AACharacterPlayerState.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/PostProcessComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 AAACharacterPlayer::AAACharacterPlayer()
 {
@@ -84,6 +86,17 @@ AAACharacterPlayer::AAACharacterPlayer()
 	}
 	
 	CurrentCharacterZoomType = ECharacterZoomType::ZoomOut;
+
+	// ver 0.7.3a
+	// Camera Filter
+	PostProcessComponent = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
+	PostProcessComponent->SetupAttachment(FollowCamera);
+
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialFinder(TEXT("/Script/Engine.Material'/Game/Material/M_DotEffet.M_DotEffet'"));
+	if (MaterialFinder.Succeeded())
+	{
+		DotEffectMaterial = MaterialFinder.Object;
+	}
 }
 
 void AAACharacterPlayer::BeginPlay()
@@ -97,6 +110,12 @@ void AAACharacterPlayer::BeginPlay()
 	}
 
 	SetCharacterControl(CurrentCharacterZoomType);
+
+	if (DotEffectMaterial)
+	{
+		UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(DotEffectMaterial, this);
+		PostProcessComponent->AddOrUpdateBlendable(DynamicMaterial);
+	}
 }
 
 void AAACharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -289,6 +308,7 @@ void AAACharacterPlayer::Expand()
 
 		if (PoolableActor != nullptr)
 		{
+			PoolableActor->SetDamage(AmmoDamage);
 			PoolableActor->SetActive(false);
 			PoolableActor->SetOwnerPlayer(this);
 			AmmoPool.Add(PoolableActor);
@@ -299,9 +319,10 @@ void AAACharacterPlayer::Expand()
 
 void AAACharacterPlayer::ReturnAmmo(AAAWeaponAmmo* InReturnAmmoActor)
 {
+	if (InReturnAmmoActor)
 	{
-		InReturnAmmoActor->SetActive(false);
-		AmmoPool.Add(InReturnAmmoActor);
+		AmmoPool.Push(InReturnAmmoActor);
+		UE_LOG(LogTemp, Log, TEXT("Call Return Ammo"));
 	}
 }
 
@@ -344,7 +365,16 @@ void AAACharacterPlayer::Fire()
 			FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
 			FRotator MuzzleRotation = Weapon->GetSocketRotation(FName("BarrelEndSocket"));
 
-			ServerRPCFire(MuzzleLocation, MuzzleRotation);
+			// ver 0.4.2a
+			// Fix Fire Direction
+			FVector CameraLocation;
+			FRotator CameraRotation;
+			GetActorEyesViewPoint(CameraLocation, CameraRotation);
+
+			FVector EndLocation = CameraLocation + (CameraRotation.Vector() * 10000.f);
+			FVector AimDirection = (EndLocation - MuzzleLocation).GetSafeNormal();
+
+			ServerRPCFire(MuzzleLocation, AimDirection);
 
 			if (WeaponData->Type != EWeaponType::Panzerfaust && WeaponData->Type != EWeaponType::Shotgun)
 			{
@@ -384,37 +414,29 @@ void AAACharacterPlayer::StopFire()
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutomaticFire);
 }
 
-bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FRotator& NewRotation)
+bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FVector& NewDirection)
 {
 	// add validation logic later
 	return bCanFire && (CurrentAmmoSize > 0);
 }
 
-void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation, const FRotator& NewRotation)
+void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation, const FVector& NewDirection)
 {
-	// ver 0.4.2a
-	// Fix Fire Direction
-	FVector CameraStartLocation = FollowCamera->GetComponentLocation();
-	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 500.f;
-	FVector Direction = CameraEndLocation - CameraStartLocation;
-
-	FRotator FireDirection = Direction.Rotation();
-
 	// ver 0.3.1a
 	// Panzerfaust Spawn Actor Per Fire
 	if (WeaponData->Type == EWeaponType::Panzerfaust)
 	{
-		AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, FireDirection);
-		Rocket->SetOwnerPlayer(this);
-		Rocket->SetLifeSpan(4.0f);
-		Rocket->SetActive(true);
+		AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, NewDirection.Rotation());
 		if (Rocket)
 		{
-			Rocket->Fire();
+			Rocket->SetOwnerPlayer(this);
+			Rocket->SetLifeSpan(4.0f);
+			Rocket->SetActive(true);
+			Rocket->Fire(NewDirection);
+			MulticastRPCFire(Rocket, NewLocation, NewDirection);
+
 			CurrentAmmoSize--;
 		}
-
-		MulticastRPCFire(Rocket, NewLocation, FireDirection);
 	}
 	else if (WeaponData->Type == EWeaponType::Shotgun)
 	{
@@ -422,16 +444,15 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 		{
 			AAAWeaponAmmo* Bullet = GetPooledAmmo();
 
-			if (Bullet != nullptr)
+			if (Bullet)
 			{
-				FRotator BulletRotation = FireDirection + GetRandomRotator();
-				Bullet->SetActorLocationAndRotation(NewLocation, BulletRotation);
+				FRotator BulletRotation = NewDirection.Rotation() + GetRandomRotator();
+				Bullet->SetActorLocation(NewLocation);
 				Bullet->SetActive(true);
-				Bullet->Fire();
+				Bullet->Fire(BulletRotation.Vector());
+				MulticastRPCFire(Bullet, NewLocation, BulletRotation.Vector());
 
 				CurrentAmmoSize--;
-
-				MulticastRPCFire(Bullet, NewLocation, BulletRotation);
 			}
 		}
 	}
@@ -439,15 +460,14 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 	{
 		AAAWeaponAmmo* Bullet = GetPooledAmmo();
 
-		if (Bullet != nullptr)
+		if (Bullet)
 		{
-			Bullet->SetActorLocationAndRotation(NewLocation, FireDirection);
+			Bullet->SetActorLocation(NewLocation);
 			Bullet->SetActive(true);
-			Bullet->Fire();
+			Bullet->Fire(NewDirection);
+			MulticastRPCFire(Bullet, NewLocation, NewDirection);
 
 			CurrentAmmoSize--;
-
-			MulticastRPCFire(Bullet, NewLocation, FireDirection);
 		}
 	}
 
@@ -457,13 +477,12 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 	}
 }
 
-void AAACharacterPlayer::MulticastRPCFire_Implementation(AAAWeaponAmmo* InAmmoClass, const FVector& NewLocation, const FRotator& NewRotation)
+void AAACharacterPlayer::MulticastRPCFire_Implementation(AAAWeaponAmmo* AmmoClass, const FVector& NewLocation, const FVector& NewDirection)
 {
-	if (InAmmoClass)
+	if (AmmoClass)
 	{
-		InAmmoClass->SetActorLocationAndRotation(NewLocation, NewRotation);
-		InAmmoClass->SetActive(true);
-		InAmmoClass->Fire();
+		AmmoClass->SetActorLocation(NewLocation);
+		AmmoClass->Fire(NewDirection);
 	}
 }
 
@@ -523,14 +542,17 @@ void AAACharacterPlayer::ClientRPCSetPooledAmmoClass_Implementation(AAACharacter
 
 void AAACharacterPlayer::Reload()
 {
-	if (bIsRun)
+	if (CurrentAmmoSize < MaxAmmoSize)
 	{
-		StopRun();
-	}
+		if (bIsRun)
+		{
+			StopRun();
+		}
 
-	if (IsLocallyControlled() && bCanFire)
-	{
-		ServerRPCPlayReloadAnimation();
+		if (IsLocallyControlled() && bCanFire)
+		{
+			ServerRPCPlayReloadAnimation();
+		}
 	}
 }
 
@@ -621,7 +643,7 @@ void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
 	BaseMovementSpeed = Stat->GetTotalStat().MovementSpeed * NewAbilityStat.MovementSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
 
-	RPM = WeaponData->WeaponStat.RPM + (WeaponData->WeaponStat.RPM * NewAbilityStat.RPM);
+	RPM = FMath::Clamp(WeaponData->WeaponStat.RPM + (WeaponData->WeaponStat.RPM * NewAbilityStat.RPM), 0.05f, 10.f);
 	AmmoDamage = WeaponData->AmmoDamage * NewAbilityStat.Damage;
 	AmmoSpeed = WeaponData->AmmoSpeed * NewAbilityStat.AmmoSpeed;
 	AmmoScale = NewAbilityStat.AmmoScale;
