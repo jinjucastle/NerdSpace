@@ -23,7 +23,7 @@ void AAAGameMode::PostInitializeComponents()
 	Super::PostInitializeComponents();
 	//라운드 활동 부분 0.3.3B
 	// 충돌가능성으로 인한 주석처리
-	GetWorldTimerManager().SetTimer(GameTimerHandle, this, &AAAGameMode::DefaultGameTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
+	//GetWorldTimerManager().SetTimer(GameTimerHandle, this, &AAAGameMode::DefaultGameTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
 }
 
 void AAAGameMode::DefaultGameTimer()
@@ -59,7 +59,7 @@ void AAAGameMode::DefaultGameTimer()
 }
 
 //다른 곳과 충돌가능성이 있기 때문에 주석 처리
-void AAAGameMode::PostLogin(APlayerController* NewPlayer)
+/*void AAAGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 		
@@ -81,7 +81,7 @@ void AAAGameMode::PostLogin(APlayerController* NewPlayer)
 		}
 	}
 	
-}
+}*/
 
 void AAAGameMode::FinishGame()
 {

@@ -17,6 +17,7 @@
 #include "GameData/AAGameInstance.h"
 #include "Item/AAItemData.h"
 #include "Kismet/GameplayStatics.h"
+#include "Player/AAPlayerController.h"
 #include "EngineUtils.h"
 
 DEFINE_LOG_CATEGORY(LogAACharacter);
@@ -91,12 +92,15 @@ AAACharacterBase::AAACharacterBase()
 	 //Item Actions
 	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AAACharacterBase::RecoverHealth)));
 	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AAACharacterBase::MakeShield)));
+	
+
 }
 
 void AAACharacterBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	Stat->OnStatChanged.AddUObject(this, &AAACharacterBase::ApplyStat);
+	
 }
 
 void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -116,50 +120,16 @@ void AAACharacterBase::BeginPlay()
 	Super::BeginPlay();
 	//ver 0.4.2b 
 	//Casting GameInstance
-	GameInstance = Cast<UAAGameInstance>(UGameplayStatics::GetGameInstance(this));
-	playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
+	
 	//ver 0.6.1b
 	//stay weapon
-		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-		{
-			APlayerController* PC = It->Get();
-			if (PC)
-			{
-				APlayerState* PS = PC->PlayerState;
-				if (PS)
-				{
-					AAACharacterPlayerState* TestPS = Cast<AAACharacterPlayerState>(PS);
-					if (TestPS)
-					{
-						UAAGameInstance* point= Cast<UAAGameInstance>(PC->GetGameInstance());
-						if (!(point->GetsetWeaponItemData()==nullptr))
-						{
-							EquipWeapon(point->GetsetWeaponItemData());
-						}
-						else
-						{
-							EquipWeapon(WeaponData);
-						}
-					}
-				}
-			}
-		}
-	
-	//ver 0.5.1b
-	//check playerState->PlayerID()
-	//충돌가능성 농후 주석처리
-	//playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
 	
 	
-	//ver 0.5.1b
-	// check PlayerState playerID() and stay WeaponData;
-	/*if (playerState->GetPlayerId() == GameInstance->PlayerInfos[0].PlayerID)
-	{
-		EquipWeapon(GameInstance->GetsetWeaponItemData());
-	 }*/
 	
 	//test
-	//EquipWeapon(WeaponData);
+	EquipWeapon(WeaponData);
+
+	
 }
 
 void AAACharacterBase::Tick(float DeltaSeconds)
@@ -201,29 +171,21 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 			
 			SetWeaponMesh(WeaponData);
 			
-      //0.6.1b
-      APlayerController* PC = Cast<APlayerController>(GetOwner());
-	    if (PC)
-	    {
-		    APlayerState* PS = PC->PlayerState;
-		    AAACharacterPlayerState* TestPS = Cast<AAACharacterPlayerState>(PS);
-		    TestNum = TestPS->GetPlayerId();
-		    if (TestPS->GetPlayerId()==TestNum)
-		    {
-			    UE_LOG(LogTemp, Error, TEXT("PlayerID: %d"), TestNum);
+			//0.7.1b
+			//changeWeapon
+			playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
 			
-			    TestPS->SetPresentWeaponData(WeaponData);
-			    UE_LOG(LogTemp, Error, TEXT("Called %s"), *TestPS->GetWeaponDat()->GetName());
-		    }
-	    }
-      
-			// ver 0.4.2b
-			//feat: gameInstance data Storage
-			if (GameInstance)
+			if (playerState)
 			{
-				UE_LOG(LogTemp, Error, TEXT("Find GameInstace"));
-				GameInstance->SetWeaponItemData(WeaponData);
+				playerState->SetPresentWeaponData(WeaponData);
+				//UE_LOG(LogTemp, Error, TEXT("WeaponDataclinet:%s"), *playerState->GetName());
+
 			}
+			else
+			{
+				//UE_LOG(LogTemp, Error, TEXT("WeaponDataclinet not init"));
+			}
+			
 		}
 
 		if (IsLocallyControlled())
@@ -245,7 +207,17 @@ void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* N
 		WeaponData = NewWeaponData;
 		SetWeaponMesh(WeaponData);
 		Stat->SetWeaponStat(WeaponData->WeaponStat);
+		
+		//0.7.1b
+		//change Code 
+		playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
+		if (playerState)
+		{
+			playerState->SetPresentWeaponData(WeaponData);
+		//	UE_LOG(LogTemp, Error, TEXT("WeaponDataServer:%s"), *playerState->GetName());
+			
 
+		}
 		
 		// ver 0.3.2a
 		// Set Ammo Size
@@ -290,6 +262,15 @@ void AAACharacterBase::SetWeaponMesh(UAAWeaponItemData* NewWeaponData)
 	FTransform ComponentWorldTransform = Weapon->GetComponentTransform();
 	FTransform SocketRelativeTransform = SocketWorldTransform.GetRelativeTransform(ComponentWorldTransform);
 	Weapon->SetRelativeLocation(SocketRelativeTransform.GetLocation());
+}
+void AAACharacterBase::SetWeaponDataBegin(class UAAWeaponItemData* NewWeaponData)
+{
+	//ver0.7.1b
+	//testCode
+	WeaponData = NewWeaponData;
+	//UE_LOG(LogAACharacter, Error, TEXT("WeaponData:%s"),*WeaponData->GetName());
+	
+	
 }
 
 void AAACharacterBase::PlayReloadAnimation()

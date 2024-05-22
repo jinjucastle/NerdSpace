@@ -20,4 +20,13 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	//virtual void OnPossess(APawn* inPawn) override;
+
+
+private:
+
+	UPROPERTY()
+	class UAAGameInstance* pc;
+
+
 };
