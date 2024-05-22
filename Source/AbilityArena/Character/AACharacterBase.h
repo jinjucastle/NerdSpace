@@ -30,7 +30,6 @@ struct FTakeItemDelegateWrapper
 	FOnTakeItemDelegate ItemDelegate;
 };
 
-
 UCLASS()
 class ABILITYARENA_API AAACharacterBase : public ACharacter,public IAACharacterItemInterface
 {
@@ -47,8 +46,6 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	virtual void Tick(float DeltaSeconds) override;
 
 	virtual void SetCharacterControlData(const class UAACharacterControlData* CharacterControlData);
 	
@@ -118,10 +115,7 @@ protected:
 
 	void SetWeaponMesh(class UAAWeaponItemData* NewWeaponData);
 public:
-
 	void SetWeaponDataBegin(class UAAWeaponItemData* NewWeaponData);
-	
-
 
 // ver 0.3.2a
 // AmmoSize
@@ -142,7 +136,7 @@ protected:
 
 public:
 	void PlayReloadAnimation();
-	void ReloadActionEnded(UAnimMontage* Montage, bool IsEnded);
+	virtual void ReloadActionEnded(UAnimMontage* Montage, bool IsEnded);
 	void ServerSetCanFire(bool NewCanFire);
   
   //TODO : Delete
@@ -153,6 +147,7 @@ public:
 protected:
 	float BaseMovementSpeed;
 	float RPM = 1.f;
+	float ReloadSpeed = 1.f;
 
 public:
 	UFUNCTION(BlueprintCallable)
@@ -162,4 +157,39 @@ public:
 // UI Section
 public:
 	FORCEINLINE class UAAWeaponItemData* GetWeaponData() const { return WeaponData; }
+
+// ver 0.7.1a
+// Add Ammo Shell
+protected:
+	UPROPERTY(EditAnywhere, Category = Ammo, Meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class AAAWeaponShell> ShellClass;
+
+public:
+	void SpawnShell(FTransform InSocketTransform);
+
+// Magazine Section
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = Bullet)
+	TObjectPtr<UStaticMeshComponent> MagMeshComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category = Bullet)
+	TObjectPtr<UStaticMeshComponent> MagInHandComponent;
+
+	UPROPERTY(EditAnywhere, Category = Ammo, Meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class AAAWeaponMag> MagClass;
+
+public:
+	void ChangeMagazine();
+	void DropMagazine();
+	void AttachNewMagazine();
+
+// ver 0.7.3a
+// Damage Section
+public:
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+	void BloodDrain(const float Damage);
+
+// ver 0.7.4a
+// Dead Section
+	virtual void SetDead();
 };

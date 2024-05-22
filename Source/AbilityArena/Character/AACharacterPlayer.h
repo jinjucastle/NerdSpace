@@ -124,7 +124,10 @@ private:
 // Listen Server Projectile section
 public:
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRPCFire(const FVector& NewLocation, const FRotator& NewRotation);
+	void ServerRPCFire(const FVector& NewLocation, const FVector& NewDirection);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastRPCFire(class AAAWeaponAmmo* AmmoClass, const FVector& NewLocation, const FVector& NewDirection);
 
 // ver 0.1.3a
 // AmmoMesh & AmmoStat Replicate
@@ -195,11 +198,20 @@ public:
 protected:
 	float AmmoScale = 1.f;
 	float Acceleration;
-	float ReloadSpeed = 1.f;
 	float SplashRound = 1.f;
 	bool bBloodDrain;
 
 public:
 	FORCEINLINE const float GetAcceleration() const { return Acceleration; }
 	FORCEINLINE const float GetAmmoScale() const { return AmmoScale; }
+	FORCEINLINE const float GetSplashRound() const { return SplashRound; }
+	FORCEINLINE const bool GetCanBloodDrain() const { return bBloodDrain; }
+
+// ver 0.7.3a
+// Camera Filter
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = PostProcess)
+	class UPostProcessComponent* PostProcessComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PostProcess)
+	class UMaterialInterface* DotEffectMaterial;
 };
