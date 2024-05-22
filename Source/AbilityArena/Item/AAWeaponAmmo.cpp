@@ -4,6 +4,7 @@
 #include "Item/AAWeaponAmmo.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Character/AACharacterPlayer.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AAAWeaponAmmo::AAAWeaponAmmo()
@@ -14,19 +15,17 @@ AAAWeaponAmmo::AAAWeaponAmmo()
 	bReplicates = true;
 	SetReplicateMovement(true);
 
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Root;
-
 	AmmoMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("AmmoMesh"));
-	AmmoMesh->SetupAttachment(Root);
-	AmmoMesh->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));
-	//test setting
-	AmmoMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+	RootComponent = AmmoMesh;
+
+	AmmoMesh->OnComponentBeginOverlap.AddDynamic(this, &AAAWeaponAmmo::OnOverlapBegin);
 
 	AmmoMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("AmmoMovement"));
-	AmmoMovement->SetUpdatedComponent(Root);
+	AmmoMovement->SetUpdatedComponent(AmmoMesh);
 	AmmoMovement->bRotationFollowsVelocity = true;
 	AmmoMovement->bShouldBounce = false;
+	AmmoMovement->StopMovementImmediately();
 
 	AmmoMovement->ProjectileGravityScale = 0.0f;
 
@@ -59,93 +58,98 @@ void AAAWeaponAmmo::Tick(float DeltaTime)
 	}
 }
 
-void AAAWeaponAmmo::NotifyActorBeginOverlap(AActor* OtherActor)
+void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	Super::NotifyActorBeginOverlap(OtherActor);
-
-	if (OtherActor == Owner)
+	if (OtherActor == Owner && AmmoType == EAmmoType::Rocket)
 	{
-		return;
+		UE_LOG(LogTemp, Warning, TEXT("Error"));
 	}
 
 	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
 	{
-		FString RoleName;
-		if (OtherActor->GetLocalRole() == ROLE_Authority)
+		if (HasAuthority())
 		{
-			RoleName = TEXT("Server");
-		}
-		else if (OtherActor->GetLocalRole() == ROLE_AutonomousProxy)
-		{
-			RoleName = TEXT("Client (Autonomous Proxy)");
-		}
-		else if (OtherActor->GetLocalRole() == ROLE_SimulatedProxy)
-		{
-			RoleName = TEXT("Client (Simulated Proxy)");
-		}
-		else
-		{
-			RoleName = TEXT("Unknown Role");
-		}
+			//Character Damage
+			if (OtherActor->IsA(AAACharacterPlayer::StaticClass()))
+			{
+				AAACharacterPlayer* OwnerCharacter = Cast<AAACharacterPlayer>(Owner);
+				FName BoneName = SweepResult.BoneName;
+				int32 AppliedDamage;
+				UE_LOG(LogTemp, Warning, TEXT("TestConllision: %s"), *BoneName.ToString());
 
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Blue, FString::Printf(TEXT("ActorName : %s | Role : %s"), *OtherActor->GetName(), *RoleName));
-		if (AmmoType == EAmmoType::Rocket)
-		{
-			Destroy();
-		}
-		else
-		{
+				if (!BoneName.IsNone())
+				{
+					if (BoneName.ToString().Contains(TEXT("DEF-spine"), ESearchCase::CaseSensitive))
+					{
+						if (BoneName.ToString().Contains(TEXT("_006"), ESearchCase::CaseSensitive, ESearchDir::FromEnd))
+						{
+							AppliedDamage = (int32)(Damage * 1.5f);
+						}
+						else
+						{
+							AppliedDamage = (int32)(Damage);
+						}
+					}
+					else
+					{
+						AppliedDamage = (int32)(Damage * 0.5f);
+					}
+				}
+
+				UGameplayStatics::ApplyDamage(OtherActor, (float)AppliedDamage, Owner->GetController(), this, UDamageType::StaticClass());
+
+				if (OwnerCharacter->GetCanBloodDrain())
+				{
+					OwnerCharacter->BloodDrain(AppliedDamage);
+				}
+			}
+			//Impulse Physics Actor
+			else if(UPrimitiveComponent * OtherCompPrimitive = Cast<UPrimitiveComponent>(OtherComp))
+			{
+				FVector ImpulseDirection = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+				FVector Impulse = ImpulseDirection * Damage * 50;
+
+				OtherCompPrimitive->AddImpulse(Impulse, NAME_None, true);
+				UE_LOG(LogTemp, Log, TEXT("Impulse"));
+			}
+
 			ReturnSelf();
+			UE_LOG(LogTemp, Log, TEXT("Return"));
 		}
-	}
-}
-
-void AAAWeaponAmmo::NotifyActorEndOverlap(AActor* OtherActor)
-{
-	Super::NotifyActorEndOverlap(OtherActor);
-
-	if (OtherActor == Owner)
-	{
-		return;
-	}
-
-	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, FString::Printf(TEXT("Notify End Overlap")));
 	}
 }
 
 void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
 {
 	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
-	//ver 0.2.1JH Change Log 
 
-
-	if (Other)
+	if (Other == Owner && AmmoType != EAmmoType::Rocket)
 	{
-		USkeletalMeshComponent* TestCom = Other->FindComponentByClass<USkeletalMeshComponent>();
-		if (TestCom)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Notify Hit")));
-			FName BoonNameText = Hit.BoneName;
-			UE_LOG(LogTemp, Warning, TEXT("TestConllision: %s"), *BoonNameText.ToString());
-		}
+		UE_LOG(LogTemp, Warning, TEXT("Error"));
 	}
-	else
+
+	if (!Other->IsA(AAAWeaponAmmo::StaticClass()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("this is not Actor"));
+		if (HasAuthority())
+		{
+			ApplySplashDamage();
+
+			Destroy();
+			UE_LOG(LogTemp, Log, TEXT("Destroy"));
+		}
 	}
 }
 
-void AAAWeaponAmmo::Fire() const
+void AAAWeaponAmmo::Fire(const FVector& FireDirection) const
 {
-	AmmoMovement->SetVelocityInLocalSpace(FVector::ForwardVector * AmmoMovement->InitialSpeed);
+	AmmoMovement->Velocity = FireDirection * AmmoMovement->InitialSpeed;
 }
 
 void AAAWeaponAmmo::SetOwnerPlayer(AAACharacterPlayer* InPlayer)
 {
 	Owner = InPlayer;
 	Damage = Owner->GetAmmoDamage();
+	SplashRound = Owner->GetSplashRound();
 	AmmoMovement->InitialSpeed = Owner->GetAmmoSpeed();
 	AmmoMovement->MaxSpeed = Owner->GetAmmoSpeed() * 10;
 }
@@ -158,8 +162,11 @@ void AAAWeaponAmmo::ReturnSelf()
 		return;
 	}
 	if (!bIsActive) return;
-	Owner->ReturnAmmo(this);
+
 	SetActive(false);
+	AmmoMovement->StopMovementImmediately();
+	SetActorLocation(Owner->GetActorLocation());
+	Owner->ReturnAmmo(this);
 }
 
 void AAAWeaponAmmo::SetActive(bool InIsActive)
@@ -172,4 +179,31 @@ void AAAWeaponAmmo::SetActive(bool InIsActive)
 	{
 		GetWorld()->GetTimerManager().SetTimer(ActiveHandle, this, &AAAWeaponAmmo::ReturnSelf, 4.0f, false);
 	}
+}
+
+void AAAWeaponAmmo::ApplySplashDamage()
+{
+	TArray<AActor*> IgnoredActors;
+	IgnoredActors.Add(this);
+
+	float BaseDamage = Damage;
+	float MinimumDamage = Damage / 10;
+	float DamageInnerRadius = 100.f * SplashRound;
+	float DamageOuterRadius = 300.0f * SplashRound;
+	float DamageFalloff = 5.0f;
+
+	UGameplayStatics::ApplyRadialDamageWithFalloff(
+		this,
+		BaseDamage,
+		MinimumDamage,
+		GetActorLocation(),
+		DamageInnerRadius,
+		DamageOuterRadius,
+		DamageFalloff,
+		UDamageType::StaticClass(),
+		IgnoredActors,
+		this,
+		Owner->GetController(),
+		ECC_Visibility
+	);
 }

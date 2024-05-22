@@ -1,0 +1,5 @@
+#include "Item/AAWeaponItemData.h"
+#include "Item/AARecoveryItem.h"
+#include "Item/AAShieldItem.h"
+#include "Item/AAWeaponShell.h"
+#include "Item/AAWeaponMag.h"

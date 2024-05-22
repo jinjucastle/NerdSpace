@@ -32,11 +32,8 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 // ver 0.0.2a
-// Create Ammo Actior
+// Create Ammo Actor
 protected:
-	UPROPERTY()
-	TObjectPtr<USceneComponent> Root;
-
 	UPROPERTY(EditAnywhere, Category = Properties, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> AmmoMesh;
 
@@ -45,18 +42,17 @@ protected:
 
 	float Damage;
 
-	//test function
-	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
-	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
 	virtual void NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other, class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit) override;
 
+	UFUNCTION()
+	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 // ver 0.0.2a
 // Fire Action 
 public:
 	// ver 0.3.1a
 	// Change Function Parameter
-	void Fire()const;
+	void Fire(const FVector& FireDirection)const;
 
 // ver 0.0.2a
 // Object Pool System
@@ -76,4 +72,15 @@ private:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Type)
 	EAmmoType AmmoType;
+
+// ver 0.7.3a
+// Damage Section
+	FORCEINLINE void SetDamage(const float NewDamage) { Damage = NewDamage; }
+
+// ver 0.7.4a
+// Panzerfaust Splash Damage
+	void ApplySplashDamage();
+
+protected:
+	float SplashRound;
 };
