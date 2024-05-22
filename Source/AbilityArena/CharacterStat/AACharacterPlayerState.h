@@ -20,19 +20,21 @@ public:
 	AAACharacterPlayerState();
 
 	void SetPresentWeaponData(TObjectPtr<class UAAWeaponItemData>& Weapondata);
-	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
+	
 	TObjectPtr<class UAAWeaponItemData> WeaponData;
 	
 	TObjectPtr<class UAAWeaponItemData> GetWeaponDat() { return PresentWeapon; }
 
-	UFUNCTION()
-		void OnRep_SetWeapon();
+	
 
 private:
 
-	UPROPERTY(ReplicatedUsing = OnRep_SetWeapon, VisibleAnywhere, Category = Stat, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY( VisibleAnywhere, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 		TObjectPtr<class UAAWeaponItemData> PresentWeapon;
 
 	TObjectPtr<class UAAGameInstance> GameInstance;
+protected:
+
+	
 	
 };

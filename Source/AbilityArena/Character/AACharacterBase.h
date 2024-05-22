@@ -48,6 +48,8 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void SetCharacterControlData(const class UAACharacterControlData* CharacterControlData);
+	
+
 
 
 	UPROPERTY(EditAnywhere, Category = CharacterControl, Meta = (AllowPrivateAccess = "true"))
@@ -78,7 +80,7 @@ protected:
 
 	//ver 0.4.2b
 	//GameInstance 
-	TObjectPtr<class UAAGameInstance> GameInstance;
+	TObjectPtr<class UAAGameInstance> gameInstance;
 	TObjectPtr<class AAACharacterPlayerState>playerState;
 // ver 0.3.0 C
 	UPROPERTY()
@@ -112,7 +114,8 @@ protected:
 	void ClientRPCChangeWeapon(AAACharacterBase* CharacterToPlay, class UAAWeaponItemData* NewWeaponData);
 
 	void SetWeaponMesh(class UAAWeaponItemData* NewWeaponData);
-
+public:
+	void SetWeaponDataBegin(class UAAWeaponItemData* NewWeaponData);
 
 // ver 0.3.2a
 // AmmoSize

@@ -59,7 +59,7 @@ void AAAGameMode::DefaultGameTimer()
 }
 
 //다른 곳과 충돌가능성이 있기 때문에 주석 처리
-void AAAGameMode::PostLogin(APlayerController* NewPlayer)
+/*void AAAGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 		
@@ -81,7 +81,7 @@ void AAAGameMode::PostLogin(APlayerController* NewPlayer)
 		}
 	}
 	
-}
+}*/
 
 void AAAGameMode::FinishGame()
 {

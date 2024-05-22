@@ -13,12 +13,13 @@ void UAAGameInstance::Init()
 {
 	Super::Init();
 	UE_LOG(LogTemp, Warning, TEXT("CallGameInStance"));
-	PresentWeapon = nullptr;
+	
 }
 
 void UAAGameInstance::SetWeaponItemData(TObjectPtr<class UAAWeaponItemData> SetPresentWeapon)
 {
 	PresentWeapon = SetPresentWeapon;
+	//UE_LOG(LogTemp, Warning, TEXT("Temp"));
 }
 
 TObjectPtr<class UAAWeaponItemData> UAAGameInstance::GetsetWeaponItemData()

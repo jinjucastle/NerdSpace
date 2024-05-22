@@ -12,6 +12,7 @@
 #include "CharacterStat/AACharacterPlayerState.h"
 #include "GameData/AAGameInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "Player/AAPlayerController.h"
 #include "EngineUtils.h"
 
 DEFINE_LOG_CATEGORY(LogAACharacter);
@@ -124,11 +125,15 @@ void AAACharacterBase::BeginPlay()
 	Super::BeginPlay();
 	//ver 0.4.2b 
 	//Casting GameInstance
-	GameInstance = Cast<UAAGameInstance>(UGameplayStatics::GetGameInstance(this));
-	playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
-	
+  
 	//test
 	EquipWeapon(WeaponData);
+}
+
+void AAACharacterBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
 }
 
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
@@ -164,14 +169,17 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 			WeaponData = WeaponItemData;
 			
 			SetWeaponMesh(WeaponData);
-      
-			// ver 0.4.2b
-			//feat: gameInstance data Storage
-			if (GameInstance)
+			
+			//0.7.1b
+			//changeWeapon
+			playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
+			
+			if (playerState)
 			{
-				UE_LOG(LogTemp, Error, TEXT("Find GameInstace"));
-				GameInstance->SetWeaponItemData(WeaponData);
-			}
+				playerState->SetPresentWeaponData(WeaponData);
+				//UE_LOG(LogTemp, Error, TEXT("WeaponDataclinet:%s"), *playerState->GetName());
+
+      }
 		}
 
 		if (IsLocallyControlled())
@@ -193,7 +201,17 @@ void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* N
 		WeaponData = NewWeaponData;
 		SetWeaponMesh(WeaponData);
 		Stat->SetWeaponStat(WeaponData->WeaponStat);
-
+		
+		//0.7.1b
+		//change Code 
+		playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
+		if (playerState)
+		{
+			playerState->SetPresentWeaponData(WeaponData);
+		//	UE_LOG(LogTemp, Error, TEXT("WeaponDataServer:%s"), *playerState->GetName());
+			
+		}
+		
 		// ver 0.3.2a
 		// Set Ammo Size
 		MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
@@ -260,6 +278,15 @@ void AAACharacterBase::SetWeaponMesh(UAAWeaponItemData* NewWeaponData)
 
 	MagInHandComponent->SetStaticMesh(WeaponData->MagMesh.Get());
 	MagInHandComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("DEF-hand_LSocket"));
+}
+void AAACharacterBase::SetWeaponDataBegin(class UAAWeaponItemData* NewWeaponData)
+{
+	//ver0.7.1b
+	//testCode
+	WeaponData = NewWeaponData;
+	//UE_LOG(LogAACharacter, Error, TEXT("WeaponData:%s"),*WeaponData->GetName());
+	
+	
 }
 
 void AAACharacterBase::PlayReloadAnimation()
