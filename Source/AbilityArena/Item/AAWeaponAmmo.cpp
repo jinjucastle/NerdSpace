@@ -110,6 +110,7 @@ void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, cl
 				FVector Impulse = ImpulseDirection * Damage * 50;
 
 				OtherCompPrimitive->AddImpulse(Impulse, NAME_None, true);
+				MulticastRPCApplyImpulse(OtherCompPrimitive, Impulse);
 				UE_LOG(LogTemp, Log, TEXT("Impulse"));
 			}
 
@@ -143,6 +144,14 @@ void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimi
 void AAAWeaponAmmo::Fire(const FVector& FireDirection) const
 {
 	AmmoMovement->Velocity = FireDirection * AmmoMovement->InitialSpeed;
+}
+
+void AAAWeaponAmmo::MulticastRPCApplyImpulse_Implementation(UPrimitiveComponent* OverlappedComp, const FVector& Impulse)
+{
+	if (OverlappedComp && OverlappedComp->IsSimulatingPhysics() && !HasAuthority())
+	{
+		OverlappedComp->AddImpulse(Impulse, NAME_None, true);
+	}
 }
 
 void AAAWeaponAmmo::SetOwnerPlayer(AAACharacterPlayer* InPlayer)

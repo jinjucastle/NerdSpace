@@ -130,12 +130,6 @@ void AAACharacterBase::BeginPlay()
 	EquipWeapon(WeaponData);
 }
 
-void AAACharacterBase::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-}
-
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
 {
 	//Pawn
@@ -453,9 +447,9 @@ float AAACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 
 void AAACharacterBase::BloodDrain(const float Damage)
 {
-	int32 NewHp = (int32)(Stat->GetCurrentHp() + Damage * 0.1);
+	int32 NewHp = (int32)(Stat->GetCurrentHp() + Damage * 0.5);
 
-	if (NewHp <= 0) NewHp = 1;
+	if (Damage * 0.5 <= 1) NewHp = Stat->GetCurrentHp() + 1;
 
 	Stat->SetHp(NewHp);
 }

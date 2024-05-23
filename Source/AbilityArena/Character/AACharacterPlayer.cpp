@@ -648,6 +648,7 @@ void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
 	AmmoSpeed = WeaponData->AmmoSpeed * NewAbilityStat.AmmoSpeed;
 	AmmoScale = NewAbilityStat.AmmoScale;
 	Acceleration = NewAbilityStat.Acceleration;
+	bBloodDrain = (NewAbilityStat.BloodDrain != 0) ? true : false;
 
 	MaxAmmoSize = WeaponData->AmmoPoolExpandSize * NewAbilityStat.AmmoSize;
 	CurrentAmmoSize = MaxAmmoSize;

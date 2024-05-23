@@ -50,8 +50,6 @@ protected:
 	virtual void SetCharacterControlData(const class UAACharacterControlData* CharacterControlData);
 	
 
-
-
 	UPROPERTY(EditAnywhere, Category = CharacterControl, Meta = (AllowPrivateAccess = "true"))
 	TMap<ECharacterZoomType, class UAACharacterControlData*> CharacterControlManager;
 
