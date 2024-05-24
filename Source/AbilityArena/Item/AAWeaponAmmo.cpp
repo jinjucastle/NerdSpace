@@ -94,13 +94,13 @@ void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, cl
 					{
 						AppliedDamage = (int32)(Damage * 0.5f);
 					}
-				}
 
-				UGameplayStatics::ApplyDamage(OtherActor, (float)AppliedDamage, Owner->GetController(), this, UDamageType::StaticClass());
+					UGameplayStatics::ApplyDamage(OtherActor, (float)AppliedDamage, Owner->GetController(), this, UDamageType::StaticClass());
 
-				if (OwnerCharacter->GetCanBloodDrain())
-				{
-					OwnerCharacter->BloodDrain(AppliedDamage);
+					if (OwnerCharacter->GetCanBloodDrain())
+					{
+						OwnerCharacter->BloodDrain(AppliedDamage);
+					}
 				}
 			}
 			//Impulse Physics Actor

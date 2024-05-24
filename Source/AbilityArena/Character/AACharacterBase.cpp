@@ -173,7 +173,7 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 				playerState->SetPresentWeaponData(WeaponData);
 				//UE_LOG(LogTemp, Error, TEXT("WeaponDataclinet:%s"), *playerState->GetName());
 
-      }
+			}
 		}
 
 		if (IsLocallyControlled())
