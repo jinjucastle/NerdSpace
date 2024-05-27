@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "AAAbilityStat.h"
 #include "AAGameInstance.generated.h"
+
 
 /**
  * 
@@ -36,7 +38,11 @@ private:
 	// initial stage of storing Waepondata
 	UPROPERTY(Transient, VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 		TObjectPtr<class UAAWeaponItemData> PresentWeapon;
-	
+	UPROPERTY()
+	FAAAbilityStat PlayerStat;
+
+	int8 bSetPlayerStatStay : 1;
+
 public:
 	//ver 0.4.2b
 	// Set Save weaponData
@@ -44,13 +50,14 @@ public:
 	//ver 0.4.2b
 	//Get Weapondata
 	TObjectPtr<class UAAWeaponItemData> GetsetWeaponItemData();
-
-	void AddPlayerInfo(const FPlayerInfo& newPlayerInfo);
-	int32 GetPlayerInfoNum() { return PlayerInfos.Num(); }
-	
-	UPROPERTY(Transient, VisibleAnywhere)
-		TArray <FPlayerInfo>PlayerInfos;
-
+	//ver0.8.1b
+	//Save playerStat
+	void SetPlayerStat(const FAAAbilityStat& NewPlayerStat);
+	//ver0.8.1b
+	//Get PlayerStat
+	FAAAbilityStat GetPlayerStat();
 
 	int16 testNum = 0;
+	void SetSavePlayerStat(bool newBool);
+	bool GetSavePlayerStat();
 };

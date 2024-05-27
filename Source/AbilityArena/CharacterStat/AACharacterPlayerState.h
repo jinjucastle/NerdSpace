@@ -19,6 +19,7 @@ public:
 	
 	AAACharacterPlayerState();
 
+	
 	void SetPresentWeaponData(TObjectPtr<class UAAWeaponItemData>& Weapondata);
 	
 	TObjectPtr<class UAAWeaponItemData> WeaponData;
@@ -32,7 +33,7 @@ private:
 	UPROPERTY( VisibleAnywhere, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 		TObjectPtr<class UAAWeaponItemData> PresentWeapon;
 
-	TObjectPtr<class UAAGameInstance> GameInstance;
+
 protected:
 
 	

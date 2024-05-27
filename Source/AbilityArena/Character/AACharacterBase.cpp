@@ -125,9 +125,10 @@ void AAACharacterBase::BeginPlay()
 	Super::BeginPlay();
 	//ver 0.4.2b 
 	//Casting GameInstance
-  
+	SetWeaponDataStore();
 	//test
 	EquipWeapon(WeaponData);
+	
 }
 
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
@@ -164,19 +165,13 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 			
 			SetWeaponMesh(WeaponData);
 			
-			//0.7.1b
-			//changeWeapon
-			playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
-			
-			if (playerState)
-			{
-				playerState->SetPresentWeaponData(WeaponData);
-				//UE_LOG(LogTemp, Error, TEXT("WeaponDataclinet:%s"), *playerState->GetName());
+			//ver0.8.1b
+			//client saveWeaponData
+			SetWeaponDataBegin();
 
-			}
 		}
 
-		if (IsLocallyControlled())
+		if(IsLocallyControlled())
 		{
 			ServerRPCChangeWeapon(WeaponItemData);
 		}
@@ -192,24 +187,21 @@ void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* N
 {
 	if (NewWeaponData)
 	{
-		WeaponData = NewWeaponData;
-		SetWeaponMesh(WeaponData);
-		Stat->SetWeaponStat(WeaponData->WeaponStat);
 		
-		//0.7.1b
-		//change Code 
-		playerState = Cast<AAACharacterPlayerState>(GetPlayerState());
-		if (playerState)
-		{
-			playerState->SetPresentWeaponData(WeaponData);
-		//	UE_LOG(LogTemp, Error, TEXT("WeaponDataServer:%s"), *playerState->GetName());
-			
-		}
 		
-		// ver 0.3.2a
-		// Set Ammo Size
-		MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
-		CurrentAmmoSize = MaxAmmoSize;
+			WeaponData = NewWeaponData;
+			SetWeaponMesh(WeaponData);
+			Stat->SetWeaponStat(WeaponData->WeaponStat);
+
+			//0.8.1b
+			//Server saved Weapondata
+			SetWeaponDataBegin();
+			UE_LOG(LogAACharacter, Error, TEXT("TestPoint"));
+			// ver 0.3.2a
+			// Set Ammo Size
+			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
+			CurrentAmmoSize = MaxAmmoSize;
+		
 	}
 
 	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
@@ -273,14 +265,45 @@ void AAACharacterBase::SetWeaponMesh(UAAWeaponItemData* NewWeaponData)
 	MagInHandComponent->SetStaticMesh(WeaponData->MagMesh.Get());
 	MagInHandComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("DEF-hand_LSocket"));
 }
-void AAACharacterBase::SetWeaponDataBegin(class UAAWeaponItemData* NewWeaponData)
+void AAACharacterBase::SetWeaponDataBegin()
 {
-	//ver0.7.1b
-	//testCode
-	WeaponData = NewWeaponData;
-	//UE_LOG(LogAACharacter, Error, TEXT("WeaponData:%s"),*WeaponData->GetName());
+	//ver0.8.1b
+	//SavedWeaponData 
+	if (IsLocallyControlled())
+	{
+		AAAPlayerController* testController = Cast<AAAPlayerController>(GetController());
+		if (testController)
+		{
+			UAAGameInstance* PC = Cast<UAAGameInstance>(testController->GetGameInstance());
+			PC->SetWeaponItemData(WeaponData);
+			//UE_LOG(LogAACharacter, Error, TEXT("WeaponData:%s"), *PC->GetName());
+
+		}
+	}
 	
-	
+}
+
+void AAACharacterBase::SetWeaponDataStore()
+{
+	//ver0.8.1b
+	// bring in WeaponData
+	AAAPlayerController* testController = Cast<AAAPlayerController>(GetController());
+	if (testController)
+	{
+		UAAGameInstance* PC = Cast<UAAGameInstance>(testController->GetGameInstance());
+		
+		if (PC->GetsetWeaponItemData())
+		{
+			WeaponData = testController->SetInitData();
+			//UE_LOG(LogAACharacter, Error, TEXT("WeaponData:%s"), *WeaponData->GetName());
+		}
+		else
+		{
+			UE_LOG(LogAACharacter, Error, TEXT("Point"));
+		}
+
+
+	}
 }
 
 void AAACharacterBase::PlayReloadAnimation()
