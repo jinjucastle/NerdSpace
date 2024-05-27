@@ -5,7 +5,7 @@
 
 UAAGameInstance::UAAGameInstance()
 {
-
+	bSetPlayerStatStay = false;
 }
 //ver 0.4.2b
 // incomplete GameInstance
@@ -19,7 +19,7 @@ void UAAGameInstance::Init()
 void UAAGameInstance::SetWeaponItemData(TObjectPtr<class UAAWeaponItemData> SetPresentWeapon)
 {
 	PresentWeapon = SetPresentWeapon;
-	//UE_LOG(LogTemp, Warning, TEXT("Temp"));
+	
 }
 
 TObjectPtr<class UAAWeaponItemData> UAAGameInstance::GetsetWeaponItemData()
@@ -27,7 +27,28 @@ TObjectPtr<class UAAWeaponItemData> UAAGameInstance::GetsetWeaponItemData()
 	return PresentWeapon;
 }
 
-void UAAGameInstance::AddPlayerInfo(const FPlayerInfo& newPlayerInfo)
+void UAAGameInstance::SetPlayerStat(const FAAAbilityStat& NewPlayerStat)
 {
-	PlayerInfos.Add(newPlayerInfo);
+	PlayerStat = NewPlayerStat;
+	
 }
+
+FAAAbilityStat UAAGameInstance::GetPlayerStat()
+{
+	return PlayerStat;
+}
+
+void UAAGameInstance::SetSavePlayerStat(bool newbool)
+{
+	bSetPlayerStatStay = newbool;
+}
+
+bool UAAGameInstance::GetSavePlayerStat()
+{
+	return bSetPlayerStatStay;
+}
+
+
+
+
+

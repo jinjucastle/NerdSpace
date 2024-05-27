@@ -115,7 +115,8 @@ protected:
 
 	void SetWeaponMesh(class UAAWeaponItemData* NewWeaponData);
 public:
-	void SetWeaponDataBegin(class UAAWeaponItemData* NewWeaponData);
+	void SetWeaponDataBegin();
+	void SetWeaponDataStore();
 
 // ver 0.3.2a
 // AmmoSize

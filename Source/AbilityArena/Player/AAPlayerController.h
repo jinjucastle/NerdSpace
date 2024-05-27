@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameData/AAAbilityStat.h"
 #include "GameFramework/PlayerController.h"
 #include "AAPlayerController.generated.h"
 
@@ -17,11 +18,18 @@ class ABILITYARENA_API AAAPlayerController : public APlayerController
 
 public:
 	AAAPlayerController();
+	//ver0.8.1b 
+	//get WeaponData
+	TObjectPtr<class UAAWeaponItemData> SetInitData();
+	//ver0.8.1b
+	//Get PlayerStat
+	FAAAbilityStat SendGameInstance();
 
 protected:
 	virtual void BeginPlay() override;
-	//virtual void OnPossess(APawn* inPawn) override;
+	
 
+	
 
 private:
 

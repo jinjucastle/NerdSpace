@@ -58,30 +58,7 @@ void AAAGameMode::DefaultGameTimer()
 
 }
 
-//다른 곳과 충돌가능성이 있기 때문에 주석 처리
-/*void AAAGameMode::PostLogin(APlayerController* NewPlayer)
-{
-	Super::PostLogin(NewPlayer);
-		
-	UAAGameInstance* GI = Cast<UAAGameInstance>(GetGameInstance());
-	AAACharacterPlayerState* PlayerState = Cast<AAACharacterPlayerState>(NewPlayer->PlayerState);
-	//ver 0.5.1b
-	//feat: PlayerID를 클라이언트가 생성되면 받아옴
-	if (GI)
-	{
-	
-		FPlayerInfo NewInfo;		
-		NewInfo.PlayerID = PlayerState->GetPlayerId();
-		GI->AddPlayerInfo(NewInfo);
-		UE_LOG(LogTemp, Warning, TEXT("Add Player"));
-		UE_LOG(LogTemp, Error, TEXT("Add Player number:%d"),GI->GetPlayerInfoNum());
-		for (int32 i = 0; i < GI->GetPlayerInfoNum(); i++)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Add Player number:%d"), GI->PlayerInfos[i].PlayerID);
-		}
-	}
-	
-}*/
+
 
 void AAAGameMode::FinishGame()
 {

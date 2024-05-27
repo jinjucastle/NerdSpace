@@ -5,7 +5,7 @@
 #include "Net/UnrealNetwork.h"
 #include "GameData/AAGameInstance.h"
 #include "Character/AACharacterPlayer.h"
-
+#include "Player/AAPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 
 AAACharacterPlayerState::AAACharacterPlayerState()
@@ -17,14 +17,26 @@ AAACharacterPlayerState::AAACharacterPlayerState()
 
 void AAACharacterPlayerState::SetPresentWeaponData(TObjectPtr<class UAAWeaponItemData>& Weapondata)
 {
-	
-	
-	GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+		
+
+			AAAPlayerController* LocalPC = Cast<AAAPlayerController>(GetPlayerController());
+			if (LocalPC)
+			{
+
+
+				UAAGameInstance* GameInstance = Cast<UAAGameInstance>(LocalPC->GetGameInstance());
+
+				if (GameInstance)
+				{
+					PresentWeapon = Weapondata;
+
+					//GameInstance->SetWeaponItemData(PresentWeapon);
+					UE_LOG(LogTemp, Error, TEXT("Loding pontWeapon Name:%s"), *GameInstance->GetName());
+				}
+			}
+		
 	
 
-	PresentWeapon = Weapondata;
-	GameInstance->SetWeaponItemData(PresentWeapon);
-	//UE_LOG(LogTemp, Error, TEXT("Loding Weapon Name:%s"),*GameInstance->GetName());
 	
 }
 

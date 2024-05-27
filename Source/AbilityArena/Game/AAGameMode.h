@@ -24,7 +24,7 @@ protected:
 	
 	//ver 0.5.1b 
 	//feat:check User UniqueID in Generate client using playerController
-	//virtual void PostLogin(APlayerController* NewPlayer) override;
+	
 
 	
 

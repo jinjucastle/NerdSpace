@@ -193,6 +193,10 @@ public:
 	void ClientRPCApplyAbility(AAACharacterPlayer* CharacterToPlay, const FAAAbilityStat& NewAbilityStat);
 
 	void SetAllAbility(const FAAAbilityStat& NewAbilityStat);
+	
+	void SetAbilityInController(const FAAAbilityStat& NewAbilityStat);
+
+	void SetAbilityBeginPlay();
 
 //Add extra stat
 protected:
