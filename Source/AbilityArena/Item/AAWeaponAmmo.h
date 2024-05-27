@@ -54,6 +54,11 @@ public:
 	// Change Function Parameter
 	void Fire(const FVector& FireDirection)const;
 
+	// ver 0.8.1a
+	// Multicast Impulse
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCApplyImpulse(UPrimitiveComponent* OverlappedComp, const FVector& Impulse);
+
 // ver 0.0.2a
 // Object Pool System
 public:
