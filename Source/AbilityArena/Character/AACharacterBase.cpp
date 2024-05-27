@@ -131,8 +131,6 @@ void AAACharacterBase::BeginPlay()
 	
 }
 
-
-
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
 {
 	//Pawn
@@ -170,6 +168,7 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 			//ver0.8.1b
 			//client saveWeaponData
 			SetWeaponDataBegin();
+
 		}
 
 		if(IsLocallyControlled())
@@ -471,9 +470,9 @@ float AAACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 
 void AAACharacterBase::BloodDrain(const float Damage)
 {
-	int32 NewHp = (int32)(Stat->GetCurrentHp() + Damage * 0.1);
+	int32 NewHp = (int32)(Stat->GetCurrentHp() + Damage * 0.5);
 
-	if (NewHp <= 0) NewHp = 1;
+	if (Damage * 0.5 <= 1) NewHp = Stat->GetCurrentHp() + 1;
 
 	Stat->SetHp(NewHp);
 }

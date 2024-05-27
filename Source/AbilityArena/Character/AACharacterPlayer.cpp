@@ -31,7 +31,7 @@ AAACharacterPlayer::AAACharacterPlayer()
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	FollowCamera->SetRelativeLocation(FVector(0.0f, 30.0f, 85.0f));
+	FollowCamera->SetRelativeLocation(FVector(0.0f, 45.0f, 85.0f));
 	FollowCamera->bUsePawnControlRotation = false;
 
 	//Input
@@ -311,6 +311,9 @@ void AAACharacterPlayer::Expand()
 
 		if (PoolableActor != nullptr)
 		{
+			// ver 0.8.2a
+			// Apply Ammo Scale
+			PoolableActor->SetActorScale3D(FVector(0.03f * AmmoScale, 0.03f * AmmoScale, 0.03f * AmmoScale));
 			PoolableActor->SetDamage(AmmoDamage);
 			PoolableActor->SetActive(false);
 			PoolableActor->SetOwnerPlayer(this);
@@ -370,12 +373,7 @@ void AAACharacterPlayer::Fire()
 
 			// ver 0.4.2a
 			// Fix Fire Direction
-			FVector CameraLocation;
-			FRotator CameraRotation;
-			GetActorEyesViewPoint(CameraLocation, CameraRotation);
-
-			FVector EndLocation = CameraLocation + (CameraRotation.Vector() * 10000.f);
-			FVector AimDirection = (EndLocation - MuzzleLocation).GetSafeNormal();
+			FVector AimDirection = FollowCamera->GetForwardVector();
 
 			ServerRPCFire(MuzzleLocation, AimDirection);
 
@@ -432,6 +430,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 		AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, NewDirection.Rotation());
 		if (Rocket)
 		{
+			Rocket->SetActorScale3D(FVector(1.f * AmmoScale, 1.f * AmmoScale, 1.f * AmmoScale));
 			Rocket->SetOwnerPlayer(this);
 			Rocket->SetLifeSpan(4.0f);
 			Rocket->SetActive(true);
@@ -695,7 +694,6 @@ void AAACharacterPlayer::SetAbilityBeginPlay()
 
 			if (PC->GetSavePlayerStat())
 			{
-
 				//UE_LOG(LogAACharacter, Error, TEXT("POErwer:%s"), *PC->GetName());
 				SetAbility(testController->SendGameInstance());
 				ApplyAbility();
