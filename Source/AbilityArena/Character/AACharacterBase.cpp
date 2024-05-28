@@ -196,7 +196,6 @@ void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* N
 			//0.8.1b
 			//Server saved Weapondata
 			SetWeaponDataBegin();
-			UE_LOG(LogAACharacter, Error, TEXT("TestPoint"));
 			// ver 0.3.2a
 			// Set Ammo Size
 			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
@@ -299,7 +298,7 @@ void AAACharacterBase::SetWeaponDataStore()
 		}
 		else
 		{
-			UE_LOG(LogAACharacter, Error, TEXT("Point"));
+			//UE_LOG(LogAACharacter, Error, TEXT("Point"));
 		}
 
 

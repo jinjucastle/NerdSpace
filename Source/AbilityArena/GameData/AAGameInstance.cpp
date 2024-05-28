@@ -2,6 +2,7 @@
 
 
 #include "GameData/AAGameInstance.h"
+#include "Game/AAGameMode.h"
 
 UAAGameInstance::UAAGameInstance()
 {
@@ -13,7 +14,7 @@ void UAAGameInstance::Init()
 {
 	Super::Init();
 	UE_LOG(LogTemp, Warning, TEXT("CallGameInStance"));
-	
+
 }
 
 void UAAGameInstance::SetWeaponItemData(TObjectPtr<class UAAWeaponItemData> SetPresentWeapon)
@@ -47,8 +48,3 @@ bool UAAGameInstance::GetSavePlayerStat()
 {
 	return bSetPlayerStatStay;
 }
-
-
-
-
-

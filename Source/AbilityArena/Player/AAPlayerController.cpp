@@ -2,9 +2,11 @@
 
 
 #include "Player/AAPlayerController.h"
+#include "Game/AAGameMode.h"
 #include "GameData/AAGameInstance.h"
 #include "Character/AACharacterBase.h"
 #include "Item/AAWeaponItemData.h"
+#include "Blueprint/UserWidget.h"
 
 AAAPlayerController::AAAPlayerController()
 {
@@ -83,8 +85,72 @@ void AAAPlayerController::BeginPlay()
 
 	FInputModeGameOnly GameOnlyInputMode;
 	SetInputMode(GameOnlyInputMode);
-	
-	
+
+	BindSeamlessTravelEvent();
+
+	CreateUI();
+}
+
+void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	RemoveUI();
+
+	if (AGameModeBase* GameMode = GetWorld()->GetAuthGameMode())
+	{
+		if (AAAGameMode* MyGameMode = Cast<AAAGameMode>(GameMode))
+		{
+			MyGameMode->OnSeamlessTravelComplete.RemoveDynamic(this, &AAAPlayerController::OnLevelChanged);
+			UE_LOG(LogTemp, Error, TEXT("RemoveDynamic HandleSeamlessTravelComplete"));
+		}
+	}
+}
+
+void AAAPlayerController::OnLevelChanged()
+{
+	UE_LOG(LogTemp, Error, TEXT("OnLevelChanged"));
+	RemoveUI();
+	CreateUI();
+}
+
+void AAAPlayerController::CreateUI()
+{
+	if (IsLocalController())
+	{
+		if (PlayerUIClass)
+		{
+			PlayerUI = CreateWidget<UUserWidget>(this, PlayerUIClass);
+			if (PlayerUI)
+			{
+				PlayerUI->AddToViewport();
+			}
+		}
+	}
+}
+
+void AAAPlayerController::RemoveUI()
+{
+	if (IsLocalController())
+	{
+		if (PlayerUI)
+		{
+			PlayerUI->RemoveFromViewport();
+			PlayerUI = nullptr;
+		}
+	}
+}
+
+void AAAPlayerController::BindSeamlessTravelEvent()
+{
+	if (AGameModeBase* GameMode = GetWorld()->GetAuthGameMode())
+	{
+		if (AAAGameMode* MyGameMode = Cast<AAAGameMode>(GameMode))
+		{
+			MyGameMode->OnSeamlessTravelComplete.AddDynamic(this, &AAAPlayerController::OnLevelChanged);
+			UE_LOG(LogTemp, Error, TEXT("Bound to OnSeamlessTravelComplete"));
+		}
+	}
 }
 
 

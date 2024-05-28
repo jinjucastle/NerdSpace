@@ -144,8 +144,8 @@ public:
 // ver 0.6.2a
 // Add MovementSpeed & RPM Storage
 protected:
-	float BaseMovementSpeed;
 	float RPM = 1.f;
+	float BaseMovementSpeed;
 	float ReloadSpeed = 1.f;
 
 public:

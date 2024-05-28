@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
 #include "AAAbilityStat.h"
 #include "AAGameInstance.generated.h"
 
@@ -29,7 +31,6 @@ class ABILITYARENA_API UAAGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 public:
-
 	UAAGameInstance();
 
 	virtual void Init() override;
@@ -57,7 +58,12 @@ public:
 	//Get PlayerStat
 	FAAAbilityStat GetPlayerStat();
 
-	int16 testNum = 0;
 	void SetSavePlayerStat(bool newBool);
 	bool GetSavePlayerStat();
+
+	UPROPERTY(Transient, VisibleInstanceOnly, Category = Ammo, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UClass> PlayerAmmoClass;
+
+	FORCEINLINE void SetAmmoClass(const TObjectPtr<UClass> NewAmmoClass) { PlayerAmmoClass = NewAmmoClass; }
+	FORCEINLINE UClass* GetAmmoClass() { return PlayerAmmoClass; }
 };

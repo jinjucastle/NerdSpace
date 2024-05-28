@@ -20,6 +20,7 @@
 #include "Player/AAPlayerController.h"
 #include "GameData/AAGameInstance.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Game/AAGameMode.h"
 
 AAACharacterPlayer::AAACharacterPlayer()
 {
@@ -593,13 +594,11 @@ void AAACharacterPlayer::ApplyAbility()
 	if (!HasAuthority())
 	{
 		SetAllAbility(AllAbility);
-		//UE_LOG(LogAACharacter, Error, TEXT("Client"));
 		SetAbilityInController(AllAbility);
 	}
 	if (IsLocallyControlled())
 	{
 		ServerRPCApplyAbility(AllAbility);
-		
 	}
 }
 
@@ -607,9 +606,11 @@ void AAACharacterPlayer::ServerRPCApplyAbility_Implementation(const FAAAbilitySt
 {
 	
 	SetAllAbility(NewAbilityStat);
+	SetAbilityInController(NewAbilityStat);
 
 	ClearPool();
 	//UE_LOG(LogAACharacter, Error, TEXT("Server"));
+
 	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
 	{
 		if (PlayerController && GetController() != PlayerController)
@@ -624,7 +625,7 @@ void AAACharacterPlayer::ServerRPCApplyAbility_Implementation(const FAAAbilitySt
 			}
 		}
 	}
-	SetAbilityInController(NewAbilityStat);
+	UE_LOG(LogTemp, Warning, TEXT("ServerRPCApplyAbility: New MaxHp = %f"), Stat->GetMaxHp());
 }
 
 void AAACharacterPlayer::ClientRPCApplyAbility_Implementation(AAACharacterPlayer* CharacterToPlay, const FAAAbilityStat& NewAbilityStat)
@@ -632,7 +633,6 @@ void AAACharacterPlayer::ClientRPCApplyAbility_Implementation(AAACharacterPlayer
 	if (CharacterToPlay)
 	{
 		CharacterToPlay->SetAllAbility(NewAbilityStat);
-		
 	}
 }
 
@@ -644,11 +644,7 @@ void AAACharacterPlayer::SetAbility(const FAAAbilityStat& InAddAbility)
 
 void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
 {
-	
-	
 		Stat->SetNewMaxHp(Stat->GetBaseStat().MaxHp * NewAbilityStat.MaxHp);
-
-		UE_LOG(LogTemp, Warning, TEXT("ServerRPCApplyAbility: New MaxHp = %f, Applied by %f"), Stat->GetMaxHp(),*GetNameSafe(this));
 
 		BaseMovementSpeed = Stat->GetTotalStat().MovementSpeed * NewAbilityStat.MovementSpeed;
 		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
@@ -664,7 +660,6 @@ void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
 
 		ReloadSpeed = NewAbilityStat.ReloadSpeed;
 		SplashRound = NewAbilityStat.SplashRound;
-	
 }
 
 void AAACharacterPlayer::SetAbilityInController(const FAAAbilityStat& NewAbilityStat)
@@ -676,8 +671,7 @@ void AAACharacterPlayer::SetAbilityInController(const FAAAbilityStat& NewAbility
 		{
 			UAAGameInstance* PC = Cast<UAAGameInstance>(testController->GetGameInstance());
 			PC->SetPlayerStat(NewAbilityStat);
-			
-			//UE_LOG(LogAACharacter, Error, TEXT("TestPOintertawreq:%s"), *PC->GetName());
+			PC->SetAmmoClass(PooledAmmoClass);
 		}
 	}
 
@@ -691,20 +685,12 @@ void AAACharacterPlayer::SetAbilityBeginPlay()
 		if (testController)
 		{
 			UAAGameInstance* PC = Cast<UAAGameInstance>(testController->GetGameInstance());
-
-			if (PC->GetSavePlayerStat())
+			if (PC)
 			{
-				//UE_LOG(LogAACharacter, Error, TEXT("POErwer:%s"), *PC->GetName());
 				SetAbility(testController->SendGameInstance());
 				ApplyAbility();
-
+				EquipAmmo(PC->GetAmmoClass());
 			}
-			else
-			{
-				PC->SetSavePlayerStat(true);
-			}
-
-
 		}
 	}
 }

@@ -27,14 +27,30 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
-
-	
-
 private:
-
 	UPROPERTY()
 	class UAAGameInstance* pc;
 
+// ver 0.9.1a
+// Level Change Event
+public:
+	UFUNCTION()
+	void OnLevelChanged();
 
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void CreateUI();
+
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void RemoveUI();
+
+	void BindSeamlessTravelEvent();
+
+private:
+	UPROPERTY()
+	UUserWidget* PlayerUI;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> PlayerUIClass;
 };

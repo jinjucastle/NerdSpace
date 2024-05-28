@@ -9,6 +9,8 @@
 /**
  * 
  */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSeamlessTravelComplete);
+
 UCLASS()
 class ABILITYARENA_API AAAGameMode : public AGameMode
 {
@@ -24,11 +26,13 @@ protected:
 	
 	//ver 0.5.1b 
 	//feat:check User UniqueID in Generate client using playerController
-	
-
-	
-
 	void FinishGame();
 	FTimerHandle GameTimerHandle;
 
+// ver 0.9.1a
+public:
+	virtual void PostSeamlessTravel() override;
+
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnSeamlessTravelComplete OnSeamlessTravelComplete;
 };
