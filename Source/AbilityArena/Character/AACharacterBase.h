@@ -95,13 +95,6 @@ protected:
 	float AmmoDamage;
 	float AmmoSpeed;
 
-public:
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE float GetAmmoDamage() const { return AmmoDamage; }
-
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE float GetAmmoSpeed() const { return AmmoSpeed; }
-
 // ver 0.1.2a
 // Replicated
 protected:
@@ -149,8 +142,7 @@ protected:
 	float ReloadSpeed = 1.f;
 
 public:
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE float GetRPM() const { return RPM; }
+
 
 // ver 0.6.4a
 // UI Section

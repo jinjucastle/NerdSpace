@@ -119,6 +119,7 @@ void AAACharacterPlayer::BeginPlay()
 		UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(DotEffectMaterial, this);
 		PostProcessComponent->AddOrUpdateBlendable(DynamicMaterial);
 	}
+
 	SetAbilityBeginPlay();
 }
 
@@ -660,6 +661,8 @@ void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
 
 		ReloadSpeed = NewAbilityStat.ReloadSpeed;
 		SplashRound = NewAbilityStat.SplashRound;
+
+		bBloodDrain = (bool)NewAbilityStat.BloodDrain;
 }
 
 void AAACharacterPlayer::SetAbilityInController(const FAAAbilityStat& NewAbilityStat)
@@ -688,8 +691,9 @@ void AAACharacterPlayer::SetAbilityBeginPlay()
 			if (PC)
 			{
 				SetAbility(testController->SendGameInstance());
-				ApplyAbility();
 				EquipAmmo(PC->GetAmmoClass());
+				PC->SetAmmoClass(PC->GetAmmoClass());
+				ApplyAbility();
 			}
 		}
 	}

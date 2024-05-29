@@ -20,12 +20,11 @@ void UAAGameInstance::Init()
 void UAAGameInstance::SetWeaponItemData(TObjectPtr<class UAAWeaponItemData> SetPresentWeapon)
 {
 	PresentWeapon = SetPresentWeapon;
-	
 }
 
 TObjectPtr<class UAAWeaponItemData> UAAGameInstance::GetsetWeaponItemData()
 {
-	return PresentWeapon;
+ 	return PresentWeapon;
 }
 
 void UAAGameInstance::SetPlayerStat(const FAAAbilityStat& NewPlayerStat)

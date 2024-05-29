@@ -218,4 +218,14 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PostProcess)
 	class UMaterialInterface* DotEffectMaterial;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetAmmoDamage() const { return AmmoDamage; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetAmmoSpeed() const { return AmmoSpeed; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetRPM() const { return RPM; }
 };

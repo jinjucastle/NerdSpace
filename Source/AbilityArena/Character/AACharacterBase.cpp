@@ -123,12 +123,13 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void AAACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+
 	//ver 0.4.2b 
 	//Casting GameInstance
 	SetWeaponDataStore();
+
 	//test
 	EquipWeapon(WeaponData);
-	
 }
 
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
@@ -294,14 +295,7 @@ void AAACharacterBase::SetWeaponDataStore()
 		if (PC->GetsetWeaponItemData())
 		{
 			WeaponData = testController->SetInitData();
-			//UE_LOG(LogAACharacter, Error, TEXT("WeaponData:%s"), *WeaponData->GetName());
 		}
-		else
-		{
-			//UE_LOG(LogAACharacter, Error, TEXT("Point"));
-		}
-
-
 	}
 }
 
