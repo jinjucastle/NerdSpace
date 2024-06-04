@@ -76,12 +76,15 @@ protected:
 	//ver 0.4.1 C
 	void StartJump();
 
+	virtual void Landed(const FHitResult& Hit) override;
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCRun();
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCStopRun();
 
+	bool bIsJump;
 	bool bIsRun;
 
 	ECharacterZoomType CurrentCharacterZoomType;

@@ -183,4 +183,104 @@ public:
 // ver 0.7.4a
 // Dead Section
 	virtual void SetDead();
+
+// ver 0.9.3a
+// Sound Section
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "FireAudio")
+	TObjectPtr<class USoundCue> PSTFireSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "FireAudio")
+	TObjectPtr<class USoundCue> ARFireSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "FireAudio")
+	TObjectPtr<class USoundCue> SRFireSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "FireAudio")
+	TObjectPtr<class USoundCue> SGFireSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "FireAudio")
+	TObjectPtr<class USoundCue> RPGFireSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> ShellDropSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> DefMagDropSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> SGMagDropSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> RPGMagDropSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> PSTMagInsertSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> ARandSRMagInsertSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> SGMagInsertSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> RPGMagInsertSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> PSTCockingSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> ARCockingSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> SRCockingSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> SGCockingSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> RPGCockingSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> MagEmptySoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> JumpSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> LandSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> FootStepSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> SuccessHitSoundCue;
+
+public:
+	UPROPERTY(EditDefaultsOnly, Category = "VoiceAudio")
+	TObjectPtr<class USoundCue> SmallHitSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "VoiceAudio")
+	TObjectPtr<class USoundCue> MidiumHitSoundCue;
+
+	UPROPERTY(EditDefaultsOnly, Category = "VoiceAudio")
+	TObjectPtr<class USoundCue> LargeHitSoundCue;
+
+protected:
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCPlaySound(USoundCue* SoundCue, FVector Location);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCPlaySound(USoundCue* SoundCue, FVector Location);
+
+	void PlayBoundShellSound();
+
+public:
+	void PlaySound(class USoundCue* InSoundCue, FVector InLocation);
+	void PlayHitSuccess();
+	void PlayFootSound();
+	void PlayRemoveMagSound();
+	void PlayInsertMagSound();
+	void PlayCockingSound();
+	void PlayEmptyMagSound();
 };

@@ -241,7 +241,7 @@ void AAACharacterPlayer::Run()
 
 	if (!HasAuthority())
 	{
-		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.75f);
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.5f);
 	}
 
 	ServerRPCRun();
@@ -268,7 +268,7 @@ void AAACharacterPlayer::ServerRPCRun_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Run"));
 
-	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.75f);
+	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.5f);
 }
 
 bool AAACharacterPlayer::ServerRPCStopRun_Validate()
@@ -291,7 +291,20 @@ void AAACharacterPlayer::StartJump()
 		StopRun();
 	}
 
-	ACharacter::Jump();
+	if (!bIsJump)
+	{
+		ACharacter::Jump();
+		PlaySound(JumpSoundCue, GetActorLocation());
+		bIsJump = true;
+	}
+}
+
+void AAACharacterPlayer::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	PlaySound(LandSoundCue, GetActorLocation());
+	bIsJump = false;
 }
 
 AAAWeaponAmmo* AAACharacterPlayer::GetPooledAmmo()
@@ -379,6 +392,28 @@ void AAACharacterPlayer::Fire()
 
 			ServerRPCFire(MuzzleLocation, AimDirection);
 
+			switch (WeaponData->Type)
+			{
+			case EWeaponType::Pistol:
+				PlaySound(PSTFireSoundCue, MuzzleLocation);
+				break;
+			case EWeaponType::Rifle:
+				PlaySound(ARFireSoundCue, MuzzleLocation);
+				break;
+			case EWeaponType::Shotgun:
+				PlaySound(SGFireSoundCue, MuzzleLocation);
+				break;
+			case EWeaponType::SniperRifle:
+				PlaySound(SRFireSoundCue, MuzzleLocation);
+				break;
+			case EWeaponType::Panzerfaust:
+				PlaySound(RPGFireSoundCue, MuzzleLocation);
+				break;
+			default:
+				PlaySound(PSTFireSoundCue, MuzzleLocation);
+				break; 
+			}
+
 			if (WeaponData->Type != EWeaponType::Panzerfaust && WeaponData->Type != EWeaponType::Shotgun)
 			{
 				FTransform ShellTransform = Weapon->GetSocketTransform(FName("ShellSocket"));
@@ -390,6 +425,7 @@ void AAACharacterPlayer::Fire()
 	else
 	{
 		StopFire();
+		PlaySound(MagEmptySoundCue, GetActorLocation());
 	}
 }
 

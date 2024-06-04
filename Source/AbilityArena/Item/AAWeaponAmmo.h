@@ -88,4 +88,5 @@ public:
 
 protected:
 	float SplashRound;
+
 };
