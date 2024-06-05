@@ -32,7 +32,11 @@ protected:
 // ver 0.9.1a
 public:
 	virtual void PostSeamlessTravel() override;
+	
+	
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnSeamlessTravelComplete OnSeamlessTravelComplete;
+	
+
 };

@@ -92,7 +92,9 @@ protected:
 // ver 0.0.2a
 // WeaponData Get
 protected:
+	
 	float AmmoDamage;
+	
 	float AmmoSpeed;
 
 // ver 0.1.2a
