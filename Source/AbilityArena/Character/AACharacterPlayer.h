@@ -76,12 +76,15 @@ protected:
 	//ver 0.4.1 C
 	void StartJump();
 
+	virtual void Landed(const FHitResult& Hit) override;
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCRun();
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCStopRun();
 
+	bool bIsJump;
 	bool bIsRun;
 
 	ECharacterZoomType CurrentCharacterZoomType;
@@ -218,4 +221,14 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PostProcess)
 	class UMaterialInterface* DotEffectMaterial;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetAmmoDamage() const { return AmmoDamage; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetAmmoSpeed() const { return AmmoSpeed; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetRPM() const { return RPM; }
 };

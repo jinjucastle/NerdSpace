@@ -14,6 +14,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Player/AAPlayerController.h"
 #include "EngineUtils.h"
+#include "Sound/SoundCue.h"
 
 DEFINE_LOG_CATEGORY(LogAACharacter);
 
@@ -123,12 +124,13 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void AAACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+
 	//ver 0.4.2b 
 	//Casting GameInstance
 	SetWeaponDataStore();
+
 	//test
 	EquipWeapon(WeaponData);
-	
 }
 
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
@@ -294,14 +296,7 @@ void AAACharacterBase::SetWeaponDataStore()
 		if (PC->GetsetWeaponItemData())
 		{
 			WeaponData = testController->SetInitData();
-			//UE_LOG(LogAACharacter, Error, TEXT("WeaponData:%s"), *WeaponData->GetName());
 		}
-		else
-		{
-			//UE_LOG(LogAACharacter, Error, TEXT("Point"));
-		}
-
-
 	}
 }
 
@@ -392,6 +387,14 @@ void AAACharacterBase::SpawnShell(FTransform InSocketTransform)
 		FVector ImpulseResult = ImpulseForward + ImpulseRight;
 
 		Shell->ShellMesh->AddImpulse(ImpulseResult);
+
+		FTimerHandle ShellTimerHandle;
+
+		GetWorld()->GetTimerManager().SetTimer(
+			ShellTimerHandle,
+			FTimerDelegate::CreateLambda([this]() {
+				PlayBoundShellSound();
+				}), 0.3f, false);
 	}
 }
 
@@ -462,6 +465,25 @@ float AAACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 	if (ActualDamage > 0.f)
 	{
 		Stat->ApplyDamage(ActualDamage);
+		if (ActualDamage > 30.f)
+		{
+			PlaySound(LargeHitSoundCue, GetActorLocation());
+		}
+		else if (ActualDamage > 15.f)
+		{
+			PlaySound(MidiumHitSoundCue, GetActorLocation());
+		}
+		else
+		{
+			PlaySound(SmallHitSoundCue, GetActorLocation());
+		}
+	}
+
+	AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(EventInstigator->GetPawn());
+
+	if (OtherPlayer)
+	{
+		OtherPlayer->PlayHitSuccess();
 	}
 
 	return ActualDamage;
@@ -486,4 +508,115 @@ void AAACharacterBase::SetDead()
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+bool AAACharacterBase::ServerRPCPlaySound_Validate(USoundCue* SoundCue, FVector Location)
+{
+	return true;
+}
+
+void AAACharacterBase::ServerRPCPlaySound_Implementation(USoundCue* SoundCue, FVector Location)
+{
+	MulticastRPCPlaySound(SoundCue, Location);
+}
+
+void AAACharacterBase::MulticastRPCPlaySound_Implementation(USoundCue* SoundCue, FVector Location)
+{
+	UGameplayStatics::PlaySoundAtLocation(this, SoundCue, Location);
+}
+
+void AAACharacterBase::PlayBoundShellSound()
+{
+	if (ShellDropSoundCue)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ShellDropSoundCue, GetActorLocation());
+	}
+}
+
+void AAACharacterBase::PlaySound(USoundCue* InSoundCue, FVector InLocation)
+{
+	if (InSoundCue)
+	{
+		if (HasAuthority())
+		{
+			MulticastRPCPlaySound(InSoundCue, InLocation);
+		}
+		else
+		{
+			ServerRPCPlaySound(InSoundCue, InLocation);
+		}
+	}
+}
+
+void AAACharacterBase::PlayHitSuccess()
+{
+	if (SuccessHitSoundCue)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, SuccessHitSoundCue, GetActorLocation());
+	}
+}
+
+void AAACharacterBase::PlayFootSound()
+{
+	if (FootStepSoundCue)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, FootStepSoundCue, GetActorLocation());
+	}
+}
+
+void AAACharacterBase::PlayRemoveMagSound()
+{
+	switch (WeaponData->Type)
+	{
+	case EWeaponType::Shotgun:
+		if (SGMagDropSoundCue) UGameplayStatics::PlaySoundAtLocation(this, SGMagDropSoundCue, GetActorLocation());
+		break;
+	case EWeaponType::Panzerfaust:
+		if (RPGMagDropSoundCue) UGameplayStatics::PlaySoundAtLocation(this, RPGMagDropSoundCue, GetActorLocation());
+		break;
+	default:
+		if(DefMagDropSoundCue) UGameplayStatics::PlaySoundAtLocation(this, DefMagDropSoundCue, GetActorLocation());
+		break;
+	}
+}
+
+void AAACharacterBase::PlayInsertMagSound()
+{
+	switch (WeaponData->Type)
+	{
+	case EWeaponType::Pistol:
+		if (PSTMagInsertSoundCue) UGameplayStatics::PlaySoundAtLocation(this, PSTMagInsertSoundCue, GetActorLocation());
+		break;
+	case EWeaponType::Shotgun:
+		if (SGMagInsertSoundCue) UGameplayStatics::PlaySoundAtLocation(this, SGMagInsertSoundCue, GetActorLocation());
+		break;
+	case EWeaponType::Panzerfaust:
+		if (RPGMagInsertSoundCue) UGameplayStatics::PlaySoundAtLocation(this, RPGMagInsertSoundCue, GetActorLocation());
+		break;
+	default:
+		if (ARandSRMagInsertSoundCue) UGameplayStatics::PlaySoundAtLocation(this, ARandSRMagInsertSoundCue, GetActorLocation());
+		break;
+	}
+}
+
+void AAACharacterBase::PlayCockingSound()
+{
+	switch (WeaponData->Type)
+	{
+	case EWeaponType::Pistol:
+		if (PSTCockingSoundCue) UGameplayStatics::PlaySoundAtLocation(this, PSTCockingSoundCue, GetActorLocation());
+		break;
+	case EWeaponType::Rifle:
+		if (ARCockingSoundCue) UGameplayStatics::PlaySoundAtLocation(this, ARCockingSoundCue, GetActorLocation());
+		break;
+	case EWeaponType::Shotgun:
+		if (SGCockingSoundCue) UGameplayStatics::PlaySoundAtLocation(this, SGCockingSoundCue, GetActorLocation());
+		break;
+	case EWeaponType::Panzerfaust:
+		if (RPGCockingSoundCue) UGameplayStatics::PlaySoundAtLocation(this, RPGCockingSoundCue, GetActorLocation());
+		break;
+	default:
+		if (SRCockingSoundCue) UGameplayStatics::PlaySoundAtLocation(this, SRCockingSoundCue, GetActorLocation());
+		break;
+	}
 }
