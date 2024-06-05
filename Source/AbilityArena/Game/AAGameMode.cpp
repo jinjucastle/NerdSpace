@@ -16,6 +16,7 @@ AAAGameMode::AAAGameMode()
 	//ver 0.5.1b
 	//feat: playerStateID가 seamlessTravel에는 변경 X
 	bUseSeamlessTravel = true;
+	
 }
 
 void AAAGameMode::PostInitializeComponents()
@@ -43,9 +44,11 @@ void AAAGameMode::DefaultGameTimer()
 			}
 			else if(GetMatchState()==MatchState::WaitingPostMatch)
 			{
-				// 0.5.1b
-				//feat: change function Servertravel->SeamlessTravel
-				GetWorld()->SeamlessTravel(TEXT("/Game/Maps/Test"),true);
+				// 0.9.1b
+				//feat: change function SeamlessTravel->Servertravel
+				
+				GetWorld()->ServerTravel(TEXT("/Game/Maps/Test_2"),true);
+				
 			}
 		}
 	}
@@ -72,8 +75,11 @@ void AAAGameMode::PostSeamlessTravel()
 		if (AAAPlayerController* MyPlayerController = Cast<AAAPlayerController>(It->Get()))
 		{
 			MyPlayerController->BindSeamlessTravelEvent();
+		
 		}
 	}
 
 	OnSeamlessTravelComplete.Broadcast();
+	
 }
+

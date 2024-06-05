@@ -126,6 +126,7 @@ void AAACharacterBase::BeginPlay()
 	//ver 0.4.2b 
 	//Casting GameInstance
 	SetWeaponDataStore();
+
 	//test
 	EquipWeapon(WeaponData);
 	
