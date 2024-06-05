@@ -14,6 +14,7 @@ void UAnimNotify_AttachMagazine::Notify(USkeletalMeshComponent* MeshComp, UAnimS
         if (Character)
         {
             Character->AttachNewMagazine();
+            Character->PlayInsertMagSound();
         }
     }
 }

@@ -47,10 +47,10 @@ public:
 
 	void BindSeamlessTravelEvent();
 
-private:
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	UUserWidget* PlayerUI;
 
+private:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> PlayerUIClass;
 };
