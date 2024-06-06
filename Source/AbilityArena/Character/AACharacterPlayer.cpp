@@ -123,6 +123,24 @@ void AAACharacterPlayer::BeginPlay()
 	SetAbilityBeginPlay();
 }
 
+void AAACharacterPlayer::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (!CurrentRecoil.IsNearlyZero())
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		if (PlayerController)
+		{
+			FRotator NewControlRotation = PlayerController->GetControlRotation();
+			NewControlRotation += CurrentRecoil;
+			PlayerController->SetControlRotation(NewControlRotation);
+		}
+
+		CurrentRecoil = FMath::RInterpTo(CurrentRecoil, FRotator::ZeroRotator, DeltaTime, RecoilRecoverySpeed);
+	}
+}
+
 void AAACharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -395,21 +413,26 @@ void AAACharacterPlayer::Fire()
 			switch (WeaponData->Type)
 			{
 			case EWeaponType::Pistol:
+				ApplyRecoil(AmmoDamage / 10);
 				PlaySound(PSTFireSoundCue, MuzzleLocation);
 				break;
 			case EWeaponType::Rifle:
+				ApplyRecoil(AmmoDamage / 20);
 				PlaySound(ARFireSoundCue, MuzzleLocation);
 				break;
 			case EWeaponType::Shotgun:
+				ApplyRecoil(AmmoDamage);
 				PlaySound(SGFireSoundCue, MuzzleLocation);
 				break;
 			case EWeaponType::SniperRifle:
+				ApplyRecoil(AmmoDamage / 10);
 				PlaySound(SRFireSoundCue, MuzzleLocation);
 				break;
 			case EWeaponType::Panzerfaust:
 				PlaySound(RPGFireSoundCue, MuzzleLocation);
 				break;
 			default:
+				ApplyRecoil(AmmoDamage);
 				PlaySound(PSTFireSoundCue, MuzzleLocation);
 				break; 
 			}
@@ -420,6 +443,8 @@ void AAACharacterPlayer::Fire()
 				SpawnShell(ShellTransform);
 			}
 			NextFireTime = CurrentTime + RPM;
+
+			RecoilStrength *= 1.1f;
 		}
 	}
 	else
@@ -449,6 +474,8 @@ void AAACharacterPlayer::StopFire()
 {
 	//ver 0.4.1 C
 	bIsFiring = false;
+
+	RecoilStrength = 1.0f;
 
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutomaticFire);
 }
@@ -733,4 +760,9 @@ void AAACharacterPlayer::SetAbilityBeginPlay()
 			}
 		}
 	}
+}
+
+void AAACharacterPlayer::SetPlayerStopFire()
+{
+	bCanFire = false;
 }

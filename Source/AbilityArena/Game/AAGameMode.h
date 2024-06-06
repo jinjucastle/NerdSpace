@@ -33,10 +33,15 @@ protected:
 public:
 	virtual void PostSeamlessTravel() override;
 	
-	
-
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnSeamlessTravelComplete OnSeamlessTravelComplete;
 	
+// ver 0.10.1a
+// View Card Select UI Round end
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Spawning")
+	TSubclassOf<AActor> BlueprintActorClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UUserWidget> CardSelectUIClass;
 };

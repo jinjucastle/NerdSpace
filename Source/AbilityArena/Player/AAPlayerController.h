@@ -50,6 +50,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	UUserWidget* PlayerUI;
 
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void CreateCardSelectUI(TSubclassOf<UUserWidget> CardSelectUI);
+
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> PlayerUIClass;

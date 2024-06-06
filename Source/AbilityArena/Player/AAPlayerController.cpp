@@ -7,6 +7,7 @@
 #include "Character/AACharacterBase.h"
 #include "Item/AAWeaponItemData.h"
 #include "Blueprint/UserWidget.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 AAAPlayerController::AAAPlayerController()
 {
@@ -137,6 +138,10 @@ void AAAPlayerController::RemoveUI()
 		{
 			PlayerUI->RemoveFromViewport();
 			PlayerUI = nullptr;
+
+			if (AAACharacterBase* PlayerCharacter = Cast<AAACharacterBase>(GetPawn())) PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+
+			SetInputMode(FInputModeGameOnly());
 		}
 	}
 }
@@ -149,6 +154,26 @@ void AAAPlayerController::BindSeamlessTravelEvent()
 		{
 			MyGameMode->OnSeamlessTravelComplete.AddDynamic(this, &AAAPlayerController::OnLevelChanged);
 			UE_LOG(LogTemp, Error, TEXT("Bound to OnSeamlessTravelComplete"));
+		}
+	}
+}
+
+void AAAPlayerController::CreateCardSelectUI(TSubclassOf<UUserWidget> CardSelectUI)
+{
+	if (CardSelectUI)
+	{
+		RemoveUI();
+
+		PlayerUI = CreateWidget<UUserWidget>(this, CardSelectUI);
+		if (PlayerUI)
+		{
+			PlayerUI->AddToViewport();
+			SetShowMouseCursor(true);
+
+			if(AAACharacterBase* PlayerCharacter = Cast<AAACharacterBase>(GetPawn())) PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+
+			FInputModeUIOnly UIOnlyInputMode;
+			SetInputMode(UIOnlyInputMode);
 		}
 	}
 }

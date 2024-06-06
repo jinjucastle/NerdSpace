@@ -284,5 +284,22 @@ public:
 	void PlayRemoveMagSound();
 	void PlayInsertMagSound();
 	void PlayCockingSound();
-	void PlayEmptyMagSound();
+
+	// ver 0.10.1a
+	// Add Recoil System
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
+	float RecoilStrength;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Recoil")
+	float RecoilRecoverySpeed;
+
+	UPROPERTY(VisibleAnywhere, Category = "Recoil")
+	FRotator CurrentRecoil;
+
+	UPROPERTY(VisibleAnywhere, Category = "Recoil")
+	FRotator TargetRecoil;
+
+	void ApplyRecoil(float Damage);
+	void RecoverRecoil();
 };

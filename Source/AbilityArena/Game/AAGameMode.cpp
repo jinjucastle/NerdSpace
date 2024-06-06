@@ -9,6 +9,7 @@
 #include "Item/AAWeaponItemData.h"
 #include "CharacterStat/AACharacterPlayerState.h"
 #include "Player/AAPlayerController.h"
+#include "Blueprint/UserWidget.h"
 
 
 AAAGameMode::AAAGameMode()
@@ -17,6 +18,17 @@ AAAGameMode::AAAGameMode()
 	//feat: playerStateID가 seamlessTravel에는 변경 X
 	bUseSeamlessTravel = true;
 	
+	static ConstructorHelpers::FClassFinder<AActor> ActorBPClass(TEXT("/Script/Engine.Blueprint'/Game/Blueprint/Item/BP_AAItemBox.BP_AAItemBox_C'"));
+	if (ActorBPClass.Class != nullptr)
+	{
+		BlueprintActorClass = ActorBPClass.Class;
+	}
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> CardSelectWBPClass(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/UI/TestUI_2.TestUI_2_C'"));
+	if (CardSelectWBPClass.Class != nullptr)
+	{
+		CardSelectUIClass = CardSelectWBPClass.Class;
+	}
 }
 
 void AAAGameMode::PostInitializeComponents()
@@ -62,6 +74,19 @@ void AAAGameMode::FinishGame()
 		EndMatch();
 	}
 	AAGameStateT->RemainingTime = AAGameStateT->ShowResultWaitingTime;
+
+	for (TPlayerControllerIterator<AAAPlayerController>::ServerAll It(GetWorld()); It; ++It)
+	{
+		AAAPlayerController* PlayerController = *It;
+
+		check(GetWorld()->GetNetMode() != NM_Client);
+		if (AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(PlayerController->GetPawn()))
+		{
+			PlayerCharacter->SetPlayerStopFire();
+		}
+
+		PlayerController->CreateCardSelectUI(CardSelectUIClass);
+	}
 }
 
 void AAAGameMode::PostSeamlessTravel()

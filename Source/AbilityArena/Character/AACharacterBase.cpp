@@ -100,6 +100,13 @@ AAACharacterBase::AAACharacterBase()
 	MagInHandComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform);
 	MagInHandComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	MagInHandComponent->SetHiddenInGame(true);
+
+	// ver 0.10.1a
+	// Recoil setting
+	RecoilStrength = 1.0f;
+	RecoilRecoverySpeed = 5.0f;
+	CurrentRecoil = FRotator::ZeroRotator;
+	TargetRecoil = FRotator::ZeroRotator;
 }
 
 void AAACharacterBase::PostInitializeComponents()
@@ -189,8 +196,6 @@ void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* N
 {
 	if (NewWeaponData)
 	{
-		
-		
 			WeaponData = NewWeaponData;
 			SetWeaponMesh(WeaponData);
 			Stat->SetWeaponStat(WeaponData->WeaponStat);
@@ -202,7 +207,6 @@ void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* N
 			// Set Ammo Size
 			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
 			CurrentAmmoSize = MaxAmmoSize;
-		
 	}
 
 	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
@@ -319,7 +323,6 @@ void AAACharacterBase::PlayReloadAnimation()
 			
 		}
 	}
-
 }
 
 void AAACharacterBase::ReloadActionEnded(UAnimMontage* Montage, bool IsEnded)
@@ -370,7 +373,6 @@ void AAACharacterBase::MakeShield(UAAItemData* InItemData)
 	{
 		UE_LOG(LogAACharacter, Log, TEXT("Make Shield"));
 	}
-
 }
 
 void AAACharacterBase::SpawnShell(FTransform InSocketTransform)
@@ -620,3 +622,39 @@ void AAACharacterBase::PlayCockingSound()
 		break;
 	}
 }
+
+void AAACharacterBase::ApplyRecoil(float Damage)
+{
+	float RecoilPitch = 1.f * Damage * RecoilStrength;
+	float RecoilYaw = FMath::RandRange(-1.0f, 1.0f) * RecoilStrength;
+
+	TargetRecoil.Pitch = RecoilPitch;
+	TargetRecoil.Yaw = RecoilYaw;
+
+	CurrentRecoil = FMath::RInterpTo(CurrentRecoil, TargetRecoil, GetWorld()->GetDeltaSeconds(), RecoilRecoverySpeed);
+
+	UE_LOG(LogTemp, Log, TEXT("Yaw : %f, Pitch : %f"), CurrentRecoil.Yaw, CurrentRecoil.Pitch);
+
+	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &AAACharacterBase::RecoverRecoil);
+}
+
+void AAACharacterBase::RecoverRecoil()
+{
+	if (CurrentRecoil.IsNearlyZero())
+	{
+		return;
+	}
+
+	CurrentRecoil = FMath::RInterpTo(CurrentRecoil, FRotator::ZeroRotator, GetWorld()->GetDeltaSeconds(), RecoilRecoverySpeed);
+
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController)
+	{
+		FRotator NewControlRotation = PlayerController->GetControlRotation();
+		NewControlRotation += CurrentRecoil;
+		PlayerController->SetControlRotation(NewControlRotation);
+	}
+
+	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &AAACharacterBase::RecoverRecoil);
+}
+

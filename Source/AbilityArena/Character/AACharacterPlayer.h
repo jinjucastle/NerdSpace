@@ -22,8 +22,8 @@ protected:
 	virtual void BeginPlay() override;
 	
 public:
+	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 
 // Character Control Section
@@ -231,4 +231,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetRPM() const { return RPM; }
+
+// ver 0.10.1a
+// Card Select Time Set Plyer Can't Fire
+	void SetPlayerStopFire();
 };
