@@ -155,7 +155,18 @@ void UAACardSelectUI::NativeConstruct()
 				UHorizontalBoxSlot* HorizontalSlot = HorizontalBox->AddChildToHorizontalBox(Widget);
 				HorizontalSlot->SetPadding(FMargin(5.0f));
 				HorizontalSlot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
+				CardList.Add(Widget);
 			}
 		}
 	}
+}
+
+UUserWidget* UAACardSelectUI::GetRandomWidget()
+{
+	if (CardList.Num() > 0)
+	{
+		int32 RandomIdx = FMath::RandRange(0, CardList.Num() - 1);
+		return CardList[RandomIdx];
+	}
+	return nullptr;
 }

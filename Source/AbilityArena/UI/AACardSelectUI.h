@@ -32,4 +32,8 @@ private:
 	TArray<TSubclassOf<UUserWidget>> FunnyAbilityWidgetClasses;
 	UHorizontalBox* HorizontalBox;
 	class AAACharacterPlayer* Owner;
+	TArray<UUserWidget*> CardList;
+
+public:
+	UUserWidget* GetRandomWidget();
 };

@@ -44,4 +44,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UUserWidget> CardSelectUIClass;
+
+	// ver 0.10.2a
+	// RandomCardPick Section
+	void RandomCardPick();
 };

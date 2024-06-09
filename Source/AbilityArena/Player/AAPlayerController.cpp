@@ -7,7 +7,9 @@
 #include "Character/AACharacterBase.h"
 #include "Item/AAWeaponItemData.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/Button.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "UI/AACardSelectUI.h"
 
 AAAPlayerController::AAAPlayerController()
 {
@@ -140,7 +142,23 @@ void AAAPlayerController::RemoveUI()
 			PlayerUI = nullptr;
 
 			if (AAACharacterBase* PlayerCharacter = Cast<AAACharacterBase>(GetPawn())) PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+		}
+	}
+}
 
+void AAAPlayerController::RefreshUI()
+{
+	if (IsLocalController())
+	{
+		if (PlayerUI)
+		{
+			PlayerUI->RemoveFromViewport();
+			PlayerUI = nullptr;
+
+			if (AAACharacterBase* PlayerCharacter = Cast<AAACharacterBase>(GetPawn())) PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+
+			// ver 0.10.1a
+			// Only RefreshUI is client can moved character
 			SetInputMode(FInputModeGameOnly());
 		}
 	}
@@ -176,6 +194,34 @@ void AAAPlayerController::CreateCardSelectUI(TSubclassOf<UUserWidget> CardSelect
 			SetInputMode(UIOnlyInputMode);
 		}
 	}
+}
+
+void AAAPlayerController::ClientRPCCreateCardSelectUI_Implementation(TSubclassOf<UUserWidget> CardSelectUI)
+{
+	CreateCardSelectUI(CardSelectUI);
+}
+
+void AAAPlayerController::SimulateRandomButtonClick()
+{
+	//After version rule for add a card
+	//Button Widget Name is only "Button"
+	if (PlayerUI)
+	{
+		UAACardSelectUI* CardSelectUI = Cast<UAACardSelectUI>(PlayerUI->GetWidgetFromName(TEXT("WBP_CardSelectUI")));
+		if (UUserWidget* RandomWidget = CardSelectUI->GetRandomWidget())
+		{
+			if (UButton* Button = Cast<UButton>(RandomWidget->GetWidgetFromName(TEXT("Button"))))
+			{
+				Button->OnClicked.Broadcast();
+				UE_LOG(LogTemp, Error, TEXT("Success Random Card Pick"));
+			}
+		}
+	}
+}
+
+void AAAPlayerController::ClientRPCSimulateRandomButtonClick_Implementation()
+{
+	SimulateRandomButtonClick();
 }
 
 

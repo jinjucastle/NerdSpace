@@ -48,6 +48,14 @@ void AAAGameMode::DefaultGameTimer()
 		AAGameStateT->RemainingTime--;
 		//0.3.3b LogMessage
 		UE_LOG(LogTemp, Log, TEXT("RemainingTime: %d"),AAGameStateT->RemainingTime);
+
+		// ver 0.10.2a
+		// until doesn't card pick 2 seconds before the level change
+		if (GetMatchState() == MatchState::WaitingPostMatch && AAGameStateT->RemainingTime == 2)
+		{
+			RandomCardPick();
+		}
+
 		if (AAGameStateT->RemainingTime <= 0)
 		{
 			if (GetMatchState() == MatchState::InProgress)
@@ -75,17 +83,19 @@ void AAAGameMode::FinishGame()
 	}
 	AAGameStateT->RemainingTime = AAGameStateT->ShowResultWaitingTime;
 
-	for (TPlayerControllerIterator<AAAPlayerController>::ServerAll It(GetWorld()); It; ++It)
+	// ver 0.10.1a
+	// All client can't fire & add card select ui
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		AAAPlayerController* PlayerController = *It;
-
-		check(GetWorld()->GetNetMode() != NM_Client);
-		if (AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(PlayerController->GetPawn()))
+		if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
 		{
-			PlayerCharacter->SetPlayerStopFire();
+			check(GetWorld()->GetNetMode() != NM_Client);
+			if (AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(PlayerController->GetPawn()))
+			{
+				PlayerCharacter->SetPlayerStopFire();
+			}
+			PlayerController->ClientRPCCreateCardSelectUI(CardSelectUIClass);
 		}
-
-		PlayerController->CreateCardSelectUI(CardSelectUIClass);
 	}
 }
 
@@ -106,5 +116,19 @@ void AAAGameMode::PostSeamlessTravel()
 
 	OnSeamlessTravelComplete.Broadcast();
 	
+}
+
+// ver 0.10.2a
+// All Client Random CardPick
+void AAAGameMode::RandomCardPick()
+{
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
+		{
+			check(GetWorld()->GetNetMode() != NM_Client);
+			PlayerController->ClientRPCSimulateRandomButtonClick();
+		}
+	}
 }
 
