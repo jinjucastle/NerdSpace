@@ -4,7 +4,7 @@
 #include "Player/AAPlayerController.h"
 #include "Game/AAGameMode.h"
 #include "GameData/AAGameInstance.h"
-#include "Character/AACharacterBase.h"
+#include "Character/AACharacterPlayer.h"
 #include "Item/AAWeaponItemData.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Button.h"
@@ -138,7 +138,7 @@ void AAAPlayerController::RemoveUI()
 	{
 		if (PlayerUI)
 		{
-			PlayerUI->RemoveFromViewport();
+			PlayerUI->RemoveFromParent();
 			PlayerUI = nullptr;
 
 			if (AAACharacterBase* PlayerCharacter = Cast<AAACharacterBase>(GetPawn())) PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
@@ -152,7 +152,7 @@ void AAAPlayerController::RefreshUI()
 	{
 		if (PlayerUI)
 		{
-			PlayerUI->RemoveFromViewport();
+			PlayerUI->RemoveFromParent();
 			PlayerUI = nullptr;
 
 			if (AAACharacterBase* PlayerCharacter = Cast<AAACharacterBase>(GetPawn())) PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
@@ -188,10 +188,20 @@ void AAAPlayerController::CreateCardSelectUI(TSubclassOf<UUserWidget> CardSelect
 			PlayerUI->AddToViewport();
 			SetShowMouseCursor(true);
 
-			if(AAACharacterBase* PlayerCharacter = Cast<AAACharacterBase>(GetPawn())) PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+			if (AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(GetPawn()))
+			{
+				PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+
+				if (PlayerCharacter->GetCurrentCharacterZoomType() == ECharacterZoomType::ZoomIn)
+				{
+					PlayerCharacter->ChangeZoom();
+				}
+			}
 
 			FInputModeUIOnly UIOnlyInputMode;
 			SetInputMode(UIOnlyInputMode);
+
+			bIsPick = false;
 		}
 	}
 }
@@ -205,7 +215,7 @@ void AAAPlayerController::SimulateRandomButtonClick()
 {
 	//After version rule for add a card
 	//Button Widget Name is only "Button"
-	if (PlayerUI)
+	if (PlayerUI && !bIsPick)
 	{
 		UAACardSelectUI* CardSelectUI = Cast<UAACardSelectUI>(PlayerUI->GetWidgetFromName(TEXT("WBP_CardSelectUI")));
 		if (UUserWidget* RandomWidget = CardSelectUI->GetRandomWidget())

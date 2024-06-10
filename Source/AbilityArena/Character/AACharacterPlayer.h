@@ -27,8 +27,10 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 
 // Character Control Section
-protected:
+public:
 	void ChangeZoom();
+
+protected:
 	void SetCharacterControl(ECharacterZoomType NewCharacterZoomType);
 	virtual void SetCharacterControlData(const class UAACharacterControlData* CharacterControlData) override;
 
@@ -39,6 +41,17 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UCameraComponent> FollowCamera;
+
+	// ver 0.10.3a
+	// SniferRifle Zoom
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	float DefaultFOV;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	float ZoomedFOV;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	float ZoomInterpSpeed;
 
 // Input Section
 protected:
@@ -89,6 +102,9 @@ protected:
 
 	ECharacterZoomType CurrentCharacterZoomType;
 
+public:
+	FORCEINLINE ECharacterZoomType GetCurrentCharacterZoomType() { return CurrentCharacterZoomType; }
+
 // ver 0.0.2a
 // Object Pool
 private:
@@ -118,6 +134,10 @@ public:
 	// Add Fire Rate System
 	void StartFire();
 	void StopFire();
+
+	// ver 0.10.3a
+	// New Fire Direction
+	FVector GetAdjustedAim()const;
 
 private:
 	FTimerHandle TimerHandle_AutomaticFire;
@@ -217,10 +237,10 @@ public:
 // ver 0.7.3a
 // Camera Filter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = PostProcess)
-	class UPostProcessComponent* PostProcessComponent;
+	TObjectPtr<class UPostProcessComponent> PostProcessComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PostProcess)
-	class UMaterialInterface* DotEffectMaterial;
+	TObjectPtr<class UMaterialInterface> DotEffectMaterial;
 
 public:
 	UFUNCTION(BlueprintCallable)
@@ -235,4 +255,15 @@ public:
 // ver 0.10.1a
 // Card Select Time Set Plyer Can't Fire
 	void SetPlayerStopFire();
+
+// ver 0.10.3a
+// Snifer Rifle Scope UI Section
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = UI)
+	TSubclassOf<class UUserWidget> ScopeWidgetClass;
+
+	TObjectPtr<class UUserWidget> ScopeWidgetInstance;
+
+	void ShowScopeWidget();
+	void HideScopeWidget();
 };

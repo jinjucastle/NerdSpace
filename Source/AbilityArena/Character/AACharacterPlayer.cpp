@@ -21,6 +21,7 @@
 #include "GameData/AAGameInstance.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Game/AAGameMode.h"
+#include "Blueprint/UserWidget.h"
 
 AAACharacterPlayer::AAACharacterPlayer()
 {
@@ -100,6 +101,14 @@ AAACharacterPlayer::AAACharacterPlayer()
 	{
 		DotEffectMaterial = MaterialFinder.Object;
 	}
+
+	// ver 0.10.3a
+	// Default FOV Value
+	DefaultFOV = 90.0f;
+	ZoomedFOV = 22.5f;
+	ZoomInterpSpeed = 20.0f;
+
+	FollowCamera->FieldOfView = DefaultFOV;
 }
 
 void AAACharacterPlayer::BeginPlay()
@@ -126,6 +135,10 @@ void AAACharacterPlayer::BeginPlay()
 void AAACharacterPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	float TargetFOV = (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn && WeaponData->Type == EWeaponType::SniperRifle) ? ZoomedFOV : DefaultFOV;
+	float NewFOV = FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaTime, ZoomInterpSpeed);
+	FollowCamera->SetFieldOfView(NewFOV);
 
 	if (!CurrentRecoil.IsNearlyZero())
 	{
@@ -175,12 +188,24 @@ void AAACharacterPlayer::ChangeZoom()
 	{
 		//feat: 줌인 할 때 걷기로 초기화 ver 0.2.0 C
 		StopRun();
-
 		SetCharacterControl(ECharacterZoomType::ZoomIn);
+
+		//SniferRifle UI
+		if (WeaponData->Type == EWeaponType::SniperRifle)
+		{
+			FollowCamera->SetRelativeLocation(FVector(160.f, 30.f, 30.f));
+			ShowScopeWidget();
+		}
 	}
 	else if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
 	{
 		SetCharacterControl(ECharacterZoomType::ZoomOut);
+
+		if (WeaponData->Type == EWeaponType::SniperRifle)
+		{
+			FollowCamera->SetRelativeLocation(FVector(0.0f, 45.0f, 85.0f));
+			HideScopeWidget();
+		}
 	}
 }
 
@@ -402,11 +427,10 @@ void AAACharacterPlayer::Fire()
 		if (CurrentTime >= NextFireTime)
 		{
 			FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
-			FRotator MuzzleRotation = Weapon->GetSocketRotation(FName("BarrelEndSocket"));
 
 			// ver 0.4.2a
 			// Fix Fire Direction
-			FVector AimDirection = FollowCamera->GetForwardVector();
+			FVector AimDirection = GetAdjustedAim();
 
 			ServerRPCFire(MuzzleLocation, AimDirection);
 
@@ -480,6 +504,30 @@ void AAACharacterPlayer::StopFire()
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutomaticFire);
 }
 
+FVector AAACharacterPlayer::GetAdjustedAim() const
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	FVector StartTrace;
+	FRotator AimRotator;
+
+	if (PlayerController)
+	{
+		PlayerController->GetPlayerViewPoint(StartTrace, AimRotator);
+	}
+
+	const FVector ShootDir = AimRotator.Vector();
+	const FVector EndTrace = StartTrace + ShootDir * 5000.0f;
+	FHitResult Impact;
+	FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(BulletTrace), true, GetInstigator());
+
+	if (GetWorld()->LineTraceSingleByChannel(Impact, StartTrace, EndTrace, ECC_Visibility, TraceParams))
+	{
+		return (Impact.Location - Weapon->GetSocketLocation(FName("BarrelEndSocket"))).GetSafeNormal();
+	}
+
+	return ShootDir;
+}
+
 bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FVector& NewDirection)
 {
 	// add validation logic later
@@ -541,6 +589,11 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 	if (CurrentAmmoSize == 0)
 	{
 		ServerRPCPlayReloadAnimation();
+
+		if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
+		{
+			ChangeZoom();
+		}
 	}
 }
 
@@ -619,6 +672,11 @@ void AAACharacterPlayer::Reload()
 		if (IsLocallyControlled() && bCanFire)
 		{
 			ServerRPCPlayReloadAnimation();
+		}
+
+		if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
+		{
+			ChangeZoom();
 		}
 	}
 }
@@ -765,4 +823,25 @@ void AAACharacterPlayer::SetAbilityBeginPlay()
 void AAACharacterPlayer::SetPlayerStopFire()
 {
 	bCanFire = false;
+}
+
+void AAACharacterPlayer::ShowScopeWidget()
+{
+	if (ScopeWidgetClass && !ScopeWidgetInstance)
+	{
+		ScopeWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), ScopeWidgetClass);
+		if (ScopeWidgetInstance)
+		{
+			ScopeWidgetInstance->AddToViewport();
+		}
+	}
+}
+
+void AAACharacterPlayer::HideScopeWidget()
+{
+	if (ScopeWidgetInstance)
+	{
+		ScopeWidgetInstance->RemoveFromParent();
+		ScopeWidgetInstance = nullptr;
+	}
 }

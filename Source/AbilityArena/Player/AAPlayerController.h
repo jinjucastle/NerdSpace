@@ -31,7 +31,7 @@ protected:
 	
 private:
 	UPROPERTY()
-	class UAAGameInstance* pc;
+	TObjectPtr<class UAAGameInstance> pc;
 
 // ver 0.9.1a
 // Level Change Event
@@ -53,7 +53,7 @@ public:
 	void BindSeamlessTravelEvent();
 
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
-	UUserWidget* PlayerUI;
+	TObjectPtr<UUserWidget> PlayerUI;
 
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void CreateCardSelectUI(TSubclassOf<UUserWidget> CardSelectUI);
@@ -72,4 +72,15 @@ public:
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> PlayerUIClass;
+
+// ver 0.10.3a
+// user card pick status check
+protected:
+	bool bIsPick;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE void SetPickUpCard() { bIsPick = true; }
+
+
 };
