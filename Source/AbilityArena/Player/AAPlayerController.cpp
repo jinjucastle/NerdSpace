@@ -4,9 +4,12 @@
 #include "Player/AAPlayerController.h"
 #include "Game/AAGameMode.h"
 #include "GameData/AAGameInstance.h"
-#include "Character/AACharacterBase.h"
+#include "Character/AACharacterPlayer.h"
 #include "Item/AAWeaponItemData.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/Button.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "UI/AACardSelectUI.h"
 
 AAAPlayerController::AAAPlayerController()
 {
@@ -135,8 +138,28 @@ void AAAPlayerController::RemoveUI()
 	{
 		if (PlayerUI)
 		{
-			PlayerUI->RemoveFromViewport();
+			PlayerUI->RemoveFromParent();
 			PlayerUI = nullptr;
+
+			if (AAACharacterBase* PlayerCharacter = Cast<AAACharacterBase>(GetPawn())) PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+		}
+	}
+}
+
+void AAAPlayerController::RefreshUI()
+{
+	if (IsLocalController())
+	{
+		if (PlayerUI)
+		{
+			PlayerUI->RemoveFromParent();
+			PlayerUI = nullptr;
+
+			if (AAACharacterBase* PlayerCharacter = Cast<AAACharacterBase>(GetPawn())) PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+
+			// ver 0.10.1a
+			// Only RefreshUI is client can moved character
+			SetInputMode(FInputModeGameOnly());
 		}
 	}
 }
@@ -151,6 +174,64 @@ void AAAPlayerController::BindSeamlessTravelEvent()
 			UE_LOG(LogTemp, Error, TEXT("Bound to OnSeamlessTravelComplete"));
 		}
 	}
+}
+
+void AAAPlayerController::CreateCardSelectUI(TSubclassOf<UUserWidget> CardSelectUI)
+{
+	if (CardSelectUI)
+	{
+		RemoveUI();
+
+		PlayerUI = CreateWidget<UUserWidget>(this, CardSelectUI);
+		if (PlayerUI)
+		{
+			PlayerUI->AddToViewport();
+			SetShowMouseCursor(true);
+
+			if (AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(GetPawn()))
+			{
+				PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+
+				if (PlayerCharacter->GetCurrentCharacterZoomType() == ECharacterZoomType::ZoomIn)
+				{
+					PlayerCharacter->ChangeZoom();
+				}
+			}
+
+			FInputModeUIOnly UIOnlyInputMode;
+			SetInputMode(UIOnlyInputMode);
+
+			bIsPick = false;
+		}
+	}
+}
+
+void AAAPlayerController::ClientRPCCreateCardSelectUI_Implementation(TSubclassOf<UUserWidget> CardSelectUI)
+{
+	CreateCardSelectUI(CardSelectUI);
+}
+
+void AAAPlayerController::SimulateRandomButtonClick()
+{
+	//After version rule for add a card
+	//Button Widget Name is only "Button"
+	if (PlayerUI && !bIsPick)
+	{
+		UAACardSelectUI* CardSelectUI = Cast<UAACardSelectUI>(PlayerUI->GetWidgetFromName(TEXT("WBP_CardSelectUI")));
+		if (UUserWidget* RandomWidget = CardSelectUI->GetRandomWidget())
+		{
+			if (UButton* Button = Cast<UButton>(RandomWidget->GetWidgetFromName(TEXT("Button"))))
+			{
+				Button->OnClicked.Broadcast();
+				UE_LOG(LogTemp, Error, TEXT("Success Random Card Pick"));
+			}
+		}
+	}
+}
+
+void AAAPlayerController::ClientRPCSimulateRandomButtonClick_Implementation()
+{
+	SimulateRandomButtonClick();
 }
 
 
