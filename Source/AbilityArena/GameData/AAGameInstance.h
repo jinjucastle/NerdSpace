@@ -7,6 +7,7 @@
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "AAAbilityStat.h"
+
 #include "AAGameInstance.generated.h"
 
 
@@ -44,6 +45,7 @@ private:
 
 	int8 bSetPlayerStatStay : 1;
 
+
 public:
 	//ver 0.4.2b
 	// Set Save weaponData
@@ -57,6 +59,9 @@ public:
 	//ver0.8.1b
 	//Get PlayerStat
 	FAAAbilityStat GetPlayerStat();
+
+	void CreateSession();
+
 
 	void SetSavePlayerStat(bool newBool);
 	bool GetSavePlayerStat();
