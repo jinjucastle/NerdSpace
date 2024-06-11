@@ -15,6 +15,13 @@ UCLASS()
 class ABILITYARENA_API AAAGameMode : public AGameMode
 {
 	GENERATED_BODY()
+
+
+private:
+	//0.10.1b LevelArray
+	TArray<FString>LevelArrary;
+	void AddLevelName();
+	FString SetTravelLevel();
 	
 public:
 	AAAGameMode();
