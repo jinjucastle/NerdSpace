@@ -798,7 +798,6 @@ void AAACharacterPlayer::SetAbilityInController(const FAAAbilityStat& NewAbility
 			PC->SetAmmoClass(PooledAmmoClass);
 		}
 	}
-
 }
 
 void AAACharacterPlayer::SetAbilityBeginPlay()

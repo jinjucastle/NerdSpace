@@ -62,7 +62,7 @@ void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, cl
 {
 	if (AAACharacterPlayer* Other = Cast<AAACharacterPlayer>(OtherActor))
 	{
-		if (Other->GetController() == Owner->GetController())
+		if (Other == Owner)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Ignore"));
 			return;

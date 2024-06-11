@@ -277,6 +277,9 @@ protected:
 
 	void PlayBoundShellSound();
 
+	UFUNCTION(Client, Reliable)
+	void ClientRPCPlayHitSuccessSound();
+
 public:
 	void PlaySound(class USoundCue* InSoundCue, FVector InLocation);
 	void PlayHitSuccess();

@@ -481,11 +481,13 @@ float AAACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 		}
 	}
 
-	AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(EventInstigator->GetPawn());
-
-	if (OtherPlayer)
+	if (AAACharacterBase* InstigatingCharacter = Cast<AAACharacterBase>(EventInstigator->GetPawn()))
 	{
-		OtherPlayer->PlayHitSuccess();
+		if (InstigatingCharacter->IsLocallyControlled())
+		{
+			InstigatingCharacter->ClientRPCPlayHitSuccessSound();
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Controller : %s, Pawn : %s"), *EventInstigator->GetName(), *InstigatingCharacter->GetName());
 	}
 
 	return ActualDamage;
@@ -524,7 +526,14 @@ void AAACharacterBase::ServerRPCPlaySound_Implementation(USoundCue* SoundCue, FV
 
 void AAACharacterBase::MulticastRPCPlaySound_Implementation(USoundCue* SoundCue, FVector Location)
 {
-	UGameplayStatics::PlaySoundAtLocation(this, SoundCue, Location);
+	if (SoundCue)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, SoundCue, Location);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Multicast PlaySound Cue is null"));
+	}
 }
 
 void AAACharacterBase::PlayBoundShellSound()
@@ -532,6 +541,22 @@ void AAACharacterBase::PlayBoundShellSound()
 	if (ShellDropSoundCue)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, ShellDropSoundCue, GetActorLocation());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("ShellDropSoundCue is null"));
+	}
+}
+
+void AAACharacterBase::ClientRPCPlayHitSuccessSound_Implementation()
+{
+	if (SuccessHitSoundCue)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, SuccessHitSoundCue, GetActorLocation());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("SuccessHitSoundCue is null"));
 	}
 }
 
@@ -555,6 +580,11 @@ void AAACharacterBase::PlayHitSuccess()
 	if (SuccessHitSoundCue)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, SuccessHitSoundCue, GetActorLocation());
+		UE_LOG(LogTemp, Error, TEXT("SuccessHit Sound Played : %s"), *GetController()->GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("SuccessHitSoundCue is null"));
 	}
 }
 
@@ -562,7 +592,11 @@ void AAACharacterBase::PlayFootSound()
 {
 	if (FootStepSoundCue)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, FootStepSoundCue, GetActorLocation());
+		PlaySound(FootStepSoundCue, GetActorLocation());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("FootStepSoundCue is null"));
 	}
 }
 
@@ -571,13 +605,16 @@ void AAACharacterBase::PlayRemoveMagSound()
 	switch (WeaponData->Type)
 	{
 	case EWeaponType::Shotgun:
-		if (SGMagDropSoundCue) UGameplayStatics::PlaySoundAtLocation(this, SGMagDropSoundCue, GetActorLocation());
+		if (SGMagDropSoundCue) PlaySound(SGMagDropSoundCue, GetActorLocation());
+		else UE_LOG(LogTemp, Error, TEXT("SGMagDropSoundCue is null"));
 		break;
 	case EWeaponType::Panzerfaust:
-		if (RPGMagDropSoundCue) UGameplayStatics::PlaySoundAtLocation(this, RPGMagDropSoundCue, GetActorLocation());
+		if (RPGMagDropSoundCue) PlaySound(RPGMagDropSoundCue, GetActorLocation());
+		else UE_LOG(LogTemp, Error, TEXT("RPGMagDropSoundCue is null"));
 		break;
 	default:
-		if(DefMagDropSoundCue) UGameplayStatics::PlaySoundAtLocation(this, DefMagDropSoundCue, GetActorLocation());
+		if(DefMagDropSoundCue) PlaySound(DefMagDropSoundCue, GetActorLocation());
+		else UE_LOG(LogTemp, Error, TEXT("DefMagDropSoundCue is null"));
 		break;
 	}
 }
@@ -587,16 +624,20 @@ void AAACharacterBase::PlayInsertMagSound()
 	switch (WeaponData->Type)
 	{
 	case EWeaponType::Pistol:
-		if (PSTMagInsertSoundCue) UGameplayStatics::PlaySoundAtLocation(this, PSTMagInsertSoundCue, GetActorLocation());
+		if (PSTMagInsertSoundCue) PlaySound(PSTMagInsertSoundCue, GetActorLocation());
+		else UE_LOG(LogTemp, Error, TEXT("PSTMagInsertSoundCue is null"));
 		break;
 	case EWeaponType::Shotgun:
-		if (SGMagInsertSoundCue) UGameplayStatics::PlaySoundAtLocation(this, SGMagInsertSoundCue, GetActorLocation());
+		if (SGMagInsertSoundCue) PlaySound(SGMagInsertSoundCue, GetActorLocation());
+		else UE_LOG(LogTemp, Error, TEXT("SGMagInsertSoundCue is null"));
 		break;
 	case EWeaponType::Panzerfaust:
-		if (RPGMagInsertSoundCue) UGameplayStatics::PlaySoundAtLocation(this, RPGMagInsertSoundCue, GetActorLocation());
+		if (RPGMagInsertSoundCue) PlaySound(RPGMagInsertSoundCue, GetActorLocation());
+		else UE_LOG(LogTemp, Error, TEXT("RPGMagInsertSoundCue is null"));
 		break;
 	default:
-		if (ARandSRMagInsertSoundCue) UGameplayStatics::PlaySoundAtLocation(this, ARandSRMagInsertSoundCue, GetActorLocation());
+		if (ARandSRMagInsertSoundCue) PlaySound(ARandSRMagInsertSoundCue, GetActorLocation());
+		else UE_LOG(LogTemp, Error, TEXT("ARandSRMagInsertSoundCue is null"));
 		break;
 	}
 }
@@ -606,19 +647,24 @@ void AAACharacterBase::PlayCockingSound()
 	switch (WeaponData->Type)
 	{
 	case EWeaponType::Pistol:
-		if (PSTCockingSoundCue) UGameplayStatics::PlaySoundAtLocation(this, PSTCockingSoundCue, GetActorLocation());
+		if (PSTCockingSoundCue) PlaySound(PSTCockingSoundCue, GetActorLocation());
+		else UE_LOG(LogTemp, Error, TEXT("PSTCockingSoundCue is null"));
 		break;
 	case EWeaponType::Rifle:
-		if (ARCockingSoundCue) UGameplayStatics::PlaySoundAtLocation(this, ARCockingSoundCue, GetActorLocation());
+		if (ARCockingSoundCue) PlaySound(ARCockingSoundCue, GetActorLocation());
+		else UE_LOG(LogTemp, Error, TEXT("ARCockingSoundCue is null"));
 		break;
 	case EWeaponType::Shotgun:
-		if (SGCockingSoundCue) UGameplayStatics::PlaySoundAtLocation(this, SGCockingSoundCue, GetActorLocation());
+		if (SGCockingSoundCue) PlaySound(SGCockingSoundCue, GetActorLocation());
+		else UE_LOG(LogTemp, Error, TEXT("SGCockingSoundCue is null"));
 		break;
 	case EWeaponType::Panzerfaust:
-		if (RPGCockingSoundCue) UGameplayStatics::PlaySoundAtLocation(this, RPGCockingSoundCue, GetActorLocation());
+		if (RPGCockingSoundCue) PlaySound(RPGCockingSoundCue, GetActorLocation());
+		else UE_LOG(LogTemp, Error, TEXT("RPGCockingSoundCue is null"));
 		break;
 	default:
-		if (SRCockingSoundCue) UGameplayStatics::PlaySoundAtLocation(this, SRCockingSoundCue, GetActorLocation());
+		if (SRCockingSoundCue) PlaySound(SRCockingSoundCue, GetActorLocation());
+		else UE_LOG(LogTemp, Error, TEXT("SRCockingSoundCue is null"));
 		break;
 	}
 }
