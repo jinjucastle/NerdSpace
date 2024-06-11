@@ -60,9 +60,13 @@ void AAAWeaponAmmo::Tick(float DeltaTime)
 
 void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor == Owner && AmmoType == EAmmoType::Rocket)
+	if (AAACharacterPlayer* Other = Cast<AAACharacterPlayer>(OtherActor))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Error"));
+		if (Other == Owner)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Ignore"));
+			return;
+		}
 	}
 
 	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
@@ -124,9 +128,19 @@ void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimi
 {
 	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
 
-	if (Other == Owner && AmmoType != EAmmoType::Rocket)
+	if (AAACharacterPlayer* OtherActor = Cast<AAACharacterPlayer>(Other))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Error"));
+		if (OtherActor->GetController() == Owner->GetController())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Ignore"));
+			return;
+		}
+	}
+
+	if (AmmoType != EAmmoType::Rocket)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Ignore"));
+		return;
 	}
 
 	if (!Other->IsA(AAAWeaponAmmo::StaticClass()))

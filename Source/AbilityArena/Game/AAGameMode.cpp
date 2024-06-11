@@ -9,6 +9,7 @@
 #include "Item/AAWeaponItemData.h"
 #include "CharacterStat/AACharacterPlayerState.h"
 #include "Player/AAPlayerController.h"
+#include "Blueprint/UserWidget.h"
 
 
 AAAGameMode::AAAGameMode()
@@ -17,6 +18,17 @@ AAAGameMode::AAAGameMode()
 	//feat: playerStateID가 seamlessTravel에는 변경 X
 	bUseSeamlessTravel = true;
 	
+	static ConstructorHelpers::FClassFinder<AActor> ActorBPClass(TEXT("/Script/Engine.Blueprint'/Game/Blueprint/Item/BP_AAItemBox.BP_AAItemBox_C'"));
+	if (ActorBPClass.Class != nullptr)
+	{
+		BlueprintActorClass = ActorBPClass.Class;
+	}
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> CardSelectWBPClass(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/UI/TestUI_2.TestUI_2_C'"));
+	if (CardSelectWBPClass.Class != nullptr)
+	{
+		CardSelectUIClass = CardSelectWBPClass.Class;
+	}
 }
 
 void AAAGameMode::PostInitializeComponents()
@@ -36,6 +48,14 @@ void AAAGameMode::DefaultGameTimer()
 		AAGameStateT->RemainingTime--;
 		//0.3.3b LogMessage
 		UE_LOG(LogTemp, Log, TEXT("RemainingTime: %d"),AAGameStateT->RemainingTime);
+
+		// ver 0.10.2a
+		// until doesn't card pick 2 seconds before the level change
+		if (GetMatchState() == MatchState::WaitingPostMatch && AAGameStateT->RemainingTime == 2)
+		{
+			RandomCardPick();
+		}
+
 		if (AAGameStateT->RemainingTime <= 0)
 		{
 			if (GetMatchState() == MatchState::InProgress)
@@ -62,6 +82,21 @@ void AAAGameMode::FinishGame()
 		EndMatch();
 	}
 	AAGameStateT->RemainingTime = AAGameStateT->ShowResultWaitingTime;
+
+	// ver 0.10.1a
+	// All client can't fire & add card select ui
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
+		{
+			check(GetWorld()->GetNetMode() != NM_Client);
+			if (AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(PlayerController->GetPawn()))
+			{
+				PlayerCharacter->SetPlayerStopFire();
+			}
+			PlayerController->ClientRPCCreateCardSelectUI(CardSelectUIClass);
+		}
+	}
 }
 
 void AAAGameMode::PostSeamlessTravel()
@@ -81,5 +116,19 @@ void AAAGameMode::PostSeamlessTravel()
 
 	OnSeamlessTravelComplete.Broadcast();
 	
+}
+
+// ver 0.10.2a
+// All Client Random CardPick
+void AAAGameMode::RandomCardPick()
+{
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
+		{
+			check(GetWorld()->GetNetMode() != NM_Client);
+			PlayerController->ClientRPCSimulateRandomButtonClick();
+		}
+	}
 }
 

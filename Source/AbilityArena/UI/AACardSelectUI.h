@@ -30,6 +30,10 @@ private:
 	TArray<TSubclassOf<UUserWidget>> PanzerfaustAbilityWidgetClasses;
 	TArray<TSubclassOf<UUserWidget>> SniperRifleAbilityWidgetClasses;
 	TArray<TSubclassOf<UUserWidget>> FunnyAbilityWidgetClasses;
-	UHorizontalBox* HorizontalBox;
-	class AAACharacterPlayer* Owner;
+	TObjectPtr<UHorizontalBox> HorizontalBox;
+	TObjectPtr<class AAACharacterPlayer> Owner;
+	TArray<UUserWidget*> CardList;
+
+public:
+	UUserWidget* GetRandomWidget();
 };

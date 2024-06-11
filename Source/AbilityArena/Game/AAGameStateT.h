@@ -26,6 +26,4 @@ public:
 	int32 MatchPlayTime=10;
 
 	int32 ShowResultWaitingTime = 5;
-
-	
 };
