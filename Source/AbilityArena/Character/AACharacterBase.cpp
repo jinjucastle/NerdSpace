@@ -481,13 +481,14 @@ float AAACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 		}
 	}
 
-	if (AAACharacterBase* InstigatingCharacter = Cast<AAACharacterBase>(EventInstigator->GetPawn()))
+
+	if (AAAPlayerController* InstigatorController = Cast<AAAPlayerController>(EventInstigator))
 	{
-		if (InstigatingCharacter->IsLocallyControlled())
+		if (AAACharacterBase* InstigatingCharacter = Cast<AAACharacterBase>(InstigatorController->GetPawn()))
 		{
 			InstigatingCharacter->ClientRPCPlayHitSuccessSound();
+			UE_LOG(LogTemp, Warning, TEXT("Controller : %s, Pawn : %s"), *InstigatorController->GetName(), *InstigatingCharacter->GetName());
 		}
-		UE_LOG(LogTemp, Warning, TEXT("Controller : %s, Pawn : %s"), *EventInstigator->GetName(), *InstigatingCharacter->GetName());
 	}
 
 	return ActualDamage;
@@ -572,19 +573,6 @@ void AAACharacterBase::PlaySound(USoundCue* InSoundCue, FVector InLocation)
 		{
 			ServerRPCPlaySound(InSoundCue, InLocation);
 		}
-	}
-}
-
-void AAACharacterBase::PlayHitSuccess()
-{
-	if (SuccessHitSoundCue)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, SuccessHitSoundCue, GetActorLocation());
-		UE_LOG(LogTemp, Error, TEXT("SuccessHit Sound Played : %s"), *GetController()->GetName());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("SuccessHitSoundCue is null"));
 	}
 }
 

@@ -282,7 +282,6 @@ protected:
 
 public:
 	void PlaySound(class USoundCue* InSoundCue, FVector InLocation);
-	void PlayHitSuccess();
 	void PlayFootSound();
 	void PlayRemoveMagSound();
 	void PlayInsertMagSound();

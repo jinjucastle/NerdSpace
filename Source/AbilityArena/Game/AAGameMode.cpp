@@ -39,7 +39,7 @@ FString AAAGameMode::SetTravelLevel()
 
 		int32 RandomIndex = FMath::RandRange(0, LevelArrary.Num() - 1);
 		RandomLevel = LevelArrary[RandomIndex];
-	} while (RandomLevel == TEXT("TestTransitionMap.umap")&& RandomLevel == TEXT("Lobby.umap"));
+	} while (RandomLevel == TEXT("TestTransitionMap.umap")|| RandomLevel == TEXT("Lobby.umap"));
 	
 	
 
