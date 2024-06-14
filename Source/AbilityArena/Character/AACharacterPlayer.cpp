@@ -431,8 +431,19 @@ void AAACharacterPlayer::Fire()
 			// ver 0.4.2a
 			// Fix Fire Direction
 			FVector AimDirection = GetAdjustedAim();
+			FVector FinalDirection;
 
-			ServerRPCFire(MuzzleLocation, AimDirection);
+			if (WeaponData->Type == EWeaponType::SniperRifle || WeaponData->Type == EWeaponType::Panzerfaust)
+			{
+				FinalDirection = AimDirection;
+			}
+			else
+			{
+				FinalDirection = GetMovementSpreadDirection(AimDirection);
+			}
+			
+
+			ServerRPCFire(MuzzleLocation, FinalDirection);
 
 			switch (WeaponData->Type)
 			{
@@ -526,6 +537,22 @@ FVector AAACharacterPlayer::GetAdjustedAim() const
 	}
 
 	return ShootDir;
+}
+
+FVector AAACharacterPlayer::GetMovementSpreadDirection(const FVector& InAimDirection) const
+{
+	FVector MovementDirection = GetVelocity().GetSafeNormal2D();
+	float Speed = GetVelocity().Size2D();
+
+	float MaxSpeed = GetCharacterMovement()->MaxWalkSpeed;
+	float SpeedRatio = FMath::Clamp(Speed / MaxSpeed, 0.0f, 1.0f);
+
+	float SpreadAngle = SpeedRatio * 2.0f;
+	FRotator SpreadRotator(0.0f, FMath::FRandRange(-SpreadAngle, SpreadAngle), 0.0f);
+
+	FVector SpreadDirection = SpreadRotator.RotateVector(InAimDirection);
+
+	return SpreadDirection;
 }
 
 bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FVector& NewDirection)

@@ -110,10 +110,10 @@ void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, cl
 			//Impulse Physics Actor
 			else if(UPrimitiveComponent * OtherCompPrimitive = Cast<UPrimitiveComponent>(OtherComp))
 			{
-				FVector ImpulseDirection = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+				FVector ImpulseDirection = (OtherActor->GetActorLocation() - OwnerLocation).GetSafeNormal();
 				FVector Impulse = ImpulseDirection * Damage * 50;
 
-				OtherCompPrimitive->AddImpulse(Impulse, NAME_None, true);
+				//OtherCompPrimitive->AddImpulse(Impulse, NAME_None, true);
 				MulticastRPCApplyImpulse(OtherCompPrimitive, Impulse);
 				UE_LOG(LogTemp, Log, TEXT("Impulse"));
 			}
@@ -162,7 +162,7 @@ void AAAWeaponAmmo::Fire(const FVector& FireDirection) const
 
 void AAAWeaponAmmo::MulticastRPCApplyImpulse_Implementation(UPrimitiveComponent* OverlappedComp, const FVector& Impulse)
 {
-	if (OverlappedComp && OverlappedComp->IsSimulatingPhysics() && !HasAuthority())
+	if (OverlappedComp && OverlappedComp->IsSimulatingPhysics())
 	{
 		OverlappedComp->AddImpulse(Impulse, NAME_None, true);
 	}
@@ -197,6 +197,11 @@ void AAAWeaponAmmo::SetActive(bool InIsActive)
 	bIsActive = InIsActive;
 	SetActorHiddenInGame(!bIsActive);
 	SetActorEnableCollision(bIsActive);
+
+	if (bIsActive)
+	{
+		OwnerLocation = Owner->GetActorLocation();
+	}
 
 	if (bIsActive && AmmoType != EAmmoType::Rocket)
 	{

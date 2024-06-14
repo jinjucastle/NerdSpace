@@ -89,4 +89,7 @@ public:
 protected:
 	float SplashRound;
 
+	// ver 0.11.2a
+	// Owner Location
+	FVector OwnerLocation;
 };

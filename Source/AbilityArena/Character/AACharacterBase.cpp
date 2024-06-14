@@ -83,6 +83,12 @@ AAACharacterBase::AAACharacterBase()
 		ReloadMontage = ReloadMontageRef.Object;
 	}
 
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> PistolReloadMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/Action/AM_Reload_Pistol.AM_Reload_Pistol'"));
+	if (PistolReloadMontageRef.Object)
+	{
+		PistolReloadMontage = PistolReloadMontageRef.Object;
+	}
+
 	bCanFire = true;
 
 	//ver 0.3.0 C
@@ -306,22 +312,35 @@ void AAACharacterBase::SetWeaponDataStore()
 
 void AAACharacterBase::PlayReloadAnimation()
 {
-	if (ReloadMontage)
+	if (ReloadMontage || PistolReloadMontage)
 	{
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		if (AnimInstance)
+		FOnMontageEnded EndDelegate;
+
+		if (WeaponData->Type == EWeaponType::Pistol)
 		{
-			AnimInstance->StopAllMontages(0.1f);
-			AnimInstance->Montage_Play(ReloadMontage, ReloadSpeed);
-			FOnMontageEnded EndDelegate;
-			EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
-			AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
-
-			ServerSetCanFire(false);
-
-			UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);		
-			
+			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+			if (AnimInstance)
+			{
+				AnimInstance->StopAllMontages(0.1f);
+				AnimInstance->Montage_Play(PistolReloadMontage, ReloadSpeed);
+				EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
+				AnimInstance->Montage_SetEndDelegate(EndDelegate, PistolReloadMontage);
+			}
 		}
+		else
+		{
+			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+			if (AnimInstance)
+			{
+				AnimInstance->StopAllMontages(0.1f);
+				AnimInstance->Montage_Play(ReloadMontage, ReloadSpeed);
+				EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
+				AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
+			}
+		}
+		ServerSetCanFire(false);
+
+		UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
 	}
 }
 

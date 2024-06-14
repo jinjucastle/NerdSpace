@@ -125,6 +125,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAnimMontage> ReloadMontage;
 
+	// ver 0.11.2a
+	// Add Pistol Reload Motion
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UAnimMontage> PistolReloadMontage;
+
 	UPROPERTY(Replicated)
 	bool bCanFire;
 
