@@ -373,8 +373,8 @@ void AAACharacterPlayer::Expand()
 			// Apply Ammo Scale
 			PoolableActor->SetActorScale3D(FVector(0.03f * AmmoScale, 0.03f * AmmoScale, 0.03f * AmmoScale));
 			PoolableActor->SetDamage(AmmoDamage);
-			PoolableActor->SetActive(false);
 			PoolableActor->SetOwnerPlayer(this);
+			PoolableActor->SetActive(false);
 			AmmoPool.Add(PoolableActor);
 		}
 	}
@@ -517,7 +517,7 @@ void AAACharacterPlayer::StopFire()
 
 FVector AAACharacterPlayer::GetAdjustedAim() const
 {
-	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	AAAPlayerController* PlayerController = Cast<AAAPlayerController>(GetController());
 	FVector StartTrace;
 	FRotator AimRotator;
 
@@ -526,17 +526,23 @@ FVector AAACharacterPlayer::GetAdjustedAim() const
 		PlayerController->GetPlayerViewPoint(StartTrace, AimRotator);
 	}
 
-	const FVector ShootDir = AimRotator.Vector();
-	const FVector EndTrace = StartTrace + ShootDir * 5000.0f;
-	FHitResult Impact;
-	FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(BulletTrace), true, GetInstigator());
+	FVector EndTrace = StartTrace + (AimRotator.Vector() * 10000);
+	FHitResult HitResult;
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this);
 
-	if (GetWorld()->LineTraceSingleByChannel(Impact, StartTrace, EndTrace, ECC_Visibility, TraceParams))
+	GetWorld()->LineTraceSingleByChannel(HitResult, StartTrace, EndTrace, ECC_Visibility, CollisionParams);
+
+	if (HitResult.bBlockingHit)
 	{
-		return (Impact.Location - Weapon->GetSocketLocation(FName("BarrelEndSocket"))).GetSafeNormal();
+		return (HitResult.ImpactPoint - Weapon->GetSocketLocation(TEXT("BarrelEndSocket"))).GetSafeNormal();
 	}
 
-	return ShootDir;
+
+	FVector CameraStartLocation = FollowCamera->GetComponentLocation();
+	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 1500.f;
+
+	return (CameraEndLocation - Weapon->GetSocketLocation(TEXT("BarrelEndSocket"))).GetSafeNormal();
 }
 
 FVector AAACharacterPlayer::GetMovementSpreadDirection(const FVector& InAimDirection) const
