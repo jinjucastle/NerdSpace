@@ -5,11 +5,12 @@
 #include "Game/AAGameStateT.h"
 #include "GameData/AAGameInstance.h"
 #include "Player/AAPlayerController.h"
+#include "Player/AASpawnPoint.h"
 #include "Character/AACharacterPlayer.h"
 #include "Item/AAWeaponItemData.h"
 #include "CharacterStat/AACharacterPlayerState.h"
-#include "Player/AAPlayerController.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 //0.10.1b add MapArray
 void AAAGameMode::AddLevelName()
@@ -53,12 +54,6 @@ AAAGameMode::AAAGameMode()
 	//ver 0.5.1b
 	//feat: playerStateID가 seamlessTravel에는 변경 X
 	bUseSeamlessTravel = true;
-	
-	static ConstructorHelpers::FClassFinder<AActor> ActorBPClass(TEXT("/Script/Engine.Blueprint'/Game/Blueprint/Item/BP_AAItemBox.BP_AAItemBox_C'"));
-	if (ActorBPClass.Class != nullptr)
-	{
-		BlueprintActorClass = ActorBPClass.Class;
-	}
 
 	static ConstructorHelpers::FClassFinder<UUserWidget> CardSelectWBPClass(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/UI/TestUI_2.TestUI_2_C'"));
 	if (CardSelectWBPClass.Class != nullptr)
@@ -106,7 +101,6 @@ void AAAGameMode::DefaultGameTimer()
 				FString ChangeMap = SetTravelLevel();
 				//UE_LOG(LogTemp, Log, TEXT("TEXT: %s"), *ChangeMap);
 				GetWorld()->ServerTravel(*ChangeMap, true);
-			
 			}
 		}
 	}
@@ -127,7 +121,6 @@ void AAAGameMode::FinishGame()
 	{
 		if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
 		{
-			check(GetWorld()->GetNetMode() != NM_Client);
 			if (AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(PlayerController->GetPawn()))
 			{
 				PlayerCharacter->SetPlayerStopFire();
@@ -148,12 +141,13 @@ void AAAGameMode::PostSeamlessTravel()
 		if (AAAPlayerController* MyPlayerController = Cast<AAAPlayerController>(It->Get()))
 		{
 			MyPlayerController->BindSeamlessTravelEvent();
-		
 		}
 	}
 
+	PlayerStartPoints.Empty();
+	UsedPlayerStartPoints.Empty();
+
 	OnSeamlessTravelComplete.Broadcast();
-	
 }
 
 // ver 0.10.2a
@@ -164,9 +158,72 @@ void AAAGameMode::RandomCardPick()
 	{
 		if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
 		{
-			check(GetWorld()->GetNetMode() != NM_Client);
 			PlayerController->ClientRPCSimulateRandomButtonClick();
 		}
 	}
 }
 
+
+// ver 0.11.4a
+// Spawn Point Setting
+AActor* AAAGameMode::ChoosePlayerStart_Implementation(AController* Player)
+{
+	AActor* ChosenSpawnPoint = GetRandomAvailableSpawnPoint();
+	if (ChosenSpawnPoint)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Chosen Spawn Point: %s"), *ChosenSpawnPoint->GetName());
+		return ChosenSpawnPoint;
+	}
+
+	return Super::ChoosePlayerStart_Implementation(Player);
+}
+
+void AAAGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	UE_LOG(LogTemp, Warning, TEXT("%s Login"), *NewPlayer->GetName());
+
+	if (UsedPlayerStartPoints.Num() >= PlayerStartPoints.Num())
+	{
+		UsedPlayerStartPoints.Empty();
+	}
+
+	for (AActor* SpawnPoint : UsedPlayerStartPoints)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Used Spawn Point: %s"), *SpawnPoint->GetName());
+	}
+}
+
+void AAAGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	InitializeSpawnPoints();
+
+	UE_LOG(LogTemp, Warning, TEXT("Spawn points initialized. Total points: %d"), PlayerStartPoints.Num());
+}
+
+void AAAGameMode::InitializeSpawnPoints()
+{
+	PlayerStartPoints.Empty();
+	UsedPlayerStartPoints.Empty();
+
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAASpawnPoint::StaticClass(), PlayerStartPoints);
+
+	UE_LOG(LogTemp, Warning, TEXT("Found %d spawn points."), PlayerStartPoints.Num());
+}
+
+AActor* AAAGameMode::GetRandomAvailableSpawnPoint()
+{
+	for (AActor* SpawnPoint : PlayerStartPoints)
+	{
+		if (!UsedPlayerStartPoints.Contains(SpawnPoint))
+		{
+			UsedPlayerStartPoints.Add(SpawnPoint);
+			return SpawnPoint;
+		}
+	}
+
+	return Super::ChoosePlayerStart_Implementation(nullptr);
+}

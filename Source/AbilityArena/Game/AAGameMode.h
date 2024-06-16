@@ -46,13 +46,26 @@ public:
 // ver 0.10.1a
 // View Card Select UI Round end
 protected:
-	UPROPERTY(EditDefaultsOnly, Category = "Spawning")
-	TSubclassOf<AActor> BlueprintActorClass;
-
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UUserWidget> CardSelectUIClass;
 
 	// ver 0.10.2a
 	// RandomCardPick Section
 	void RandomCardPick();
+
+// ver 0.11.4a
+// Spawn Point array
+public:
+	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+protected:
+	virtual void BeginPlay() override;
+
+private:
+	void InitializeSpawnPoints();
+	AActor* GetRandomAvailableSpawnPoint();
+
+	TArray<AActor*> PlayerStartPoints;
+	TSet<AActor*> UsedPlayerStartPoints;
 };

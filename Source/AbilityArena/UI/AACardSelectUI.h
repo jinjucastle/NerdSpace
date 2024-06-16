@@ -23,16 +23,27 @@ protected:
 	virtual void NativeConstruct() override;
 
 private:
+	void LoadAllWidgetBlueprints();
+	void CategorizeWidgetBlueprints(const FString&, const FString& AssetName);
+
 	TArray<TSubclassOf<UUserWidget>> DefaultAbilityWidgetClasses;
+	TArray<TSubclassOf<UUserWidget>> DefaultRandAbilityWidgetClasses;
 	TArray<TSubclassOf<UUserWidget>> PistolAbilityWidgetClasses;
+	TArray<TSubclassOf<UUserWidget>> PistolRandAbilityWidgetClasses;
 	TArray<TSubclassOf<UUserWidget>> AsultRifleAbilityWidgetClasses;
+	TArray<TSubclassOf<UUserWidget>> AsultRifleRandAbilityWidgetClasses;
 	TArray<TSubclassOf<UUserWidget>> ShotgunAbilityWidgetClasses;
+	TArray<TSubclassOf<UUserWidget>> ShotgunRandAbilityWidgetClasses;
 	TArray<TSubclassOf<UUserWidget>> PanzerfaustAbilityWidgetClasses;
+	TArray<TSubclassOf<UUserWidget>> PanzerfaustRandAbilityWidgetClasses;
 	TArray<TSubclassOf<UUserWidget>> SniperRifleAbilityWidgetClasses;
-	TArray<TSubclassOf<UUserWidget>> FunnyAbilityWidgetClasses;
+	TArray<TSubclassOf<UUserWidget>> SniperRifleRandAbilityWidgetClasses;
+
 	TObjectPtr<UHorizontalBox> HorizontalBox;
 	TObjectPtr<class AAACharacterPlayer> Owner;
+
 	TArray<UUserWidget*> CardList;
+	TSubclassOf<UUserWidget> JackpotCard;
 
 public:
 	UUserWidget* GetRandomWidget();

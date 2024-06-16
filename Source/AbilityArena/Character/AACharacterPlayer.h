@@ -231,6 +231,7 @@ protected:
 	float Acceleration;
 	float SplashRound = 1.f;
 	bool bBloodDrain;
+	int32 Magnification;
 
 public:
 	FORCEINLINE const float GetAcceleration() const { return Acceleration; }

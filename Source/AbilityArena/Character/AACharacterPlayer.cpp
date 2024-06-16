@@ -105,7 +105,7 @@ AAACharacterPlayer::AAACharacterPlayer()
 	// ver 0.10.3a
 	// Default FOV Value
 	DefaultFOV = 90.0f;
-	ZoomedFOV = 22.5f;
+	ZoomedFOV = 45.0f;
 	ZoomInterpSpeed = 20.0f;
 
 	FollowCamera->FieldOfView = DefaultFOV;
@@ -136,7 +136,7 @@ void AAACharacterPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	float TargetFOV = (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn && WeaponData->Type == EWeaponType::SniperRifle) ? ZoomedFOV : DefaultFOV;
+	float TargetFOV = (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn && WeaponData->Type == EWeaponType::SniperRifle) ? (ZoomedFOV / Magnification) : DefaultFOV;
 	float NewFOV = FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaTime, ZoomInterpSpeed);
 	FollowCamera->SetFieldOfView(NewFOV);
 
@@ -810,13 +810,15 @@ void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
 		AmmoScale = NewAbilityStat.AmmoScale;
 		Acceleration = NewAbilityStat.Acceleration;
 
-		MaxAmmoSize = WeaponData->AmmoPoolExpandSize * NewAbilityStat.AmmoSize;
+		MaxAmmoSize = (int32)(WeaponData->AmmoPoolExpandSize * NewAbilityStat.AmmoSize);
 		CurrentAmmoSize = MaxAmmoSize;
 
 		ReloadSpeed = NewAbilityStat.ReloadSpeed;
 		SplashRound = NewAbilityStat.SplashRound;
 
 		bBloodDrain = (bool)NewAbilityStat.BloodDrain;
+
+		Magnification = NewAbilityStat.Magnification;
 }
 
 void AAACharacterPlayer::SetAbilityInController(const FAAAbilityStat& NewAbilityStat)
