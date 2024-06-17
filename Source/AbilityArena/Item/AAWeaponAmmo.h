@@ -92,4 +92,13 @@ protected:
 	// ver 0.11.2a
 	// Owner Location
 	FVector OwnerLocation;
+
+// ver 0.11.5a
+// fx Section
+public:
+	UPROPERTY(EditDefaultsOnly, Category = "Effects")
+	class UNiagaraSystem* NormalAmmoEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Effects")
+	class UNiagaraSystem* RocketAmmoEffect;
 };

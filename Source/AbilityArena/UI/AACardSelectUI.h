@@ -24,7 +24,7 @@ protected:
 
 private:
 	void LoadAllWidgetBlueprints();
-	void CategorizeWidgetBlueprints(const FString&, const FString& AssetName);
+	void CategorizeWidgetBlueprints(const FString& AssetPath, const FString& AssetName);
 
 	TArray<TSubclassOf<UUserWidget>> DefaultAbilityWidgetClasses;
 	TArray<TSubclassOf<UUserWidget>> DefaultRandAbilityWidgetClasses;

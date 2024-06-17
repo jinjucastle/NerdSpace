@@ -126,7 +126,6 @@ void UAACardSelectUI::LoadAllWidgetBlueprints()
 	{
 		FString AssetName = AssetData.AssetName.ToString();
 		FString AssetPath = AssetData.ObjectPath.ToString();
-		UE_LOG(LogTemp, Log, TEXT("Processing Asset: %s at Path: %s"), *AssetName, *AssetPath);
 		CategorizeWidgetBlueprints(AssetPath, AssetName);
 	}
 }
@@ -142,93 +141,101 @@ void UAACardSelectUI::CategorizeWidgetBlueprints(const FString& AssetPath, const
 	if (WidgetClass && WidgetClass->IsChildOf(UUserWidget::StaticClass()))
 	{
 		TSubclassOf<UUserWidget> UserWidgetClass = WidgetClass;
-		if (AssetName.Contains("WBP_DEF_"))
+		if (AssetName.Contains("WBP_DEF_") || AssetName.Contains("WBP_ChangeWeapon"))
 		{
 			if (AssetName.Contains("JACKPOT"))
 			{
 				JackpotCard = UserWidgetClass;
+				UE_LOG(LogTemp, Log, TEXT("Loaded Jackpot widget: %s"), *AssetName);
 				return;
 			}
 
 			if (AssetName.Contains("Rand"))
 			{
 				DefaultRandAbilityWidgetClasses.Add(UserWidgetClass);
+				UE_LOG(LogTemp, Log, TEXT("Loaded Rand widget: %s"), *AssetName);
 				return;
+			}
+
+			switch (Owner->GetWeaponData()->Type)
+			{
+			case EWeaponType::Rifle:
+				if (AssetName.Contains("WBP_ChangeWeapon_ToAR")) return;
+				break;
+			case EWeaponType::Shotgun:
+				if (AssetName.Contains("WBP_ChangeWeapon_ToSG")) return;
+				break;
+			case EWeaponType::Panzerfaust:
+				if (AssetName.Contains("WBP_ChangeWeapon_ToPZF")) return;
+				break;
+			case EWeaponType::SniperRifle:
+				if (AssetName.Contains("WBP_ChangeWeapon_ToSR")) return;
+				break;
 			}
 
 			DefaultAbilityWidgetClasses.Add(UserWidgetClass);
+			UE_LOG(LogTemp, Log, TEXT("Loaded Default widget: %s"), *AssetName);
 		}
-		else if (AssetName.Contains("WBP_PST_") || AssetName.Contains("WBP_Change"))
+		else if (AssetName.Contains("WBP_PST_"))
 		{
-			PistolAbilityWidgetClasses.Add(WidgetClass);
-
 			if (AssetName.Contains("Rand"))
 			{
 				PistolRandAbilityWidgetClasses.Add(UserWidgetClass);
-				return;
-			}
-		}
-		else if (AssetName.Contains("WBP_AR_") || AssetName.Contains("WBP_Change"))
-		{
-			if (AssetName.Contains("ToAR"))
-			{
+				UE_LOG(LogTemp, Log, TEXT("Loaded Pistol Rand widget: %s"), *AssetName);
 				return;
 			}
 
+			PistolAbilityWidgetClasses.Add(UserWidgetClass);
+			UE_LOG(LogTemp, Log, TEXT("Loaded Pistol widget: %s"), *AssetName);
+		}
+		else if (AssetName.Contains("WBP_AR_"))
+		{
 			if (AssetName.Contains("Rand"))
 			{
 				AsultRifleRandAbilityWidgetClasses.Add(UserWidgetClass);
+				UE_LOG(LogTemp, Log, TEXT("Loaded AsultRifle Rand widget: %s"), *AssetName);
 				return;
 			}
 
-			AsultRifleAbilityWidgetClasses.Add(WidgetClass);
+			AsultRifleAbilityWidgetClasses.Add(UserWidgetClass);
+			UE_LOG(LogTemp, Log, TEXT("Loaded AsultRifle widget: %s"), *AssetName);
 		}
-		else if (AssetName.Contains("WBP_SG_") || AssetName.Contains("WBP_Change"))
+		else if (AssetName.Contains("WBP_SG_"))
 		{
-			if (AssetName.Contains("ToSG"))
-			{
-				return;
-			}
-
 			if (AssetName.Contains("Rand"))
 			{
 				ShotgunRandAbilityWidgetClasses.Add(UserWidgetClass);
+				UE_LOG(LogTemp, Log, TEXT("Loaded Shotgun Rand widget: %s"), *AssetName);
 				return;
 			}
 
-			ShotgunAbilityWidgetClasses.Add(WidgetClass);
+			ShotgunAbilityWidgetClasses.Add(UserWidgetClass);
+			UE_LOG(LogTemp, Log, TEXT("Loaded Shotgun widget: %s"), *AssetName);
 		}
-		else if (AssetName.Contains("WBP_PZF_") || AssetName.Contains("WBP_Change"))
+		else if (AssetName.Contains("WBP_PZF_"))
 		{
-			if (AssetName.Contains("ToPZF"))
-			{
-				return;
-			}
-
 			if (AssetName.Contains("Rand"))
 			{
 				PanzerfaustRandAbilityWidgetClasses.Add(UserWidgetClass);
+				UE_LOG(LogTemp, Log, TEXT("Loaded Panzerfaust Rand widget: %s"), *AssetName);
 				return;
 			}
 
-			PanzerfaustAbilityWidgetClasses.Add(WidgetClass);
+			PanzerfaustAbilityWidgetClasses.Add(UserWidgetClass);
+			UE_LOG(LogTemp, Log, TEXT("Loaded Panzerfaust widget: %s"), *AssetName);
 		}
-		else if (AssetName.Contains("WBP_SR_") || AssetName.Contains("WBP_Change"))
+		else if (AssetName.Contains("WBP_SR_"))
 		{
-			if (AssetName.Contains("ToSR"))
-			{
-				return;
-			}
-
 			if (AssetName.Contains("Rand"))
 			{
 				SniperRifleRandAbilityWidgetClasses.Add(UserWidgetClass);
+				UE_LOG(LogTemp, Log, TEXT("Loaded SniperRifle Rand widget: %s"), *AssetName);
 				return;
 			}
 
-			SniperRifleAbilityWidgetClasses.Add(WidgetClass);
+			SniperRifleAbilityWidgetClasses.Add(UserWidgetClass);
+			UE_LOG(LogTemp, Log, TEXT("Loaded SniperRifle widget: %s"), *AssetName);
 		}
-		UE_LOG(LogTemp, Log, TEXT("Loaded and categorized widget: %s"), *AssetName);
 	}
 	else
 	{

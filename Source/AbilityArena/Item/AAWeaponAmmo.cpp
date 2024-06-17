@@ -5,6 +5,8 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Character/AACharacterPlayer.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 // Sets default values
 AAAWeaponAmmo::AAAWeaponAmmo()
@@ -62,7 +64,7 @@ void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, cl
 {
 	if (AAACharacterPlayer* Other = Cast<AAACharacterPlayer>(OtherActor))
 	{
-		if (Other == Owner)
+		if (Other == Owner || AmmoType != EAmmoType::Normal)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Ignore"));
 			return;
@@ -107,17 +109,29 @@ void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, cl
 					}
 				}
 			}
-			//Impulse Physics Actor
-			else if(UPrimitiveComponent * OtherCompPrimitive = Cast<UPrimitiveComponent>(OtherComp))
+			else
 			{
-				FVector ImpulseDirection = (OtherActor->GetActorLocation() - OwnerLocation).GetSafeNormal();
-				FVector Impulse = ImpulseDirection * Damage * 50;
+				if (NormalAmmoEffect)
+				{
+					FVector SpawnLocation = GetActorLocation();
 
-				//OtherCompPrimitive->AddImpulse(Impulse, NAME_None, true);
-				MulticastRPCApplyImpulse(OtherCompPrimitive, Impulse);
-				UE_LOG(LogTemp, Log, TEXT("Impulse"));
+					UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NormalAmmoEffect, SpawnLocation);
+
+					UE_LOG(LogTemp, Log, TEXT("Niagara Effect Spawned at Location: %s"), *SpawnLocation.ToString());
+
+				}
+
+				//Impulse Physics Actor
+				if (UPrimitiveComponent* OtherCompPrimitive = Cast<UPrimitiveComponent>(OtherComp))
+				{
+					FVector ImpulseDirection = (OtherActor->GetActorLocation() - OwnerLocation).GetSafeNormal();
+					FVector Impulse = ImpulseDirection * Damage * 50;
+
+					//OtherCompPrimitive->AddImpulse(Impulse, NAME_None, true);
+					MulticastRPCApplyImpulse(OtherCompPrimitive, Impulse);
+					UE_LOG(LogTemp, Log, TEXT("Impulse"));
+				}
 			}
-
 			ReturnSelf();
 			UE_LOG(LogTemp, Log, TEXT("Return"));
 		}
@@ -150,6 +164,13 @@ void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimi
 			ApplySplashDamage();
 
 			Destroy();
+
+			if (RocketAmmoEffect)
+			{
+				FVector SpawnLocation = GetActorLocation();
+
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), RocketAmmoEffect, SpawnLocation);
+			}
 			UE_LOG(LogTemp, Log, TEXT("Destroy"));
 		}
 	}

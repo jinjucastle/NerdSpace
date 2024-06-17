@@ -136,7 +136,9 @@ void AAACharacterPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	float TargetFOV = (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn && WeaponData->Type == EWeaponType::SniperRifle) ? (ZoomedFOV / Magnification) : DefaultFOV;
+	float NewZoomedFov = ZoomedFOV / Magnification;
+
+	float TargetFOV = (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn && WeaponData->Type == EWeaponType::SniperRifle) ? NewZoomedFov : DefaultFOV;
 	float NewFOV = FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaTime, ZoomInterpSpeed);
 	FollowCamera->SetFieldOfView(NewFOV);
 
