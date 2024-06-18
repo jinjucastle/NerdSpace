@@ -8,7 +8,9 @@
 AAAGameStateT::AAAGameStateT()
 {
 	//0.3.3b 라운드 시간 지정
-	RemainingTime = MatchPlayTime;
+	// 0.11.6a
+	// Card Select Time
+	RemainingTime = ShowResultWaitingTime;
 }
 
 void AAAGameStateT::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

@@ -22,8 +22,6 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray <FLifetimeProperty>& OutLifetimeProps) const;
 	UPROPERTY(Transient, Replicated)
 		int32 RemainingTime;
-		
-	int32 MatchPlayTime=10;
 
-	int32 ShowResultWaitingTime = 5;
+	int32 ShowResultWaitingTime = 20;
 };

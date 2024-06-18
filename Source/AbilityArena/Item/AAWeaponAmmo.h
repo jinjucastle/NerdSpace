@@ -93,12 +93,24 @@ protected:
 	// Owner Location
 	FVector OwnerLocation;
 
-// ver 0.11.5a
-// fx Section
+// ver 0.11.6a
+// fx Section & Sound Section
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Effects")
-	class UNiagaraSystem* NormalAmmoEffect;
+	class UNiagaraSystem* AmmoEffect;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Effects")
-	class UNiagaraSystem* RocketAmmoEffect;
+	class UNiagaraSystem* HitEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> AmmoSoundCue;
+
+	void PlaySoundCue();
+
+protected:
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCPlaySound(USoundCue* SoundCue, FVector Location);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCPlayEffect(UNiagaraSystem* InEffect, FVector Location);
 };

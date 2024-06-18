@@ -68,4 +68,15 @@ private:
 
 	TArray<AActor*> PlayerStartPoints;
 	TSet<AActor*> UsedPlayerStartPoints;
+
+// ver 0.11.6a
+// Round Change Gimmik
+public:
+	void PlayerDied(AController* PlayerController);
+
+private:
+	int32 AlivePlayers;
+
+	void CheckForRoundEnd();
+	void StartNextRound();
 };

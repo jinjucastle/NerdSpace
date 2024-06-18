@@ -15,6 +15,7 @@
 #include "Player/AAPlayerController.h"
 #include "EngineUtils.h"
 #include "Sound/SoundCue.h"
+#include "Game/AAGameMode.h"
 
 DEFINE_LOG_CATEGORY(LogAACharacter);
 
@@ -113,6 +114,8 @@ AAACharacterBase::AAACharacterBase()
 	RecoilRecoverySpeed = 5.0f;
 	CurrentRecoil = FRotator::ZeroRotator;
 	TargetRecoil = FRotator::ZeroRotator;
+
+	bIsAlive = true;
 }
 
 void AAACharacterBase::PostInitializeComponents()
@@ -130,6 +133,7 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(AAACharacterBase, MaxAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, CurrentAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, bCanFire);
+	DOREPLIFETIME(AAACharacterBase, bIsAlive);
 	
 }
 
@@ -529,9 +533,26 @@ void AAACharacterBase::SetDead()
 	GetMesh()->SetSimulatePhysics(true);
 	GetMesh()->SetEnableGravity(true);
 	GetMesh()->WakeAllRigidBodies();
-	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	GetMesh()->SetCollisionProfileName(TEXT("AARagDoll"));
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	AAAGameMode* CurrentGameMode = Cast<AAAGameMode>(UGameplayStatics::GetGameMode(this));
+	if (CurrentGameMode && bIsAlive)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		CurrentGameMode->PlayerDied(PlayerController);
+	}
+
+	FTimerHandle DeadTimerHandle;
+
+	GetWorld()->GetTimerManager().SetTimer(
+		DeadTimerHandle,
+		FTimerDelegate::CreateLambda([this]() {
+			SetActorHiddenInGame(true);
+			}), 10.0f, false);
+
+	bIsAlive = false;
 }
 
 bool AAACharacterBase::ServerRPCPlaySound_Validate(USoundCue* SoundCue, FVector Location)
@@ -590,7 +611,10 @@ void AAACharacterBase::PlaySound(USoundCue* InSoundCue, FVector InLocation)
 		}
 		else
 		{
-			ServerRPCPlaySound(InSoundCue, InLocation);
+			if (IsLocallyControlled())
+			{
+				ServerRPCPlaySound(InSoundCue, InLocation);
+			}
 		}
 	}
 }

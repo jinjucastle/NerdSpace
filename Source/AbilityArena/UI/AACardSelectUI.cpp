@@ -135,8 +135,6 @@ void UAACardSelectUI::CategorizeWidgetBlueprints(const FString& AssetPath, const
 	FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
 	FSoftObjectPath WidgetClassPath(AssetPath + "_C");
 
-	UE_LOG(LogTemp, Log, TEXT("Attempting to load widget class: %s"), *WidgetClassPath.ToString());
-
 	UClass* WidgetClass = Cast<UClass>(Streamable.LoadSynchronous(WidgetClassPath));
 	if (WidgetClass && WidgetClass->IsChildOf(UUserWidget::StaticClass()))
 	{
@@ -146,14 +144,12 @@ void UAACardSelectUI::CategorizeWidgetBlueprints(const FString& AssetPath, const
 			if (AssetName.Contains("JACKPOT"))
 			{
 				JackpotCard = UserWidgetClass;
-				UE_LOG(LogTemp, Log, TEXT("Loaded Jackpot widget: %s"), *AssetName);
 				return;
 			}
 
 			if (AssetName.Contains("Rand"))
 			{
 				DefaultRandAbilityWidgetClasses.Add(UserWidgetClass);
-				UE_LOG(LogTemp, Log, TEXT("Loaded Rand widget: %s"), *AssetName);
 				return;
 			}
 
@@ -174,67 +170,56 @@ void UAACardSelectUI::CategorizeWidgetBlueprints(const FString& AssetPath, const
 			}
 
 			DefaultAbilityWidgetClasses.Add(UserWidgetClass);
-			UE_LOG(LogTemp, Log, TEXT("Loaded Default widget: %s"), *AssetName);
 		}
 		else if (AssetName.Contains("WBP_PST_"))
 		{
 			if (AssetName.Contains("Rand"))
 			{
 				PistolRandAbilityWidgetClasses.Add(UserWidgetClass);
-				UE_LOG(LogTemp, Log, TEXT("Loaded Pistol Rand widget: %s"), *AssetName);
 				return;
 			}
 
 			PistolAbilityWidgetClasses.Add(UserWidgetClass);
-			UE_LOG(LogTemp, Log, TEXT("Loaded Pistol widget: %s"), *AssetName);
 		}
 		else if (AssetName.Contains("WBP_AR_"))
 		{
 			if (AssetName.Contains("Rand"))
 			{
 				AsultRifleRandAbilityWidgetClasses.Add(UserWidgetClass);
-				UE_LOG(LogTemp, Log, TEXT("Loaded AsultRifle Rand widget: %s"), *AssetName);
 				return;
 			}
 
 			AsultRifleAbilityWidgetClasses.Add(UserWidgetClass);
-			UE_LOG(LogTemp, Log, TEXT("Loaded AsultRifle widget: %s"), *AssetName);
 		}
 		else if (AssetName.Contains("WBP_SG_"))
 		{
 			if (AssetName.Contains("Rand"))
 			{
 				ShotgunRandAbilityWidgetClasses.Add(UserWidgetClass);
-				UE_LOG(LogTemp, Log, TEXT("Loaded Shotgun Rand widget: %s"), *AssetName);
 				return;
 			}
 
 			ShotgunAbilityWidgetClasses.Add(UserWidgetClass);
-			UE_LOG(LogTemp, Log, TEXT("Loaded Shotgun widget: %s"), *AssetName);
 		}
 		else if (AssetName.Contains("WBP_PZF_"))
 		{
 			if (AssetName.Contains("Rand"))
 			{
 				PanzerfaustRandAbilityWidgetClasses.Add(UserWidgetClass);
-				UE_LOG(LogTemp, Log, TEXT("Loaded Panzerfaust Rand widget: %s"), *AssetName);
 				return;
 			}
 
 			PanzerfaustAbilityWidgetClasses.Add(UserWidgetClass);
-			UE_LOG(LogTemp, Log, TEXT("Loaded Panzerfaust widget: %s"), *AssetName);
 		}
 		else if (AssetName.Contains("WBP_SR_"))
 		{
 			if (AssetName.Contains("Rand"))
 			{
 				SniperRifleRandAbilityWidgetClasses.Add(UserWidgetClass);
-				UE_LOG(LogTemp, Log, TEXT("Loaded SniperRifle Rand widget: %s"), *AssetName);
 				return;
 			}
 
 			SniperRifleAbilityWidgetClasses.Add(UserWidgetClass);
-			UE_LOG(LogTemp, Log, TEXT("Loaded SniperRifle widget: %s"), *AssetName);
 		}
 	}
 	else

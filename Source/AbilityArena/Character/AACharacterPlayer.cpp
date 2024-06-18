@@ -354,7 +354,7 @@ void AAACharacterPlayer::Landed(const FHitResult& Hit)
 
 AAAWeaponAmmo* AAACharacterPlayer::GetPooledAmmo()
 {
-	if (AmmoPool.IsEmpty()) Expand();
+	if (AmmoPool.Num() == 0) Expand();
 
 	return AmmoPool.Pop();
 }
@@ -578,7 +578,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 		AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, NewDirection.Rotation());
 		if (Rocket)
 		{
-			Rocket->SetActorScale3D(FVector(1.f * AmmoScale, 1.f * AmmoScale, 1.f * AmmoScale));
+			Rocket->SetActorScale3D(FVector(1.f, 1.f * AmmoScale, 1.f * AmmoScale));
 			Rocket->SetOwnerPlayer(this);
 			Rocket->SetLifeSpan(4.0f);
 			Rocket->SetActive(true);

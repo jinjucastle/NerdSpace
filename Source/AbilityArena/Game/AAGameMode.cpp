@@ -60,6 +60,8 @@ AAAGameMode::AAAGameMode()
 	{
 		CardSelectUIClass = CardSelectWBPClass.Class;
 	}
+
+	AlivePlayers = 0;
 }
 
 void AAAGameMode::PostInitializeComponents()
@@ -75,26 +77,24 @@ void AAAGameMode::DefaultGameTimer()
 {
 	AAAGameStateT* const AAGameStateT = Cast<AAAGameStateT>(GameState);
 	
-	if (AAGameStateT && AAGameStateT->RemainingTime > 0)
+	if (AAGameStateT && AAGameStateT->RemainingTime > 0 && GetMatchState() != MatchState::InProgress)
 	{
-		AAGameStateT->RemainingTime--;
-		//0.3.3b LogMessage
-		UE_LOG(LogTemp, Log, TEXT("RemainingTime: %d"),AAGameStateT->RemainingTime);
-
-		// ver 0.10.2a
-		// until doesn't card pick 2 seconds before the level change
-		if (GetMatchState() == MatchState::WaitingPostMatch && AAGameStateT->RemainingTime == 2)
+		if (GetMatchState() == MatchState::WaitingPostMatch)
 		{
-			RandomCardPick();
+			AAGameStateT->RemainingTime--;
+			//0.3.3b LogMessage
+			UE_LOG(LogTemp, Log, TEXT("Card Select RemainingTime: %d"), AAGameStateT->RemainingTime);
+			// ver 0.10.2a
+			// until doesn't card pick 2 seconds before the level change
+			if (AAGameStateT->RemainingTime == 2)
+			{
+				RandomCardPick();
+			}
 		}
 
 		if (AAGameStateT->RemainingTime <= 0)
 		{
-			if (GetMatchState() == MatchState::InProgress)
-			{
-				FinishGame();
-			}
-			else if(GetMatchState()==MatchState::WaitingPostMatch)
+			if(GetMatchState()==MatchState::WaitingPostMatch)
 			{
 				// 0.9.1b
 				//feat: change function SeamlessTravel->Servertravel
@@ -193,6 +193,9 @@ void AAAGameMode::PostLogin(APlayerController* NewPlayer)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Used Spawn Point: %s"), *SpawnPoint->GetName());
 	}
+
+	AlivePlayers++;
+	UE_LOG(LogTemp, Warning, TEXT("Found %d Alive Player"), AlivePlayers);
 }
 
 void AAAGameMode::BeginPlay()
@@ -226,4 +229,29 @@ AActor* AAAGameMode::GetRandomAvailableSpawnPoint()
 	}
 
 	return Super::ChoosePlayerStart_Implementation(nullptr);
+}
+
+void AAAGameMode::PlayerDied(AController* PlayerController)
+{
+	AlivePlayers--;
+
+	// 플레이어가 죽을 때마다 라운드 종료 조건을 확인합니다.
+	CheckForRoundEnd();
+
+	UE_LOG(LogTemp, Warning, TEXT("Current %d Alive Player"), AlivePlayers);
+}
+
+void AAAGameMode::CheckForRoundEnd()
+{
+	if (AlivePlayers <= 1)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Last Man Standing"));
+		StartNextRound();
+	}
+}
+
+void AAAGameMode::StartNextRound()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Move to Next round"));
+	FinishGame();
 }

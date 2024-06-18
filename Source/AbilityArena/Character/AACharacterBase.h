@@ -309,4 +309,9 @@ protected:
 
 	void ApplyRecoil(float Damage);
 	void RecoverRecoil();
+
+	// ver 0.11.6a
+	// Alive check
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	bool bIsAlive;
 };
