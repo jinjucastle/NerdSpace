@@ -71,4 +71,7 @@ public:
 
 	FORCEINLINE void SetAmmoClass(const TObjectPtr<UClass> NewAmmoClass) { PlayerAmmoClass = NewAmmoClass; }
 	FORCEINLINE UClass* GetAmmoClass() { return PlayerAmmoClass; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString PlayerName;
 };
