@@ -125,6 +125,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAnimMontage> ReloadMontage;
 
+	// ver 0.11.2a
+	// Add Pistol Reload Motion
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UAnimMontage> PistolReloadMontage;
+
 	UPROPERTY(Replicated)
 	bool bCanFire;
 
@@ -282,7 +287,6 @@ protected:
 
 public:
 	void PlaySound(class USoundCue* InSoundCue, FVector InLocation);
-	void PlayHitSuccess();
 	void PlayFootSound();
 	void PlayRemoveMagSound();
 	void PlayInsertMagSound();
@@ -305,4 +309,9 @@ protected:
 
 	void ApplyRecoil(float Damage);
 	void RecoverRecoil();
+
+	// ver 0.11.6a
+	// Alive check
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	bool bIsAlive;
 };

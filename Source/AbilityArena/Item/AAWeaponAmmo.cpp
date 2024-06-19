@@ -5,6 +5,9 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Character/AACharacterPlayer.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Sound/SoundCue.h"
 
 // Sets default values
 AAAWeaponAmmo::AAAWeaponAmmo()
@@ -62,7 +65,7 @@ void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, cl
 {
 	if (AAACharacterPlayer* Other = Cast<AAACharacterPlayer>(OtherActor))
 	{
-		if (Other == Owner)
+		if (Other == Owner || AmmoType != EAmmoType::Normal)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Ignore"));
 			return;
@@ -101,23 +104,37 @@ void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, cl
 
 					UGameplayStatics::ApplyDamage(OtherActor, (float)AppliedDamage, Owner->GetController(), this, UDamageType::StaticClass());
 
+					if (HitEffect)
+					{
+						MulticastRPCPlayEffect(HitEffect, GetActorLocation());
+					}
+
 					if (OwnerCharacter->GetCanBloodDrain())
 					{
 						OwnerCharacter->BloodDrain(AppliedDamage);
 					}
 				}
 			}
-			//Impulse Physics Actor
-			else if(UPrimitiveComponent * OtherCompPrimitive = Cast<UPrimitiveComponent>(OtherComp))
+			else
 			{
-				FVector ImpulseDirection = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-				FVector Impulse = ImpulseDirection * Damage * 50;
+				if (AmmoEffect)
+				{
+					MulticastRPCPlayEffect(AmmoEffect, GetActorLocation());
 
-				OtherCompPrimitive->AddImpulse(Impulse, NAME_None, true);
-				MulticastRPCApplyImpulse(OtherCompPrimitive, Impulse);
-				UE_LOG(LogTemp, Log, TEXT("Impulse"));
+					PlaySoundCue();
+				}
+
+				//Impulse Physics Actor
+				if (UPrimitiveComponent* OtherCompPrimitive = Cast<UPrimitiveComponent>(OtherComp))
+				{
+					FVector ImpulseDirection = (OtherActor->GetActorLocation() - OwnerLocation).GetSafeNormal();
+					FVector Impulse = ImpulseDirection * Damage * 10;
+
+					//OtherCompPrimitive->AddImpulse(Impulse, NAME_None, true);
+					MulticastRPCApplyImpulse(OtherCompPrimitive, Impulse);
+					UE_LOG(LogTemp, Log, TEXT("Impulse"));
+				}
 			}
-
 			ReturnSelf();
 			UE_LOG(LogTemp, Log, TEXT("Return"));
 		}
@@ -147,9 +164,19 @@ void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimi
 	{
 		if (HasAuthority())
 		{
+			UE_LOG(LogTemp, Log, TEXT("Hit: %s"), *Hit.GetActor()->GetName());
+
 			ApplySplashDamage();
 
+			if (AmmoEffect)
+			{
+				MulticastRPCPlayEffect(AmmoEffect, GetActorLocation());
+
+				PlaySoundCue();
+			}
+
 			Destroy();
+
 			UE_LOG(LogTemp, Log, TEXT("Destroy"));
 		}
 	}
@@ -162,7 +189,7 @@ void AAAWeaponAmmo::Fire(const FVector& FireDirection) const
 
 void AAAWeaponAmmo::MulticastRPCApplyImpulse_Implementation(UPrimitiveComponent* OverlappedComp, const FVector& Impulse)
 {
-	if (OverlappedComp && OverlappedComp->IsSimulatingPhysics() && !HasAuthority())
+	if (OverlappedComp && OverlappedComp->IsSimulatingPhysics())
 	{
 		OverlappedComp->AddImpulse(Impulse, NAME_None, true);
 	}
@@ -198,6 +225,11 @@ void AAAWeaponAmmo::SetActive(bool InIsActive)
 	SetActorHiddenInGame(!bIsActive);
 	SetActorEnableCollision(bIsActive);
 
+	if (bIsActive)
+	{
+		OwnerLocation = Owner->GetActorLocation();
+	}
+
 	if (bIsActive && AmmoType != EAmmoType::Rocket)
 	{
 		GetWorld()->GetTimerManager().SetTimer(ActiveHandle, this, &AAAWeaponAmmo::ReturnSelf, 4.0f, false);
@@ -229,4 +261,71 @@ void AAAWeaponAmmo::ApplySplashDamage()
 		Owner->GetController(),
 		ECC_Visibility
 	);
+
+	TArray<FHitResult> OutHits;
+
+	FVector Start = GetActorLocation();
+	FVector End = Start;
+
+	FCollisionShape MyColSphere = FCollisionShape::MakeSphere(DamageOuterRadius);
+
+	bool isHit = GetWorld()->SweepMultiByChannel(OutHits, Start, End, FQuat::Identity, ECC_WorldStatic, MyColSphere);
+
+	if (isHit)
+	{
+		for (auto& Hit : OutHits)
+		{
+			UStaticMeshComponent* MeshComp = Cast<UStaticMeshComponent>((Hit.GetActor())->GetRootComponent());
+
+			if (MeshComp)
+			{
+				if (MeshComp->IsSimulatingPhysics())
+				{
+					MeshComp->AddRadialImpulse(GetActorLocation(), DamageOuterRadius, Damage * 10, ERadialImpulseFalloff::RIF_Linear, true);
+					UE_LOG(LogTemp, Log, TEXT("Hit Mesh: %s"), *Hit.GetActor()->GetName());
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("No physics simulation for: %s"), *(Hit.GetActor()->GetName()));
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("No mesh component simulation for: %s"), *(Hit.GetActor()->GetName()));
+			}
+		}
+	}
+
+	DrawDebugSphere(GetWorld(), GetActorLocation(), DamageInnerRadius, 32, FColor::Red, false, 2.0f);
+	DrawDebugSphere(GetWorld(), GetActorLocation(), DamageOuterRadius, 32, FColor::Cyan, false, 2.0f);
+}
+
+void AAAWeaponAmmo::PlaySoundCue()
+{
+	if (AmmoSoundCue)
+	{
+		MulticastRPCPlaySound(AmmoSoundCue, GetActorLocation());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("AmmoSoundCue is null"));
+	}
+}
+
+void AAAWeaponAmmo::MulticastRPCPlayEffect_Implementation(UNiagaraSystem* InEffect, FVector Location)
+{
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), InEffect, Location);
+}
+
+void AAAWeaponAmmo::MulticastRPCPlaySound_Implementation(USoundCue* SoundCue, FVector Location)
+{
+	if (SoundCue)
+	{
+		UGameplayStatics::SpawnSoundAtLocation(this, AmmoSoundCue, GetActorLocation());
+		UE_LOG(LogTemp, Error, TEXT("Play SoundCue"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Multicast PlaySound Cue is null"));
+	}
 }

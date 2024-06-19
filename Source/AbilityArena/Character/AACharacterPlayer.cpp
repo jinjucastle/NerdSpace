@@ -105,7 +105,7 @@ AAACharacterPlayer::AAACharacterPlayer()
 	// ver 0.10.3a
 	// Default FOV Value
 	DefaultFOV = 90.0f;
-	ZoomedFOV = 22.5f;
+	ZoomedFOV = 45.0f;
 	ZoomInterpSpeed = 20.0f;
 
 	FollowCamera->FieldOfView = DefaultFOV;
@@ -136,7 +136,9 @@ void AAACharacterPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	float TargetFOV = (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn && WeaponData->Type == EWeaponType::SniperRifle) ? ZoomedFOV : DefaultFOV;
+	float NewZoomedFov = ZoomedFOV / Magnification;
+
+	float TargetFOV = (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn && WeaponData->Type == EWeaponType::SniperRifle) ? NewZoomedFov : DefaultFOV;
 	float NewFOV = FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaTime, ZoomInterpSpeed);
 	FollowCamera->SetFieldOfView(NewFOV);
 
@@ -352,7 +354,7 @@ void AAACharacterPlayer::Landed(const FHitResult& Hit)
 
 AAAWeaponAmmo* AAACharacterPlayer::GetPooledAmmo()
 {
-	if (AmmoPool.IsEmpty()) Expand();
+	if (AmmoPool.Num() == 0) Expand();
 
 	return AmmoPool.Pop();
 }
@@ -373,8 +375,8 @@ void AAACharacterPlayer::Expand()
 			// Apply Ammo Scale
 			PoolableActor->SetActorScale3D(FVector(0.03f * AmmoScale, 0.03f * AmmoScale, 0.03f * AmmoScale));
 			PoolableActor->SetDamage(AmmoDamage);
-			PoolableActor->SetActive(false);
 			PoolableActor->SetOwnerPlayer(this);
+			PoolableActor->SetActive(false);
 			AmmoPool.Add(PoolableActor);
 		}
 	}
@@ -431,8 +433,19 @@ void AAACharacterPlayer::Fire()
 			// ver 0.4.2a
 			// Fix Fire Direction
 			FVector AimDirection = GetAdjustedAim();
+			FVector FinalDirection;
 
-			ServerRPCFire(MuzzleLocation, AimDirection);
+			if (WeaponData->Type == EWeaponType::SniperRifle || WeaponData->Type == EWeaponType::Panzerfaust)
+			{
+				FinalDirection = AimDirection;
+			}
+			else
+			{
+				FinalDirection = GetMovementSpreadDirection(AimDirection);
+			}
+			
+
+			ServerRPCFire(MuzzleLocation, FinalDirection);
 
 			switch (WeaponData->Type)
 			{
@@ -506,7 +519,7 @@ void AAACharacterPlayer::StopFire()
 
 FVector AAACharacterPlayer::GetAdjustedAim() const
 {
-	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	AAAPlayerController* PlayerController = Cast<AAAPlayerController>(GetController());
 	FVector StartTrace;
 	FRotator AimRotator;
 
@@ -515,17 +528,39 @@ FVector AAACharacterPlayer::GetAdjustedAim() const
 		PlayerController->GetPlayerViewPoint(StartTrace, AimRotator);
 	}
 
-	const FVector ShootDir = AimRotator.Vector();
-	const FVector EndTrace = StartTrace + ShootDir * 5000.0f;
-	FHitResult Impact;
-	FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(BulletTrace), true, GetInstigator());
+	FVector EndTrace = StartTrace + (AimRotator.Vector() * 10000);
+	FHitResult HitResult;
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this);
 
-	if (GetWorld()->LineTraceSingleByChannel(Impact, StartTrace, EndTrace, ECC_Visibility, TraceParams))
+	GetWorld()->LineTraceSingleByChannel(HitResult, StartTrace, EndTrace, ECC_Visibility, CollisionParams);
+
+	if (HitResult.bBlockingHit)
 	{
-		return (Impact.Location - Weapon->GetSocketLocation(FName("BarrelEndSocket"))).GetSafeNormal();
+		return (HitResult.ImpactPoint - Weapon->GetSocketLocation(TEXT("BarrelEndSocket"))).GetSafeNormal();
 	}
 
-	return ShootDir;
+
+	FVector CameraStartLocation = FollowCamera->GetComponentLocation();
+	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 1500.f;
+
+	return (CameraEndLocation - Weapon->GetSocketLocation(TEXT("BarrelEndSocket"))).GetSafeNormal();
+}
+
+FVector AAACharacterPlayer::GetMovementSpreadDirection(const FVector& InAimDirection) const
+{
+	FVector MovementDirection = GetVelocity().GetSafeNormal2D();
+	float Speed = GetVelocity().Size2D();
+
+	float MaxSpeed = GetCharacterMovement()->MaxWalkSpeed;
+	float SpeedRatio = FMath::Clamp(Speed / MaxSpeed, 0.0f, 1.0f);
+
+	float SpreadAngle = SpeedRatio * 2.0f;
+	FRotator SpreadRotator(0.0f, FMath::FRandRange(-SpreadAngle, SpreadAngle), 0.0f);
+
+	FVector SpreadDirection = SpreadRotator.RotateVector(InAimDirection);
+
+	return SpreadDirection;
 }
 
 bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FVector& NewDirection)
@@ -543,7 +578,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 		AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, NewDirection.Rotation());
 		if (Rocket)
 		{
-			Rocket->SetActorScale3D(FVector(1.f * AmmoScale, 1.f * AmmoScale, 1.f * AmmoScale));
+			Rocket->SetActorScale3D(FVector(1.f, 1.f * AmmoScale, 1.f * AmmoScale));
 			Rocket->SetOwnerPlayer(this);
 			Rocket->SetLifeSpan(4.0f);
 			Rocket->SetActive(true);
@@ -777,13 +812,15 @@ void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
 		AmmoScale = NewAbilityStat.AmmoScale;
 		Acceleration = NewAbilityStat.Acceleration;
 
-		MaxAmmoSize = WeaponData->AmmoPoolExpandSize * NewAbilityStat.AmmoSize;
+		MaxAmmoSize = (int32)(WeaponData->AmmoPoolExpandSize * NewAbilityStat.AmmoSize);
 		CurrentAmmoSize = MaxAmmoSize;
 
 		ReloadSpeed = NewAbilityStat.ReloadSpeed;
 		SplashRound = NewAbilityStat.SplashRound;
 
 		bBloodDrain = (bool)NewAbilityStat.BloodDrain;
+
+		Magnification = NewAbilityStat.Magnification;
 }
 
 void AAACharacterPlayer::SetAbilityInController(const FAAAbilityStat& NewAbilityStat)

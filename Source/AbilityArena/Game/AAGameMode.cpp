@@ -5,11 +5,12 @@
 #include "Game/AAGameStateT.h"
 #include "GameData/AAGameInstance.h"
 #include "Player/AAPlayerController.h"
+#include "Player/AASpawnPoint.h"
 #include "Character/AACharacterPlayer.h"
 #include "Item/AAWeaponItemData.h"
 #include "CharacterStat/AACharacterPlayerState.h"
-#include "Player/AAPlayerController.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 //0.10.1b add MapArray
 void AAAGameMode::AddLevelName()
@@ -39,7 +40,7 @@ FString AAAGameMode::SetTravelLevel()
 
 		int32 RandomIndex = FMath::RandRange(0, LevelArrary.Num() - 1);
 		RandomLevel = LevelArrary[RandomIndex];
-	} while (RandomLevel == TEXT("TestTransitionMap.umap")&& RandomLevel == TEXT("Lobby.umap"));
+	} while (RandomLevel == TEXT("TestTransitionMap.umap")|| RandomLevel == TEXT("Lobby.umap"));
 	
 	
 
@@ -53,18 +54,14 @@ AAAGameMode::AAAGameMode()
 	//ver 0.5.1b
 	//feat: playerStateID가 seamlessTravel에는 변경 X
 	bUseSeamlessTravel = true;
-	
-	static ConstructorHelpers::FClassFinder<AActor> ActorBPClass(TEXT("/Script/Engine.Blueprint'/Game/Blueprint/Item/BP_AAItemBox.BP_AAItemBox_C'"));
-	if (ActorBPClass.Class != nullptr)
-	{
-		BlueprintActorClass = ActorBPClass.Class;
-	}
 
 	static ConstructorHelpers::FClassFinder<UUserWidget> CardSelectWBPClass(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/UI/TestUI_2.TestUI_2_C'"));
 	if (CardSelectWBPClass.Class != nullptr)
 	{
 		CardSelectUIClass = CardSelectWBPClass.Class;
 	}
+
+	AlivePlayers = 0;
 }
 
 void AAAGameMode::PostInitializeComponents()
@@ -80,33 +77,30 @@ void AAAGameMode::DefaultGameTimer()
 {
 	AAAGameStateT* const AAGameStateT = Cast<AAAGameStateT>(GameState);
 	
-	if (AAGameStateT && AAGameStateT->RemainingTime > 0)
+	if (AAGameStateT && AAGameStateT->RemainingTime > 0 && GetMatchState() != MatchState::InProgress)
 	{
-		AAGameStateT->RemainingTime--;
-		//0.3.3b LogMessage
-		UE_LOG(LogTemp, Log, TEXT("RemainingTime: %d"),AAGameStateT->RemainingTime);
-
-		// ver 0.10.2a
-		// until doesn't card pick 2 seconds before the level change
-		if (GetMatchState() == MatchState::WaitingPostMatch && AAGameStateT->RemainingTime == 2)
+		if (GetMatchState() == MatchState::WaitingPostMatch)
 		{
-			RandomCardPick();
+			AAGameStateT->RemainingTime--;
+			//0.3.3b LogMessage
+			UE_LOG(LogTemp, Log, TEXT("Card Select RemainingTime: %d"), AAGameStateT->RemainingTime);
+			// ver 0.10.2a
+			// until doesn't card pick 2 seconds before the level change
+			if (AAGameStateT->RemainingTime == 2)
+			{
+				RandomCardPick();
+			}
 		}
 
 		if (AAGameStateT->RemainingTime <= 0)
 		{
-			if (GetMatchState() == MatchState::InProgress)
-			{
-				FinishGame();
-			}
-			else if(GetMatchState()==MatchState::WaitingPostMatch)
+			if(GetMatchState()==MatchState::WaitingPostMatch)
 			{
 				// 0.9.1b
 				//feat: change function SeamlessTravel->Servertravel
 				FString ChangeMap = SetTravelLevel();
 				//UE_LOG(LogTemp, Log, TEXT("TEXT: %s"), *ChangeMap);
 				GetWorld()->ServerTravel(*ChangeMap, true);
-			
 			}
 		}
 	}
@@ -127,7 +121,6 @@ void AAAGameMode::FinishGame()
 	{
 		if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
 		{
-			check(GetWorld()->GetNetMode() != NM_Client);
 			if (AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(PlayerController->GetPawn()))
 			{
 				PlayerCharacter->SetPlayerStopFire();
@@ -148,12 +141,13 @@ void AAAGameMode::PostSeamlessTravel()
 		if (AAAPlayerController* MyPlayerController = Cast<AAAPlayerController>(It->Get()))
 		{
 			MyPlayerController->BindSeamlessTravelEvent();
-		
 		}
 	}
 
+	PlayerStartPoints.Empty();
+	UsedPlayerStartPoints.Empty();
+
 	OnSeamlessTravelComplete.Broadcast();
-	
 }
 
 // ver 0.10.2a
@@ -164,9 +158,100 @@ void AAAGameMode::RandomCardPick()
 	{
 		if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
 		{
-			check(GetWorld()->GetNetMode() != NM_Client);
 			PlayerController->ClientRPCSimulateRandomButtonClick();
 		}
 	}
 }
 
+
+// ver 0.11.4a
+// Spawn Point Setting
+AActor* AAAGameMode::ChoosePlayerStart_Implementation(AController* Player)
+{
+	AActor* ChosenSpawnPoint = GetRandomAvailableSpawnPoint();
+	if (ChosenSpawnPoint)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Chosen Spawn Point: %s"), *ChosenSpawnPoint->GetName());
+		return ChosenSpawnPoint;
+	}
+
+	return Super::ChoosePlayerStart_Implementation(Player);
+}
+
+void AAAGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	UE_LOG(LogTemp, Warning, TEXT("%s Login"), *NewPlayer->GetName());
+
+	if (UsedPlayerStartPoints.Num() >= PlayerStartPoints.Num())
+	{
+		UsedPlayerStartPoints.Empty();
+	}
+
+	for (AActor* SpawnPoint : UsedPlayerStartPoints)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Used Spawn Point: %s"), *SpawnPoint->GetName());
+	}
+
+	AlivePlayers++;
+	UE_LOG(LogTemp, Warning, TEXT("Found %d Alive Player"), AlivePlayers);
+}
+
+void AAAGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	InitializeSpawnPoints();
+
+	UE_LOG(LogTemp, Warning, TEXT("Spawn points initialized. Total points: %d"), PlayerStartPoints.Num());
+}
+
+void AAAGameMode::InitializeSpawnPoints()
+{
+	PlayerStartPoints.Empty();
+	UsedPlayerStartPoints.Empty();
+
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAASpawnPoint::StaticClass(), PlayerStartPoints);
+
+	UE_LOG(LogTemp, Warning, TEXT("Found %d spawn points."), PlayerStartPoints.Num());
+}
+
+AActor* AAAGameMode::GetRandomAvailableSpawnPoint()
+{
+	for (AActor* SpawnPoint : PlayerStartPoints)
+	{
+		if (!UsedPlayerStartPoints.Contains(SpawnPoint))
+		{
+			UsedPlayerStartPoints.Add(SpawnPoint);
+			return SpawnPoint;
+		}
+	}
+
+	return Super::ChoosePlayerStart_Implementation(nullptr);
+}
+
+void AAAGameMode::PlayerDied(AController* PlayerController)
+{
+	AlivePlayers--;
+
+	// 플레이어가 죽을 때마다 라운드 종료 조건을 확인합니다.
+	CheckForRoundEnd();
+
+	UE_LOG(LogTemp, Warning, TEXT("Current %d Alive Player"), AlivePlayers);
+}
+
+void AAAGameMode::CheckForRoundEnd()
+{
+	if (AlivePlayers <= 1)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Last Man Standing"));
+		StartNextRound();
+	}
+}
+
+void AAAGameMode::StartNextRound()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Move to Next round"));
+	FinishGame();
+}

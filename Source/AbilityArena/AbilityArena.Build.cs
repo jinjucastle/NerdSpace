@@ -10,7 +10,9 @@ public class AbilityArena : ModuleRules
 
         PublicIncludePaths.AddRange(new string[] { "AbilityArena" });
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG"});
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "Niagara", "OnlineSubsystemSteam",
+			"OnlineSubsystem", "AdvancedSessions", "AdvancedSteamSessions" });
+
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

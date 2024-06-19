@@ -15,6 +15,7 @@
 #include "Player/AAPlayerController.h"
 #include "EngineUtils.h"
 #include "Sound/SoundCue.h"
+#include "Game/AAGameMode.h"
 
 DEFINE_LOG_CATEGORY(LogAACharacter);
 
@@ -83,6 +84,12 @@ AAACharacterBase::AAACharacterBase()
 		ReloadMontage = ReloadMontageRef.Object;
 	}
 
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> PistolReloadMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/Action/AM_Reload_Pistol.AM_Reload_Pistol'"));
+	if (PistolReloadMontageRef.Object)
+	{
+		PistolReloadMontage = PistolReloadMontageRef.Object;
+	}
+
 	bCanFire = true;
 
 	//ver 0.3.0 C
@@ -107,6 +114,8 @@ AAACharacterBase::AAACharacterBase()
 	RecoilRecoverySpeed = 5.0f;
 	CurrentRecoil = FRotator::ZeroRotator;
 	TargetRecoil = FRotator::ZeroRotator;
+
+	bIsAlive = true;
 }
 
 void AAACharacterBase::PostInitializeComponents()
@@ -124,6 +133,7 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(AAACharacterBase, MaxAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, CurrentAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, bCanFire);
+	DOREPLIFETIME(AAACharacterBase, bIsAlive);
 	
 }
 
@@ -306,22 +316,35 @@ void AAACharacterBase::SetWeaponDataStore()
 
 void AAACharacterBase::PlayReloadAnimation()
 {
-	if (ReloadMontage)
+	if (ReloadMontage || PistolReloadMontage)
 	{
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		if (AnimInstance)
+		FOnMontageEnded EndDelegate;
+
+		if (WeaponData->Type == EWeaponType::Pistol)
 		{
-			AnimInstance->StopAllMontages(0.1f);
-			AnimInstance->Montage_Play(ReloadMontage, ReloadSpeed);
-			FOnMontageEnded EndDelegate;
-			EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
-			AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
-
-			ServerSetCanFire(false);
-
-			UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);		
-			
+			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+			if (AnimInstance)
+			{
+				AnimInstance->StopAllMontages(0.1f);
+				AnimInstance->Montage_Play(PistolReloadMontage, ReloadSpeed);
+				EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
+				AnimInstance->Montage_SetEndDelegate(EndDelegate, PistolReloadMontage);
+			}
 		}
+		else
+		{
+			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+			if (AnimInstance)
+			{
+				AnimInstance->StopAllMontages(0.1f);
+				AnimInstance->Montage_Play(ReloadMontage, ReloadSpeed);
+				EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
+				AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
+			}
+		}
+		ServerSetCanFire(false);
+
+		UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
 	}
 }
 
@@ -481,13 +504,14 @@ float AAACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 		}
 	}
 
-	if (AAACharacterBase* InstigatingCharacter = Cast<AAACharacterBase>(EventInstigator->GetPawn()))
+
+	if (AAAPlayerController* InstigatorController = Cast<AAAPlayerController>(EventInstigator))
 	{
-		if (InstigatingCharacter->IsLocallyControlled())
+		if (AAACharacterBase* InstigatingCharacter = Cast<AAACharacterBase>(InstigatorController->GetPawn()))
 		{
 			InstigatingCharacter->ClientRPCPlayHitSuccessSound();
+			UE_LOG(LogTemp, Warning, TEXT("Controller : %s, Pawn : %s"), *InstigatorController->GetName(), *InstigatingCharacter->GetName());
 		}
-		UE_LOG(LogTemp, Warning, TEXT("Controller : %s, Pawn : %s"), *EventInstigator->GetName(), *InstigatingCharacter->GetName());
 	}
 
 	return ActualDamage;
@@ -509,9 +533,26 @@ void AAACharacterBase::SetDead()
 	GetMesh()->SetSimulatePhysics(true);
 	GetMesh()->SetEnableGravity(true);
 	GetMesh()->WakeAllRigidBodies();
-	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	GetMesh()->SetCollisionProfileName(TEXT("AARagDoll"));
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	AAAGameMode* CurrentGameMode = Cast<AAAGameMode>(UGameplayStatics::GetGameMode(this));
+	if (CurrentGameMode && bIsAlive)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		CurrentGameMode->PlayerDied(PlayerController);
+	}
+
+	FTimerHandle DeadTimerHandle;
+
+	GetWorld()->GetTimerManager().SetTimer(
+		DeadTimerHandle,
+		FTimerDelegate::CreateLambda([this]() {
+			SetActorHiddenInGame(true);
+			}), 10.0f, false);
+
+	bIsAlive = false;
 }
 
 bool AAACharacterBase::ServerRPCPlaySound_Validate(USoundCue* SoundCue, FVector Location)
@@ -570,21 +611,11 @@ void AAACharacterBase::PlaySound(USoundCue* InSoundCue, FVector InLocation)
 		}
 		else
 		{
-			ServerRPCPlaySound(InSoundCue, InLocation);
+			if (IsLocallyControlled())
+			{
+				ServerRPCPlaySound(InSoundCue, InLocation);
+			}
 		}
-	}
-}
-
-void AAACharacterBase::PlayHitSuccess()
-{
-	if (SuccessHitSoundCue)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, SuccessHitSoundCue, GetActorLocation());
-		UE_LOG(LogTemp, Error, TEXT("SuccessHit Sound Played : %s"), *GetController()->GetName());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("SuccessHitSoundCue is null"));
 	}
 }
 

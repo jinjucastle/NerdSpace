@@ -10,14 +10,8 @@ struct FAAAbilityStat : public FTableRowBase
 	GENERATED_BODY()
 
 public:
-	FAAAbilityStat() : CurrentWeapon(0), NewWeapon(0), MaxHp(0.0f), RPM(0.0f), Damage(0.0f), MovementSpeed(0.0f), AmmoSpeed(0.0f), AmmoSize(0.0f), AmmoScale(0.0f), Acceleration(0.0f),
-		ReloadSpeed(0.0f), SplashRound(0.0f), BloodDrain(0) {}
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = WeaponType)
-	int32 CurrentWeapon;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = WeaponType)
-	int32 NewWeapon;
+	FAAAbilityStat() : MaxHp(0.0f), RPM(0.0f), Damage(0.0f), MovementSpeed(0.0f), AmmoSpeed(0.0f), AmmoSize(0.0f), AmmoScale(0.0f), Acceleration(0.0f),
+		ReloadSpeed(0.0f), SplashRound(0.0f), BloodDrain(0), Magnification(0) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
 	float MaxHp;
@@ -51,6 +45,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
 	int32 BloodDrain;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
+	int32 Magnification;
 
 
 	FAAAbilityStat operator+(const FAAAbilityStat& Other) const

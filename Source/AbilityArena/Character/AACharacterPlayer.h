@@ -139,6 +139,10 @@ public:
 	// New Fire Direction
 	FVector GetAdjustedAim()const;
 
+	// ver 0.11.2a
+	// Fire Spread System
+	FVector GetMovementSpreadDirection(const FVector& InAimDirection) const;
+
 private:
 	FTimerHandle TimerHandle_AutomaticFire;
 	float FireRate;
@@ -227,6 +231,7 @@ protected:
 	float Acceleration;
 	float SplashRound = 1.f;
 	bool bBloodDrain;
+	int32 Magnification;
 
 public:
 	FORCEINLINE const float GetAcceleration() const { return Acceleration; }
