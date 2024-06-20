@@ -66,8 +66,9 @@ void UAACardSelectUI::NativeConstruct()
 		}
 
 		Algo::RandomShuffle(CurrentTypeAbility);
+		Algo::RandomShuffle(CurrentTypeRandAbility);
 
-		UE_LOG(LogTemp, Log, TEXT("Found %d assets"), CurrentTypeAbility.Num());
+		UE_LOG(LogTemp, Log, TEXT("Found %d assets"), CurrentTypeAbility.Num() + CurrentTypeRandAbility.Num());
 
 		for (int32 i = 0; i < 4; i++)
 		{
@@ -125,7 +126,7 @@ void UAACardSelectUI::LoadAllWidgetBlueprints()
 	for (const FAssetData& AssetData : AssetDataArray)
 	{
 		FString AssetName = AssetData.AssetName.ToString();
-		FString AssetPath = AssetData.ObjectPath.ToString();
+		FString AssetPath = AssetData.GetObjectPathString();
 		CategorizeWidgetBlueprints(AssetPath, AssetName);
 	}
 }

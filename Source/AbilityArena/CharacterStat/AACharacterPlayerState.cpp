@@ -11,36 +11,20 @@
 AAACharacterPlayerState::AAACharacterPlayerState()
 {
 	PresentWeapon = nullptr;
-	
-	
 }
 
 void AAACharacterPlayerState::SetPresentWeaponData(TObjectPtr<class UAAWeaponItemData>& Weapondata)
 {
-		
+	AAAPlayerController* LocalPC = Cast<AAAPlayerController>(GetPlayerController());
+	if (LocalPC)
+	{
+		UAAGameInstance* GameInstance = Cast<UAAGameInstance>(LocalPC->GetGameInstance());
+		if (GameInstance)
+		{
+			PresentWeapon = Weapondata;
 
-			AAAPlayerController* LocalPC = Cast<AAAPlayerController>(GetPlayerController());
-			if (LocalPC)
-			{
-
-
-				UAAGameInstance* GameInstance = Cast<UAAGameInstance>(LocalPC->GetGameInstance());
-
-				if (GameInstance)
-				{
-					PresentWeapon = Weapondata;
-
-					//GameInstance->SetWeaponItemData(PresentWeapon);
-					UE_LOG(LogTemp, Error, TEXT("Loding pontWeapon Name:%s"), *GameInstance->GetName());
-				}
-			}
-		
-	
-
-	
+			//GameInstance->SetWeaponItemData(PresentWeapon);
+			UE_LOG(LogTemp, Error, TEXT("Loding pontWeapon Name:%s"), *GameInstance->GetName());
+		}
+	}
 }
-
-
-
-
-

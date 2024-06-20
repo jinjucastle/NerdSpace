@@ -35,9 +35,8 @@ FString AAAGameMode::SetTravelLevel()
 		UE_LOG(LogTemp, Log, TEXT("Level is Empty"));
 	}
 	FString RandomLevel;
-	do {
-
-
+	do 
+	{
 		int32 RandomIndex = FMath::RandRange(0, LevelArrary.Num() - 1);
 		RandomLevel = LevelArrary[RandomIndex];
 	} while (RandomLevel == TEXT("TestTransitionMap.umap")|| RandomLevel == TEXT("Lobby.umap"));
@@ -82,13 +81,20 @@ void AAAGameMode::DefaultGameTimer()
 		if (GetMatchState() == MatchState::WaitingPostMatch)
 		{
 			AAGameStateT->RemainingTime--;
-			//0.3.3b LogMessage
-			UE_LOG(LogTemp, Log, TEXT("Card Select RemainingTime: %d"), AAGameStateT->RemainingTime);
-			// ver 0.10.2a
-			// until doesn't card pick 2 seconds before the level change
-			if (AAGameStateT->RemainingTime == 2)
+			if (!isFinishGame)
 			{
-				RandomCardPick();
+				//0.3.3b LogMessage
+				UE_LOG(LogTemp, Log, TEXT("Card Select RemainingTime: %d"), AAGameStateT->RemainingTime);
+				// ver 0.10.2a
+				// until doesn't card pick 2 seconds before the level change
+				if (AAGameStateT->RemainingTime == 2)
+				{
+					RandomCardPick();
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Log, TEXT("Finish Game, Move To Lobby: %d"), AAGameStateT->RemainingTime);
 			}
 		}
 
@@ -96,11 +102,19 @@ void AAAGameMode::DefaultGameTimer()
 		{
 			if(GetMatchState()==MatchState::WaitingPostMatch)
 			{
-				// 0.9.1b
-				//feat: change function SeamlessTravel->Servertravel
-				FString ChangeMap = SetTravelLevel();
-				//UE_LOG(LogTemp, Log, TEXT("TEXT: %s"), *ChangeMap);
-				GetWorld()->ServerTravel(*ChangeMap, true);
+				if (!isFinishGame)
+				{
+					// 0.9.1b
+					//feat: change function SeamlessTravel->Servertravel
+					FString ChangeMap = SetTravelLevel();
+					//UE_LOG(LogTemp, Log, TEXT("TEXT: %s"), *ChangeMap);
+					GetWorld()->ServerTravel(*ChangeMap, true);
+				}
+				else
+				{
+					FString LobbyMap = "/Script/Engine.World'/Game/Maps/Lobby.Lobby'";
+					GetWorld()->ServerTravel(*LobbyMap, true);
+				}
 			}
 		}
 	}
@@ -125,7 +139,11 @@ void AAAGameMode::FinishGame()
 			{
 				PlayerCharacter->SetPlayerStopFire();
 			}
-			PlayerController->ClientRPCCreateCardSelectUI(CardSelectUIClass);
+
+			if (!isFinishGame)
+			{
+				PlayerController->ClientRPCCreateCardSelectUI(CardSelectUIClass);
+			}
 		}
 	}
 }
@@ -246,6 +264,25 @@ void AAAGameMode::CheckForRoundEnd()
 	if (AlivePlayers <= 1)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Last Man Standing"));
+
+		AAAPlayerController* UserController = Cast<AAAPlayerController>(GetLastPlayerController());
+		if (UserController && HasAuthority())
+		{
+			FString SteamID = UserController->GetSteamID();
+			UE_LOG(LogTemp, Warning, TEXT("Calling ClientRPCAddScore for %s"), *SteamID);
+			UserController->AddScore(SteamID);
+			UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+			if (GameInstance)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("%s Score: %d after ClientRPCAddScore"), *SteamID, GameInstance->GetScore(SteamID));
+				if (GameInstance->GetScore(SteamID) >= 5)
+				{
+					isFinishGame = true;
+					CreateWinnerUI(UserController);
+					UE_LOG(LogTemp, Error, TEXT("Winner is %s!!!"), *SteamID);
+				}
+			}
+		}
 		StartNextRound();
 	}
 }
@@ -254,4 +291,37 @@ void AAAGameMode::StartNextRound()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Move to Next round"));
 	FinishGame();
+}
+
+APlayerController* AAAGameMode::GetLastPlayerController()
+{
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		AAAPlayerController* PC = Cast<AAAPlayerController>(It->Get());
+		if (PC)
+		{
+			AAACharacterPlayer* LastManCharacter = Cast<AAACharacterPlayer>(PC->GetPawn());
+			if (LastManCharacter && LastManCharacter->GetIsAlive())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("%s: %s is Alive"), *PC->GetSteamID(), *LastManCharacter->GetActorLocation().ToString());
+				return PC;
+			}
+		}
+	}
+	return nullptr;
+}
+
+void AAAGameMode::CreateWinnerUI(AAAPlayerController* WinnerController)
+{
+	if (WinnerController)
+	{
+		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		{
+			AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get());
+			if (PlayerController)
+			{
+				PlayerController->ClientRPCCreateGameResultUI(WinnerController->GetSteamID());
+			}
+		}
+	}
 }

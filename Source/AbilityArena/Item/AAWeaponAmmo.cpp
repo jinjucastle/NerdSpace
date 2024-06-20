@@ -316,7 +316,7 @@ void AAAWeaponAmmo::MulticastRPCPlayEffect_Implementation(UNiagaraSystem* InEffe
 {
 	if (AmmoType == EAmmoType::Rocket)
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), InEffect, Location, FRotator::ZeroRotator, FVector(Damage / 200));
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), InEffect, Location, FRotator::ZeroRotator, FVector(SplashRound));
 	}
 	else
 	{

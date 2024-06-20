@@ -868,7 +868,7 @@ void AAACharacterPlayer::ShowScopeWidget()
 		ScopeWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), ScopeWidgetClass);
 		if (ScopeWidgetInstance)
 		{
-			ScopeWidgetInstance->AddToViewport();
+			ScopeWidgetInstance->AddToViewport(-1);
 		}
 	}
 }

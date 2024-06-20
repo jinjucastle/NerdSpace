@@ -16,26 +16,14 @@ class ABILITYARENA_API AAACharacterPlayerState : public APlayerState
 	GENERATED_BODY()
 
 public:
-	
 	AAACharacterPlayerState();
-
 	
 	void SetPresentWeaponData(TObjectPtr<class UAAWeaponItemData>& Weapondata);
-	
+
 	TObjectPtr<class UAAWeaponItemData> WeaponData;
-	
 	TObjectPtr<class UAAWeaponItemData> GetWeaponDat() { return PresentWeapon; }
 
-	
-
 private:
-
 	UPROPERTY( VisibleAnywhere, Category = Stat, Meta = (AllowPrivateAccess = "true"))
-		TObjectPtr<class UAAWeaponItemData> PresentWeapon;
-
-
-protected:
-
-	
-	
+	TObjectPtr<class UAAWeaponItemData> PresentWeapon;
 };
