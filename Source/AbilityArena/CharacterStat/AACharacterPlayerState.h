@@ -26,4 +26,19 @@ public:
 private:
 	UPROPERTY( VisibleAnywhere, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAAWeaponItemData> PresentWeapon;
+
+// ver 0.12.2a
+// Set ID
+public:
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const;
+
+	UFUNCTION(BlueprintCallable, Category = "PlayerState")
+	FString GetSteamID() const;
+
+	UFUNCTION(BlueprintCallable, Category = "PlayerState")
+	void SetSteamID(const FString& InSteamID);
+
+private:
+	UPROPERTY(Replicated)
+	FString SteamID;
 };
