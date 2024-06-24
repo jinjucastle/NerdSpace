@@ -11,6 +11,7 @@
 AAACharacterPlayerState::AAACharacterPlayerState()
 {
 	PresentWeapon = nullptr;
+	bReplicates = true;
 }
 
 void AAACharacterPlayerState::SetPresentWeaponData(TObjectPtr<class UAAWeaponItemData>& Weapondata)
@@ -27,4 +28,20 @@ void AAACharacterPlayerState::SetPresentWeaponData(TObjectPtr<class UAAWeaponIte
 			UE_LOG(LogTemp, Error, TEXT("Loding pontWeapon Name:%s"), *GameInstance->GetName());
 		}
 	}
+}
+
+void AAACharacterPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AAACharacterPlayerState, SteamID);
+}
+
+FString AAACharacterPlayerState::GetSteamID() const
+{
+	return SteamID;
+}
+
+void AAACharacterPlayerState::SetSteamID(const FString& InSteamID)
+{
+	SteamID = InSteamID;
 }

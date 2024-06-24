@@ -5,6 +5,7 @@
 #include "Game/AAGameMode.h"
 #include "GameData/AAGameInstance.h"
 #include "Character/AACharacterPlayer.h"
+#include "CharacterStat/AACharacterPlayerState.h"
 #include "Item/AAWeaponItemData.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Button.h"
@@ -79,7 +80,7 @@ void AAAPlayerController::BeginPlay()
 
 	CreateUI();
 
-	/*if (IsLocalController())
+	if (IsLocalController())
 	{
 		IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get(STEAM_SUBSYSTEM);
 		if (OnlineSubsystem)
@@ -90,22 +91,33 @@ void AAAPlayerController::BeginPlay()
 				FUniqueNetIdRepl UserId = Identity->GetUniquePlayerId(GetLocalPlayer()->GetControllerId());
 				if (UserId.IsValid())
 				{
-					SteamID = UserId->ToString();
+					if (HasAuthority())
+					{
+						FString NewID = UserId->ToString();
+						SteamID = NewID;
+						SetSteamIDInPlayerState();
+					}
+					else
+					{
+						FString NewID = UserId->ToString();
+						ServerSetSteamID(NewID);
+					}
 				}
 			}
 		}
-	}*/
-	if (HasAuthority())
+	}
+	
+	/*if (HasAuthority())
 	{
 		FString NewID = FString::FromInt(GetUniqueID());
 		SteamID = NewID;
-		ClientSetSteamID(SteamID);
+		SetSteamIDInPlayerState();
 	}
 	else
 	{
 		FString NewID = FString::FromInt(GetUniqueID());
 		ServerSetSteamID(NewID);
-	}
+	}*/
 }
 
 void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -119,7 +131,6 @@ void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		if (AAAGameMode* MyGameMode = Cast<AAAGameMode>(GameMode))
 		{
 			MyGameMode->OnSeamlessTravelComplete.RemoveDynamic(this, &AAAPlayerController::OnLevelChanged);
-			UE_LOG(LogTemp, Error, TEXT("RemoveDynamic HandleSeamlessTravelComplete"));
 		}
 	}
 }
@@ -248,6 +259,11 @@ void AAAPlayerController::ClientRPCCreateGameResultUI_Implementation(const FStri
 	CreateGameResultUI(InSteamID);
 }
 
+void AAAPlayerController::ClientRPCSimulateRandomButtonClick_Implementation()
+{
+	SimulateRandomButtonClick();
+}
+
 FString AAAPlayerController::GetSteamID() const
 {
 	return SteamID;
@@ -327,12 +343,15 @@ bool AAAPlayerController::ServerSetSteamID_Validate(const FString& NewSteamID)
 void AAAPlayerController::ServerSetSteamID_Implementation(const FString& NewSteamID)
 {
 	SteamID = NewSteamID;
+	SetSteamIDInPlayerState();
 	ClientSetSteamID(SteamID);
 }
 
-void AAAPlayerController::ClientRPCSimulateRandomButtonClick_Implementation()
+void AAAPlayerController::SetSteamIDInPlayerState()
 {
-	SimulateRandomButtonClick();
+	if (AAACharacterPlayerState* PS = GetPlayerState<AAACharacterPlayerState>())
+	{
+		PS->SetSteamID(SteamID);
+	}
 }
-
 
