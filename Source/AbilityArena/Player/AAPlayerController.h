@@ -113,4 +113,6 @@ private:
 	TSubclassOf<UUserWidget> GameResultUIClass;
 
 	TObjectPtr<UUserWidget> GameResultUI;
+
+	void SetSteamIDInPlayerState();
 };
