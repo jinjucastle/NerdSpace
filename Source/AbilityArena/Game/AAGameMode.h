@@ -79,4 +79,14 @@ private:
 
 	void CheckForRoundEnd();
 	void StartNextRound();
+
+// ver 0.12.1a
+// Score Section
+protected:
+	APlayerController* GetLastPlayerController();
+
+	bool isFinishGame = false;
+
+public:
+	void CreateWinnerUI(class AAAPlayerController* WinnerController);
 };

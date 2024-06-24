@@ -314,7 +314,14 @@ void AAAWeaponAmmo::PlaySoundCue()
 
 void AAAWeaponAmmo::MulticastRPCPlayEffect_Implementation(UNiagaraSystem* InEffect, FVector Location)
 {
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), InEffect, Location);
+	if (AmmoType == EAmmoType::Rocket)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), InEffect, Location, FRotator::ZeroRotator, FVector(SplashRound));
+	}
+	else
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), InEffect, Location);
+	}
 }
 
 void AAAWeaponAmmo::MulticastRPCPlaySound_Implementation(USoundCue* SoundCue, FVector Location)

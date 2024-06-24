@@ -100,6 +100,7 @@ protected:
 	bool bIsJump;
 	bool bIsRun;
 
+	UPROPERTY(BlueprintReadOnly)
 	ECharacterZoomType CurrentCharacterZoomType;
 
 public:

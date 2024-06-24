@@ -133,8 +133,6 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(AAACharacterBase, MaxAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, CurrentAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, bCanFire);
-	DOREPLIFETIME(AAACharacterBase, bIsAlive);
-	
 }
 
 // Called when the game starts or when spawned
@@ -540,6 +538,8 @@ void AAACharacterBase::SetDead()
 	AAAGameMode* CurrentGameMode = Cast<AAAGameMode>(UGameplayStatics::GetGameMode(this));
 	if (CurrentGameMode && bIsAlive)
 	{
+		bIsAlive = false;
+		UE_LOG(LogTemp, Error, TEXT("Set bIsAlive is false"));
 		APlayerController* PlayerController = Cast<APlayerController>(GetController());
 		CurrentGameMode->PlayerDied(PlayerController);
 	}
@@ -551,8 +551,6 @@ void AAACharacterBase::SetDead()
 		FTimerDelegate::CreateLambda([this]() {
 			SetActorHiddenInGame(true);
 			}), 10.0f, false);
-
-	bIsAlive = false;
 }
 
 bool AAACharacterBase::ServerRPCPlaySound_Validate(USoundCue* SoundCue, FVector Location)

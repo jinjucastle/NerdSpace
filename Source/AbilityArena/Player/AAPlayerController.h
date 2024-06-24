@@ -52,9 +52,11 @@ public:
 
 	void BindSeamlessTravelEvent();
 
+protected:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UUserWidget> PlayerUI;
 
+public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void CreateCardSelectUI(TSubclassOf<UUserWidget> CardSelectUI);
 
@@ -82,5 +84,35 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE void SetPickUpCard() { bIsPick = true; }
 
+// ver 0.12.1a
+// Score Section & Access Steam ID
+	UFUNCTION(BlueprintCallable, Category = "Steam")
+	FString GetSteamID() const;
 
+	UFUNCTION(Client, Reliable)
+	void ClientRPCCreateGameResultUI(const FString& InSteamID);
+
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void CreateGameResultUI(const FString& InSteamID);
+
+	void AddScore(const FString& InSteamID);
+
+	UFUNCTION(BlueprintCallable)
+	int32 GetScore(const FString& InSteamID) const;
+
+	//TEST Input ID
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSetSteamID(const FString& NewSteamID);
+
+	UFUNCTION(Client, Reliable)
+	void ClientSetSteamID(const FString& InSteamID);
+private:
+	FString SteamID;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> GameResultUIClass;
+
+	TObjectPtr<UUserWidget> GameResultUI;
+
+	void SetSteamIDInPlayerState();
 };

@@ -8,6 +8,7 @@
 UAAGameInstance::UAAGameInstance()
 {
 	bSetPlayerStatStay = false;
+
 	PlayerName = TEXT("Player Name");
 }
 //ver 0.4.2b
@@ -48,6 +49,27 @@ void UAAGameInstance::SetSavePlayerStat(bool newbool)
 bool UAAGameInstance::GetSavePlayerStat()
 {
 	return bSetPlayerStatStay;
+}
+
+void UAAGameInstance::AddScore(const FString& SteamID, int32 Points)
+{
+	if (Score.Contains(SteamID))
+	{
+		Score[SteamID] += Points;
+	}
+	else
+	{
+		Score.Add(SteamID, Points);
+	}
+}
+
+int32 UAAGameInstance::GetScore(const FString& SteamID) const
+{
+	if (Score.Contains(SteamID))
+	{
+		return Score[SteamID];
+	}
+	return 0;
 }
 
 void UAAGameInstance::CreateSession()
