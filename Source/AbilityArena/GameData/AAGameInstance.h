@@ -66,6 +66,9 @@ public:
 	void SetSavePlayerStat(bool newBool);
 	bool GetSavePlayerStat();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FString PlayerName;
+
 	UPROPERTY(Transient, VisibleInstanceOnly, Category = Ammo, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UClass> PlayerAmmoClass;
 

@@ -8,6 +8,7 @@
 UAAGameInstance::UAAGameInstance()
 {
 	bSetPlayerStatStay = false;
+	PlayerName = TEXT("Player Name");
 }
 //ver 0.4.2b
 // incomplete GameInstance
