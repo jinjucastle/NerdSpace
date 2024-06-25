@@ -276,7 +276,7 @@ void AAAGameMode::CheckForRoundEnd()
 			if (GameInstance)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("%s(%s) Score: %d after ClientRPCAddScore"), *SteamNickName, *SteamID, GameInstance->GetScore(SteamID));
-				if (GameInstance->GetScore(SteamID) >= 1)
+				if (GameInstance->GetScore(SteamID) >= 5)
 				{
 					isFinishGame = true;
 					CreateWinnerUI(UserController);
