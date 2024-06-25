@@ -15,7 +15,7 @@
  * 
  */
 //ver 0.5.1b
-//feat: playerId ÀúÀå¿ë struct
+//feat: playerId Ã€ÃºÃ€Ã¥Â¿Ã« struct
 USTRUCT(BlueprintType)
 struct FPlayerInfo {
 
