@@ -89,11 +89,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Steam")
 	FString GetSteamID() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Steam")
+	FString GetSteamNickName() const;
+
 	UFUNCTION(Client, Reliable)
-	void ClientRPCCreateGameResultUI(const FString& InSteamID);
+	void ClientRPCCreateGameResultUI(const FString& InSteamNickName);
 
 	UFUNCTION(BlueprintCallable, Category = "UI")
-	void CreateGameResultUI(const FString& InSteamID);
+	void CreateGameResultUI(const FString& InSteamNickName);
 
 	void AddScore(const FString& InSteamID);
 
@@ -102,12 +105,13 @@ public:
 
 	//TEST Input ID
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerSetSteamID(const FString& NewSteamID);
+	void ServerSetSteamID(const FString& InSteamID, const FString& InSteamNickName);
 
 	UFUNCTION(Client, Reliable)
-	void ClientSetSteamID(const FString& InSteamID);
+	void ClientSetSteamID(const FString& InSteamID, const FString& InSteamNickName);
 private:
 	FString SteamID;
+	FString SteamNickName;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> GameResultUIClass;
