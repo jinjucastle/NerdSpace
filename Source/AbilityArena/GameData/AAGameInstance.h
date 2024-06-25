@@ -67,7 +67,7 @@ public:
 	bool GetSavePlayerStat();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FString PlayerName;
+	FString PlayerName;
 
 	UPROPERTY(Transient, VisibleInstanceOnly, Category = Ammo, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UClass> PlayerAmmoClass;
@@ -75,16 +75,10 @@ public:
 	FORCEINLINE void SetAmmoClass(const TObjectPtr<UClass> NewAmmoClass) { PlayerAmmoClass = NewAmmoClass; }
 	FORCEINLINE UClass* GetAmmoClass() { return PlayerAmmoClass; }
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString PlayerName;
-
 	// ver 0.12.1a
 	// Score Section
 	void AddScore(const FString& SteamID, int32 Points);
 	FORCEINLINE int32 GetScore(const FString& SteamID) const;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Winner")
-	FString WinningPlayerName;
 
 protected:
 	UPROPERTY(BlueprintReadOnly)

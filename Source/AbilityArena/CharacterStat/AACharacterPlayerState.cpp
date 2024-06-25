@@ -34,6 +34,7 @@ void AAACharacterPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AAACharacterPlayerState, SteamID);
+	DOREPLIFETIME(AAACharacterPlayerState, SteamNickName);
 }
 
 FString AAACharacterPlayerState::GetSteamID() const
@@ -44,4 +45,14 @@ FString AAACharacterPlayerState::GetSteamID() const
 void AAACharacterPlayerState::SetSteamID(const FString& InSteamID)
 {
 	SteamID = InSteamID;
+}
+
+FString AAACharacterPlayerState::GetSteamNickName() const
+{
+	return SteamNickName;
+}
+
+void AAACharacterPlayerState::SetSteamNickName(const FString& InSteamNickName)
+{
+	SteamNickName = InSteamNickName;
 }
