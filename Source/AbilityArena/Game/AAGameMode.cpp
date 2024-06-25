@@ -269,17 +269,18 @@ void AAAGameMode::CheckForRoundEnd()
 		if (UserController && HasAuthority())
 		{
 			FString SteamID = UserController->GetSteamID();
-			UE_LOG(LogTemp, Warning, TEXT("Calling ClientRPCAddScore for %s"), *SteamID);
+			FString SteamNickName = UserController->GetSteamNickName();
+			UE_LOG(LogTemp, Warning, TEXT("Calling ClientRPCAddScore for %s(%s)"), *SteamNickName, *SteamID);
 			UserController->AddScore(SteamID);
 			UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
 			if (GameInstance)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("%s Score: %d after ClientRPCAddScore"), *SteamID, GameInstance->GetScore(SteamID));
-				if (GameInstance->GetScore(SteamID) >= 5)
+				UE_LOG(LogTemp, Warning, TEXT("%s(%s) Score: %d after ClientRPCAddScore"), *SteamNickName, *SteamID, GameInstance->GetScore(SteamID));
+				if (GameInstance->GetScore(SteamID) >= 1)
 				{
 					isFinishGame = true;
 					CreateWinnerUI(UserController);
-					UE_LOG(LogTemp, Error, TEXT("Winner is %s!!!"), *SteamID);
+					UE_LOG(LogTemp, Error, TEXT("Winner is %s!!!"), *SteamNickName);
 				}
 			}
 		}
@@ -320,7 +321,7 @@ void AAAGameMode::CreateWinnerUI(AAAPlayerController* WinnerController)
 			AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get());
 			if (PlayerController)
 			{
-				PlayerController->ClientRPCCreateGameResultUI(WinnerController->GetSteamID());
+				PlayerController->ClientRPCCreateGameResultUI(WinnerController->GetSteamNickName());
 			}
 		}
 	}

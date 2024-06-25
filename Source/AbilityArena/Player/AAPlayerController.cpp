@@ -10,9 +10,11 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/Button.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "UI/AACardSelectUI.h"
 #include "OnlineSubsystem.h"
 #include "Interfaces/OnlineIdentityInterface.h"
+#include "Interfaces/OnlinefriendsInterface.h"
 
 AAAPlayerController::AAAPlayerController()
 {
@@ -93,14 +95,17 @@ void AAAPlayerController::BeginPlay()
 				{
 					if (HasAuthority())
 					{
-						FString NewID = UserId->ToString();
+						FString NewID = UserId.ToString();
+						FString NewNickName = Identity->GetPlayerNickname(*UserId);
 						SteamID = NewID;
+						SteamNickName = NewNickName;
 						SetSteamIDInPlayerState();
 					}
 					else
 					{
-						FString NewID = UserId->ToString();
-						ServerSetSteamID(NewID);
+						FString NewID = UserId.ToString();
+						FString NewNickName = Identity->GetPlayerNickname(*UserId);
+						ServerSetSteamID(NewID, NewNickName);
 					}
 				}
 			}
@@ -254,9 +259,9 @@ void AAAPlayerController::SimulateRandomButtonClick()
 	}
 }
 
-void AAAPlayerController::ClientRPCCreateGameResultUI_Implementation(const FString& InSteamID)
+void AAAPlayerController::ClientRPCCreateGameResultUI_Implementation(const FString& InSteamNickName)
 {
-	CreateGameResultUI(InSteamID);
+	CreateGameResultUI(InSteamNickName);
 }
 
 void AAAPlayerController::ClientRPCSimulateRandomButtonClick_Implementation()
@@ -269,7 +274,12 @@ FString AAAPlayerController::GetSteamID() const
 	return SteamID;
 }
 
-void AAAPlayerController::CreateGameResultUI(const FString& InSteamID)
+FString AAAPlayerController::GetSteamNickName() const
+{
+	return SteamNickName;
+}
+
+void AAAPlayerController::CreateGameResultUI(const FString& InSteamNickName)
 {
 	if (GameResultUIClass)
 	{
@@ -280,7 +290,7 @@ void AAAPlayerController::CreateGameResultUI(const FString& InSteamID)
 		{
 			GameResultUI->AddToViewport();
 
-			UE_LOG(LogTemp, Log, TEXT("Creating Game Result UI for Winner: %s"), *InSteamID);
+			UE_LOG(LogTemp, Log, TEXT("Creating Game Result UI for Winner: %s"), *InSteamNickName);
 
 			if (GameResultUI->IsA<UUserWidget>())
 			{
@@ -292,10 +302,10 @@ void AAAPlayerController::CreateGameResultUI(const FString& InSteamID)
 						FString WinnerNameString;
 					};
 					FWinnerName Params;
-					Params.WinnerNameString = InSteamID;
+					Params.WinnerNameString = InSteamNickName;
 					GameResultUI->ProcessEvent(Func, &Params);
 
-					UE_LOG(LogTemp, Log, TEXT("SetWinnerName function called with name: %s"), *InSteamID);
+					UE_LOG(LogTemp, Log, TEXT("SetWinnerName function called with name: %s"), *InSteamNickName);
 				}
 			}
 		}
@@ -327,24 +337,26 @@ int32 AAAPlayerController::GetScore(const FString& InSteamID) const
 }
 
 //TEST Input ID
-void AAAPlayerController::ClientSetSteamID_Implementation(const FString& InSteamID)
+void AAAPlayerController::ClientSetSteamID_Implementation(const FString& InSteamID, const FString& InSteamNickName)
 {
 	if (IsLocalController())
 	{
 		SteamID = InSteamID;
+		SteamNickName = InSteamNickName;
 	}
 }
 
-bool AAAPlayerController::ServerSetSteamID_Validate(const FString& NewSteamID)
+bool AAAPlayerController::ServerSetSteamID_Validate(const FString& InSteamID, const FString& InSteamNickName)
 {
 	return true;
 }
 
-void AAAPlayerController::ServerSetSteamID_Implementation(const FString& NewSteamID)
+void AAAPlayerController::ServerSetSteamID_Implementation(const FString& InSteamID, const FString& InSteamNickName)
 {
-	SteamID = NewSteamID;
+	SteamID = InSteamID;
+	SteamNickName = InSteamNickName;
 	SetSteamIDInPlayerState();
-	ClientSetSteamID(SteamID);
+	ClientSetSteamID(SteamID, SteamNickName);
 }
 
 void AAAPlayerController::SetSteamIDInPlayerState()
@@ -352,6 +364,7 @@ void AAAPlayerController::SetSteamIDInPlayerState()
 	if (AAACharacterPlayerState* PS = GetPlayerState<AAACharacterPlayerState>())
 	{
 		PS->SetSteamID(SteamID);
+		PS->SetSteamNickName(SteamNickName);
 	}
 }
 

@@ -38,7 +38,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "PlayerState")
 	void SetSteamID(const FString& InSteamID);
 
+	UFUNCTION(BlueprintCallable, Category = "PlayerState")
+	FString GetSteamNickName() const;
+
+	UFUNCTION(BlueprintCallable, Category = "PlayerState")
+	void SetSteamNickName(const FString& InSteamNickName);
+
 private:
 	UPROPERTY(Replicated)
 	FString SteamID;
+
+	UPROPERTY(Replicated)
+	FString SteamNickName;
 };
