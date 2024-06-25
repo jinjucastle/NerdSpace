@@ -15,7 +15,7 @@
  * 
  */
 //ver 0.5.1b
-//feat: playerId ÀúÀå¿ë struct
+//feat: playerId Ã€ÃºÃ€Ã¥Â¿Ã« struct
 USTRUCT(BlueprintType)
 struct FPlayerInfo {
 
@@ -78,7 +78,7 @@ public:
 	// ver 0.12.1a
 	// Score Section
 	void AddScore(const FString& SteamID, int32 Points);
-	FORCEINLINE int32 GetScore(const FString& SteamID) const;
+	int32 GetScore(const FString& SteamID) const;
 
 protected:
 	UPROPERTY(BlueprintReadOnly)
