@@ -54,12 +54,6 @@ AAAGameMode::AAAGameMode()
 	//feat: playerStateID가 seamlessTravel에는 변경 X
 	bUseSeamlessTravel = true;
 
-	static ConstructorHelpers::FClassFinder<UUserWidget> CardSelectWBPClass(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/UI/TestUI_2.TestUI_2_C'"));
-	if (CardSelectWBPClass.Class != nullptr)
-	{
-		CardSelectUIClass = CardSelectWBPClass.Class;
-	}
-
 	AlivePlayers = 0;
 }
 

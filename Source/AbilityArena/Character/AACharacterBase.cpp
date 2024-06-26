@@ -48,12 +48,6 @@ AAACharacterBase::AAACharacterBase()
 		GetMesh()->SetSkeletalMesh(CharacterMeshRef.Object);
 	}
 
-	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimInstanceClassRef(TEXT("/Game/Animation/ABP_AA_Character.ABP_AA_Character_C"));
-	if (AnimInstanceClassRef.Class)
-	{
-		GetMesh()->SetAnimInstanceClass(AnimInstanceClassRef.Class);
-	}
-
 	// Zoom
 	static ConstructorHelpers::FObjectFinder<UAACharacterControlData> ZoomOutDataRef(TEXT("/Script/AbilityArena.AACharacterControlData'/Game/CharacterControl/AAC_ZoomOut.AAC_ZoomOut'"));
 	if (ZoomOutDataRef.Object)

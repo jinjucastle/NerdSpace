@@ -24,7 +24,7 @@ struct FPlayerInfo {
 public:
 
 	UPROPERTY(VisibleAnywhere, Category = State)
-		int32 PlayerID;
+		int32 PlayerID = 0;
 };
 
 UCLASS()
