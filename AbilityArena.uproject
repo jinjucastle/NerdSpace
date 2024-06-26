@@ -33,6 +33,13 @@
 			"SupportedTargetPlatforms": [
 				"Win64"
 			]
+<<<<<<< HEAD
+		},
+		{
+			"Name": "VisualStudioSourceCodeAccess",
+			"Enabled": false
+=======
+>>>>>>> e84285bc4548bd84875ae9f01d07c328df1b62bd
 		}
 	]
 }
