@@ -15,13 +15,15 @@
 //0.10.1b add MapArray
 void AAAGameMode::AddLevelName()
 {
-	FString ContentsPath = FPaths::ProjectContentDir() + TEXT("/Maps");
+	
+	/*FString ContentsPath = FPaths::ProjectContentDir() + TEXT("/Maps");
 	FPaths::NormalizeDirectoryName(ContentsPath);
-	IFileManager& FileManaget = IFileManager::Get();
-	FString Searchpatten = TEXT("/*.umap");
-	FileManaget.FindFiles(LevelArrary, *(ContentsPath+Searchpatten), true, false);
+	IFileManager& FileManager = IFileManager::Get();
+	FString Searchpatten = TEXT("*.umap");
+	FileManager.FindFiles(LevelArrary, *(ContentsPath + "/" + Searchpatten), true, false);
 
 	UE_LOG(LogTemp, Log, TEXT("portoq") );
+	*/
 	for (const FString& FileNames : LevelArrary)
 	{
 		UE_LOG(LogTemp, Log, TEXT("portoq: %s"), *FileNames);
@@ -30,20 +32,25 @@ void AAAGameMode::AddLevelName()
 //0.10.1b find randommapURL
 FString AAAGameMode::SetTravelLevel()
 {
-	if (LevelArrary.Num() == 0)
+	/*if (LevelArrary.Num() == 0)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Level is Empty"));
+		return TEXT("");
 	}
 	FString RandomLevel;
+  
 	do 
 	{
 		int32 RandomIndex = FMath::RandRange(0, LevelArrary.Num() - 1);
 		RandomLevel = LevelArrary[RandomIndex];
-	} while (RandomLevel == TEXT("TestTransitionMap.umap")|| RandomLevel == TEXT("Lobby.umap"));
+	} while (RandomLevel == TEXT("TestTransitionMap.umap")|| RandomLevel == TEXT("Lobby.umap"));*/
 	
+	int32 RandomIndex = FMath::RandRange(0, LevelArrary.Num() - 1);
+	RandomLevel = LevelArrary[RandomIndex];
 	
+	FString TotalLevel = TEXT("/Game/Maps/") + RandomLevel;
+	//FString TotalLevel = TEXT("/Game/Maps/Test");
 
-	FString TotalLevel = TEXT("/Game/Maps/") + FPaths::GetBaseFilename(*RandomLevel);
 	UE_LOG(LogTemp, Error, TEXT("Level Name Is:%s"), *TotalLevel);
 	return  TotalLevel;
 }
@@ -51,7 +58,7 @@ FString AAAGameMode::SetTravelLevel()
 AAAGameMode::AAAGameMode()
 {
 	//ver 0.5.1b
-	//feat: playerStateID°¡ seamlessTravel¿¡´Â º¯°æ X
+	//feat: playerStateIDê°€ seamlessTravelì—ëŠ” ë³€ê²½ X
 	bUseSeamlessTravel = true;
 
 	AlivePlayers = 0;
@@ -60,20 +67,22 @@ AAAGameMode::AAAGameMode()
 void AAAGameMode::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	//¶ó¿îµå È°µ¿ ºÎºĞ 0.3.3B
-	// Ãæµ¹°¡´É¼ºÀ¸·Î ÀÎÇÑ ÁÖ¼®Ã³¸®
+	//ë¼ìš´ë“œ í™œë™ ë¶€ë¶„ 0.3.3B
+	// ì¶©ëŒê°€ëŠ¥ì„±ìœ¼ë¡œ ì¸í•œ ì£¼ì„ì²˜ë¦¬
 	GetWorldTimerManager().SetTimer(GameTimerHandle, this, &AAAGameMode::DefaultGameTimer, GetWorldSettings()->GetEffectiveTimeDilation(), true);
+
 	AddLevelName();
 }
 
 void AAAGameMode::DefaultGameTimer()
 {
 	AAAGameStateT* const AAGameStateT = Cast<AAAGameStateT>(GameState);
-	
+	//FString ChangeMap = SetTravelLevel();
 	if (AAGameStateT && AAGameStateT->RemainingTime > 0 && GetMatchState() != MatchState::InProgress)
 	{
 		if (GetMatchState() == MatchState::WaitingPostMatch)
 		{
+
 			AAGameStateT->RemainingTime--;
 			if (!isFinishGame)
 			{
@@ -106,7 +115,7 @@ void AAAGameMode::DefaultGameTimer()
 				}
 				else
 				{
-					FString LobbyMap = "/Script/Engine.World'/Game/Maps/Lobby.Lobby'";
+					FString LobbyMap = TEXT("/Game/Maps/Lobby");
 					GetWorld()->ServerTravel(*LobbyMap, true);
 				}
 			}
@@ -195,7 +204,8 @@ void AAAGameMode::PostLogin(APlayerController* NewPlayer)
 	Super::PostLogin(NewPlayer);
 
 	UE_LOG(LogTemp, Warning, TEXT("%s Login"), *NewPlayer->GetName());
-
+	
+	
 	if (UsedPlayerStartPoints.Num() >= PlayerStartPoints.Num())
 	{
 		UsedPlayerStartPoints.Empty();
@@ -247,7 +257,7 @@ void AAAGameMode::PlayerDied(AController* PlayerController)
 {
 	AlivePlayers--;
 
-	// ÇÃ·¹ÀÌ¾î°¡ Á×À» ¶§¸¶´Ù ¶ó¿îµå Á¾·á Á¶°ÇÀ» È®ÀÎÇÕ´Ï´Ù.
+	// í”Œë ˆì´ì–´ê°€ ì£½ì„ ë•Œë§ˆë‹¤ ë¼ìš´ë“œ ì¢…ë£Œ ì¡°ê±´ì„ í™•ì¸í•©ë‹ˆë‹¤.
 	CheckForRoundEnd();
 
 	UE_LOG(LogTemp, Warning, TEXT("Current %d Alive Player"), AlivePlayers);
