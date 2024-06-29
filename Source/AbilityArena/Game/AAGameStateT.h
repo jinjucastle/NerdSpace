@@ -23,5 +23,5 @@ public:
 	UPROPERTY(Transient, Replicated)
 		int32 RemainingTime;
 
-	int32 ShowResultWaitingTime = 20;
+	int32 ShowResultWaitingTime = 15;
 };

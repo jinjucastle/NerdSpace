@@ -119,4 +119,18 @@ private:
 	TObjectPtr<UUserWidget> GameResultUI;
 
 	void SetSteamIDInPlayerState();
+
+//ver 0.13.4a
+public:
+	UPROPERTY(BlueprintReadOnly)
+	int32 PlayerScore = 0;
+
+	UFUNCTION(BlueprintCallable)
+	void GetScoreFromServer();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCRequestScore(const FString& InSteamID);
+
+	UFUNCTION(Client, Reliable)
+	void ClientRPCReceiveScore(const FString& InSteamID, int32 InScore);
 };
