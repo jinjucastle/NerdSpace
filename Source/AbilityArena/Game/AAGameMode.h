@@ -19,12 +19,15 @@ class ABILITYARENA_API AAAGameMode : public AGameMode
 
 private:
 	//0.10.1b LevelArray
-	TArray<FString>LevelArrary;
+	
 	void AddLevelName();
 	FString SetTravelLevel();
 	
 public:
 	AAAGameMode();
+	UPROPERTY(EditDefaultsOnly, Category = "Level")
+	TArray<FString>LevelArrary;
+
 protected:
 
 	virtual void PostInitializeComponents() override;
@@ -58,6 +61,8 @@ protected:
 public:
 	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+	
+	
 
 protected:
 	virtual void BeginPlay() override;
