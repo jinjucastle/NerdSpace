@@ -115,13 +115,15 @@ void AAAPlayerController::BeginPlay()
 	/*if (HasAuthority())
 	{
 		FString NewID = FString::FromInt(GetUniqueID());
+		FString NewNickName = "UserNick";
 		SteamID = NewID;
-		SetSteamIDInPlayerState();
+		ServerSetSteamID(NewID, NewNickName);
 	}
 	else
 	{
 		FString NewID = FString::FromInt(GetUniqueID());
-		ServerSetSteamID(NewID);
+		FString NewNickName = "UserNick";
+		ServerSetSteamID(NewID, NewNickName);
 	}*/
 }
 
@@ -365,6 +367,52 @@ void AAAPlayerController::SetSteamIDInPlayerState()
 	{
 		PS->SetSteamID(SteamID);
 		PS->SetSteamNickName(SteamNickName);
+	}
+}
+
+void AAAPlayerController::GetScoreFromServer()
+{
+	ServerRPCRequestScore(GetSteamID());
+}
+
+bool AAAPlayerController::ServerRPCRequestScore_Validate(const FString& InSteamID)
+{
+	return true;
+}
+
+void AAAPlayerController::ServerRPCRequestScore_Implementation(const FString& InSteamID)
+{
+	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		if (UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance()))
+		{
+			int32 NewScore = GameInstance->GetScore(InSteamID);
+			ClientRPCReceiveScore(InSteamID, NewScore);
+		}
+	}
+}
+
+void AAAPlayerController::ClientRPCReceiveScore_Implementation(const FString& InSteamID, int32 InScore)
+{
+	if (IsLocalController())
+	{
+		PlayerScore = InScore;
+		UE_LOG(LogTemp, Log, TEXT("Steam ID: %s, Score: %d"), *InSteamID, PlayerScore);
+
+		if (PlayerUI)
+		{
+			UFunction* Func = PlayerUI->FindFunction(FName("UpdateScoreUI"));
+			if (Func)
+			{
+				struct FScoreParams
+				{
+					int32 Score;
+				};
+				FScoreParams Params;
+				Params.Score = PlayerScore;
+				PlayerUI->ProcessEvent(Func, &Params);
+			}
+		}
 	}
 }
 

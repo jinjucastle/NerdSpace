@@ -134,7 +134,7 @@ void UAACardSelectUI::LoadAllWidgetBlueprints()
 void UAACardSelectUI::CategorizeWidgetBlueprints(const FString& AssetPath, const FString& AssetName)
 {
 	FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
-	FSoftObjectPath WidgetClassPath(AssetPath);
+	FSoftObjectPath WidgetClassPath(AssetPath + "_C");
 
 	UClass* WidgetClass = Cast<UClass>(Streamable.LoadSynchronous(WidgetClassPath));
 	if (WidgetClass && WidgetClass->IsChildOf(UUserWidget::StaticClass()))
