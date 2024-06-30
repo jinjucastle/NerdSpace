@@ -32,12 +32,13 @@ void AAAGameMode::AddLevelName()
 //0.10.1b find randommapURL
 FString AAAGameMode::SetTravelLevel()
 {
+	FString RandomLevel;
 	/*if (LevelArrary.Num() == 0)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Level is Empty"));
 		return TEXT("");
 	}
-	FString RandomLevel;
+	
   
 	do 
 	{
