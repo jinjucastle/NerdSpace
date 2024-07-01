@@ -91,7 +91,6 @@ void AAAPlayerController::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	
 }
 
 void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -148,6 +147,8 @@ void AAAPlayerController::OnPossess(APawn* InPawn)
 		}
 	}
 
+	UE_LOG(LogTemp, Log, TEXT("Controller Set Steam Id or NickName Complete."));
+
 	/*if (HasAuthority())
 	{
 		FString NewID = FString::FromInt(GetUniqueID());
@@ -162,12 +163,9 @@ void AAAPlayerController::OnPossess(APawn* InPawn)
 		ServerSetSteamID(NewID, NewNickName);
 	}*/
 
-	UE_LOG(LogTemp, Log, TEXT("Controller Set Steam Id or NickName Complete."));
-
 	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Controller Possess Pawn Complete."));
-		GameMode->PlayerPossessCompleted(this);
+		GameMode->OnAllPlayersReady.AddDynamic(this, &AAAPlayerController::HandleSeamlessTravelComplete);
 	}
 }
 
