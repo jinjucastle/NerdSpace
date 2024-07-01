@@ -15,15 +15,6 @@
 //0.10.1b add MapArray
 void AAAGameMode::AddLevelName()
 {
-	
-	/*FString ContentsPath = FPaths::ProjectContentDir() + TEXT("/Maps");
-	FPaths::NormalizeDirectoryName(ContentsPath);
-	IFileManager& FileManager = IFileManager::Get();
-	FString Searchpatten = TEXT("*.umap");
-	FileManager.FindFiles(LevelArrary, *(ContentsPath + "/" + Searchpatten), true, false);
-
-	UE_LOG(LogTemp, Log, TEXT("portoq") );
-	*/
 	for (const FString& FileNames : LevelArrary)
 	{
 		UE_LOG(LogTemp, Log, TEXT("portoq: %s"), *FileNames);
@@ -32,18 +23,7 @@ void AAAGameMode::AddLevelName()
 //0.10.1b find randommapURL
 FString AAAGameMode::SetTravelLevel()
 {
-	/*if (LevelArrary.Num() == 0)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Level is Empty"));
-		return TEXT("");
-	}
 	FString RandomLevel;
-  
-	do 
-	{
-		int32 RandomIndex = FMath::RandRange(0, LevelArrary.Num() - 1);
-		RandomLevel = LevelArrary[RandomIndex];
-	} while (RandomLevel == TEXT("TestTransitionMap.umap")|| RandomLevel == TEXT("Lobby.umap"));*/
 	
 	int32 RandomIndex = FMath::RandRange(0, LevelArrary.Num() - 1);
 	RandomLevel = LevelArrary[RandomIndex];
@@ -62,6 +42,9 @@ AAAGameMode::AAAGameMode()
 	bUseSeamlessTravel = true;
 
 	AlivePlayers = 0;
+
+	NumPlayersLoggedIn = 0;
+	TotalPlayers = 2;
 }
 
 void AAAGameMode::PostInitializeComponents()
@@ -202,9 +185,6 @@ AActor* AAAGameMode::ChoosePlayerStart_Implementation(AController* Player)
 void AAAGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
-
-	UE_LOG(LogTemp, Warning, TEXT("%s Login"), *NewPlayer->GetName());
-	
 	
 	if (UsedPlayerStartPoints.Num() >= PlayerStartPoints.Num())
 	{
@@ -218,6 +198,11 @@ void AAAGameMode::PostLogin(APlayerController* NewPlayer)
 
 	AlivePlayers++;
 	UE_LOG(LogTemp, Warning, TEXT("Found %d Alive Player"), AlivePlayers);
+
+	NumPlayersLoggedIn++;
+
+	CheckAllPlayersReady();
+	CheckAllPlayersPossessed();
 }
 
 void AAAGameMode::BeginPlay()
@@ -275,7 +260,7 @@ void AAAGameMode::CheckForRoundEnd()
 			FString SteamID = UserController->GetSteamID();
 			FString SteamNickName = UserController->GetSteamNickName();
 			UE_LOG(LogTemp, Warning, TEXT("Calling ClientRPCAddScore for %s(%s)"), *SteamNickName, *SteamID);
-			UserController->AddScore(SteamID);
+			UserController->AddScore(SteamID, 1);
 			UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
 			if (GameInstance)
 			{
@@ -329,4 +314,109 @@ void AAAGameMode::CreateWinnerUI(AAAPlayerController* WinnerController)
 			}
 		}
 	}
+}
+
+void AAAGameMode::CheckAllPlayersReady()
+{
+	if (NumPlayersLoggedIn >= TotalPlayers)
+	{
+		OnAllPlayersReady.Broadcast();
+		//StartGame();
+	}
+}
+
+void AAAGameMode::CheckAllPlayersPossessed()
+{
+	if (NumPlayersPossessed >= TotalPlayers)
+	{
+		StartGame();
+	}
+}
+
+void AAAGameMode::StartGame()
+{
+	UE_LOG(LogTemp, Warning, TEXT("All players are ready. Starting the game..."));
+
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get());
+		if (PlayerController && HasAuthority())
+		{
+			FString SteamID = PlayerController->GetSteamID();
+			FString SteamNickName = Cast<AAACharacterPlayerState>(PlayerController->PlayerState)->GetSteamNickName();
+			UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+			if (GameInstance)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("%s is in game now (%s)"), *SteamNickName, *SteamID);
+				PlayerController->AddScore(SteamID, 0);
+				GameInstance->AddPlayerNickname(SteamID, SteamNickName);
+			}
+		}
+	}
+
+	ShowScoreUI();
+
+	FTimerHandle UnusedHandle;
+	GetWorldTimerManager().SetTimer(UnusedHandle, this, &AAAGameMode::HideScoreUI, 7.0f, false);
+}
+
+void AAAGameMode::PlayerPossessCompleted(APlayerController* NewPlayer)
+{
+	NumPlayersPossessed++;
+	CheckAllPlayersPossessed();
+}
+
+void AAAGameMode::ShowScoreUI()
+{
+	if (ScoreWidgetClass != nullptr)
+	{
+		// Get all player controllers in the level
+		TArray<AActor*> PlayerControllers;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerController::StaticClass(), PlayerControllers);
+
+		for (AActor* PlayerControllerActor : PlayerControllers)
+		{
+			AAAPlayerController* PlayerController = Cast<AAAPlayerController>(PlayerControllerActor);
+			if (PlayerController)
+			{
+				UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+				if (GameInstance)
+				{
+					TArray<FString> PlayerIDs;
+					TArray<FString> PlayerNickNames;
+					TArray<int32> PlayerScores;
+
+					GameInstance->Score.GenerateKeyArray(PlayerIDs);
+
+					for (const FString& PlayerID : PlayerIDs)
+					{
+						FString PlayerNickName = GameInstance->GetPlayerNickname(PlayerID);
+						int32 PlayerScore = GameInstance->GetScore(PlayerID);
+						
+						PlayerNickNames.Add(PlayerNickName);
+						PlayerScores.Add(PlayerScore);
+					}
+
+					PlayerController->ClientRPCAddScoreWidget(ScoreWidgetClass, PlayerNickNames, PlayerScores);
+				}
+			}
+		}
+	}
+}
+
+void AAAGameMode::HideScoreUI()
+{
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get());
+		if (PlayerController)
+		{
+			PlayerController->ClientRPCRemoveScoreWidget();
+		}
+	}
+}
+
+void AAAGameMode::MulticastRPCShowScoreUI_Implementation()
+{
+	ShowScoreUI();
 }

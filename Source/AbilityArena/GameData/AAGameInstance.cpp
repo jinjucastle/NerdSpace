@@ -18,6 +18,7 @@ void UAAGameInstance::Init()
 	Super::Init();
 	UE_LOG(LogTemp, Warning, TEXT("CallGameInStance"));
 	
+	Score.Empty();
 }
 
 void UAAGameInstance::SetWeaponItemData(TObjectPtr<class UAAWeaponItemData> SetPresentWeapon)
@@ -60,6 +61,7 @@ void UAAGameInstance::AddScore(const FString& SteamID, int32 Points)
 	else
 	{
 		Score.Add(SteamID, Points);
+		UE_LOG(LogTemp, Log, TEXT("Success Add %s"), *SteamID);
 	}
 }
 
@@ -70,6 +72,29 @@ int32 UAAGameInstance::GetScore(const FString& SteamID) const
 		return Score[SteamID];
 	}
 	return 0;
+}
+
+bool UAAGameInstance::CheckScore(const FString& SteamID) const
+{
+	return Score.Contains(SteamID);
+}
+
+void UAAGameInstance::AddPlayerNickname(const FString& SteamID, const FString& Nickname)
+{
+	if (!PlayerNicknames.Contains(SteamID))
+	{
+		PlayerNicknames.Add(SteamID, Nickname);
+		UE_LOG(LogTemp, Log, TEXT("Added nickname %s for %s"), *Nickname, *SteamID);
+	}
+}
+
+FString UAAGameInstance::GetPlayerNickname(const FString& SteamID) const
+{
+	if (PlayerNicknames.Contains(SteamID))
+	{
+		return PlayerNicknames[SteamID];
+	}
+	return FString();
 }
 
 void UAAGameInstance::CreateSession()
