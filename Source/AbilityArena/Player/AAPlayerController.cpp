@@ -86,6 +86,30 @@ void AAAPlayerController::BeginPlay()
 
 	//CreateUI();
 
+	/*if (HasAuthority())
+	{
+		FString NewID = FString::FromInt(GetUniqueID());
+		FString NewNickName = "ServerNick";
+		SteamID = NewID;
+		ServerSetSteamID(NewID, NewNickName);
+	}
+	else
+	{
+		FString NewID = FString::FromInt(GetUniqueID());
+		FString NewNickName = "ClientNick";
+		ServerSetSteamID(NewID, NewNickName);
+	}*/
+
+	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GameMode->OnAllPlayersReady.AddDynamic(this, &AAAPlayerController::HandleSeamlessTravelComplete);
+	}
+}
+
+void AAAPlayerController::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
 	if (IsLocalController())
 	{
 		IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get(STEAM_SUBSYSTEM);
@@ -115,27 +139,8 @@ void AAAPlayerController::BeginPlay()
 			}
 		}
 	}
-	
+
 	UE_LOG(LogTemp, Log, TEXT("Controller Set Steam Id or NickName Complete."));
-
-	/*if (HasAuthority())
-	{
-		FString NewID = FString::FromInt(GetUniqueID());
-		FString NewNickName = "ServerNick";
-		SteamID = NewID;
-		ServerSetSteamID(NewID, NewNickName);
-	}
-	else
-	{
-		FString NewID = FString::FromInt(GetUniqueID());
-		FString NewNickName = "ClientNick";
-		ServerSetSteamID(NewID, NewNickName);
-	}*/
-
-	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		GameMode->OnAllPlayersReady.AddDynamic(this, &AAAPlayerController::HandleSeamlessTravelComplete);
-	}
 }
 
 void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
