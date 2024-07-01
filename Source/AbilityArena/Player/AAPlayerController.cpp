@@ -9,6 +9,10 @@
 #include "Item/AAWeaponItemData.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Button.h"
+#include "Components/ProgressBar.h"
+#include "Components/TextBlock.h"
+#include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "UI/AACardSelectUI.h"
@@ -75,12 +79,12 @@ void AAAPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	FInputModeGameOnly GameOnlyInputMode;
-	SetInputMode(GameOnlyInputMode);
+	/*FInputModeGameOnly GameOnlyInputMode;
+	SetInputMode(GameOnlyInputMode);*/
 
 	BindSeamlessTravelEvent();
 
-	CreateUI();
+	//CreateUI();
 
 	if (IsLocalController())
 	{
@@ -115,16 +119,21 @@ void AAAPlayerController::BeginPlay()
 	/*if (HasAuthority())
 	{
 		FString NewID = FString::FromInt(GetUniqueID());
-		FString NewNickName = "UserNick";
+		FString NewNickName = "ServerNick";
 		SteamID = NewID;
 		ServerSetSteamID(NewID, NewNickName);
 	}
 	else
 	{
 		FString NewID = FString::FromInt(GetUniqueID());
-		FString NewNickName = "UserNick";
+		FString NewNickName = "ClientNick";
 		ServerSetSteamID(NewID, NewNickName);
 	}*/
+
+	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GameMode->OnAllPlayersReady.AddDynamic(this, &AAAPlayerController::HandleSeamlessTravelComplete);
+	}
 }
 
 void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -139,6 +148,29 @@ void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		{
 			MyGameMode->OnSeamlessTravelComplete.RemoveDynamic(this, &AAAPlayerController::OnLevelChanged);
 		}
+	}
+}
+
+void AAAPlayerController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
+void AAAPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GameMode->PlayerPossessCompleted(this);
+	}
+}
+
+void AAAPlayerController::HandleSeamlessTravelComplete()
+{
+	if (IsLocalController())
+	{
+		UE_LOG(LogTemp, Log, TEXT("HandleSeamlessTravelComplete: UI initialized"));
 	}
 }
 
@@ -314,16 +346,13 @@ void AAAPlayerController::CreateGameResultUI(const FString& InSteamNickName)
 	}
 }
 
-void AAAPlayerController::AddScore(const FString& InSteamID)
+void AAAPlayerController::AddScore(const FString& InSteamID, int32 InScore)
 {
-	if (HasAuthority())
+	UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+	if (GameInstance)
 	{
-		UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
-		if (GameInstance)
-		{
-			GameInstance->AddScore(SteamID, 1);
-			UE_LOG(LogTemp, Warning, TEXT("Player %s new score: %d"), *SteamID, GameInstance->GetScore(SteamID));
-		}
+		GameInstance->AddScore(InSteamID, InScore);
+		UE_LOG(LogTemp, Warning, TEXT("Player %s new score: %d"), *InSteamID, GameInstance->GetScore(InSteamID));
 	}
 }
 
@@ -350,6 +379,8 @@ void AAAPlayerController::ClientSetSteamID_Implementation(const FString& InSteam
 
 bool AAAPlayerController::ServerSetSteamID_Validate(const FString& InSteamID, const FString& InSteamNickName)
 {
+	/*UAAGameInstance* MyGameInstace = Cast<UAAGameInstance>(GetGameInstance());
+	return MyGameInstace->CheckScore(InSteamID);*/
 	return true;
 }
 
@@ -370,49 +401,58 @@ void AAAPlayerController::SetSteamIDInPlayerState()
 	}
 }
 
-void AAAPlayerController::GetScoreFromServer()
+void AAAPlayerController::ClientRPCAddScoreWidget_Implementation(TSubclassOf<UUserWidget> WidgetClass, const TArray<FString>& PlayerNickNames, const TArray<int32>& PlayerScores)
 {
-	ServerRPCRequestScore(GetSteamID());
-}
-
-bool AAAPlayerController::ServerRPCRequestScore_Validate(const FString& InSteamID)
-{
-	return true;
-}
-
-void AAAPlayerController::ServerRPCRequestScore_Implementation(const FString& InSteamID)
-{
-	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
+	if (ScoreWidget != nullptr)
 	{
-		if (UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance()))
-		{
-			int32 NewScore = GameInstance->GetScore(InSteamID);
-			ClientRPCReceiveScore(InSteamID, NewScore);
-		}
+		ScoreWidget->RemoveFromViewport();
+		ScoreWidget = nullptr;
 	}
-}
 
-void AAAPlayerController::ClientRPCReceiveScore_Implementation(const FString& InSteamID, int32 InScore)
-{
-	if (IsLocalController())
+	if (WidgetClass != nullptr)
 	{
-		PlayerScore = InScore;
-		UE_LOG(LogTemp, Log, TEXT("Steam ID: %s, Score: %d"), *InSteamID, PlayerScore);
-
-		if (PlayerUI)
+		ScoreWidget = CreateWidget<UUserWidget>(this, WidgetClass);
+		if (ScoreWidget != nullptr)
 		{
-			UFunction* Func = PlayerUI->FindFunction(FName("UpdateScoreUI"));
-			if (Func)
+			for (int32 i = 0; i < PlayerNickNames.Num(); ++i)
 			{
-				struct FScoreParams
+				FString PlayerNickName = PlayerNickNames[i];
+				int32 PlayerScore = PlayerScores.IsValidIndex(i) ? PlayerScores[i] : 0;
+				UFunction* Func = ScoreWidget->FindFunction(FName("AddPlayerScore"));
+				if (Func)
 				{
-					int32 Score;
-				};
-				FScoreParams Params;
-				Params.Score = PlayerScore;
-				PlayerUI->ProcessEvent(Func, &Params);
+					struct FPlayerScore
+					{
+						FString NickName;
+						int32 Score;
+					};
+					FPlayerScore Params;
+					Params.NickName = PlayerNickName;
+					Params.Score = PlayerScore;
+					ScoreWidget->ProcessEvent(Func, &Params);
+				}
 			}
+
+			ScoreWidget->AddToViewport();
+
+			FInputModeUIOnly UIOnlyInputMode;
+			SetInputMode(UIOnlyInputMode);
 		}
 	}
+}
+
+void AAAPlayerController::ClientRPCRemoveScoreWidget_Implementation()
+{
+	if (ScoreWidget != nullptr)
+	{
+		ScoreWidget->RemoveFromViewport();
+		ScoreWidget = nullptr;
+	}
+
+	RefreshUI();
+	CreateUI();
+
+	FInputModeGameOnly GameOnlyInputMode;
+	SetInputMode(GameOnlyInputMode);
 }
 

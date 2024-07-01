@@ -10,6 +10,7 @@
  * 
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSeamlessTravelComplete);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAllPlayersReady);
 
 UCLASS()
 class ABILITYARENA_API AAAGameMode : public AGameMode
@@ -61,8 +62,6 @@ protected:
 public:
 	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
-	
-	
 
 protected:
 	virtual void BeginPlay() override;
@@ -94,4 +93,36 @@ protected:
 
 public:
 	void CreateWinnerUI(class AAAPlayerController* WinnerController);
+
+// ver 0.13.5a
+// User Synchronize
+private:
+	int32 NumPlayersLoggedIn;
+	int32 NumPlayersPossessed;
+	int32 TotalPlayers;
+
+	void CheckAllPlayersReady();
+	void CheckAllPlayersPossessed();
+	void StartGame();
+
+public:
+	void PlayerPossessCompleted(APlayerController* NewPlayer);
+
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnAllPlayersReady OnAllPlayersReady;
+
+// View Score UI
+protected:
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void ShowScoreUI();
+
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void HideScoreUI();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCShowScoreUI();
+
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UUserWidget> ScoreWidgetClass;
 };
