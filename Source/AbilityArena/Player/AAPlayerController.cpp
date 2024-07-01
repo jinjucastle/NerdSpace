@@ -79,12 +79,44 @@ void AAAPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	/*FInputModeGameOnly GameOnlyInputMode;
-	SetInputMode(GameOnlyInputMode);*/
-
 	BindSeamlessTravelEvent();
 
-	//CreateUI();
+	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GameMode->OnAllPlayersReady.AddDynamic(this, &AAAPlayerController::HandleSeamlessTravelComplete);
+	}
+}
+
+void AAAPlayerController::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	
+}
+
+void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	RemoveUI();
+
+	if (AGameModeBase* GameMode = GetWorld()->GetAuthGameMode())
+	{
+		if (AAAGameMode* MyGameMode = Cast<AAAGameMode>(GameMode))
+		{
+			MyGameMode->OnSeamlessTravelComplete.RemoveDynamic(this, &AAAPlayerController::OnLevelChanged);
+		}
+	}
+}
+
+void AAAPlayerController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
+void AAAPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
 
 	if (IsLocalController())
 	{
@@ -115,8 +147,6 @@ void AAAPlayerController::BeginPlay()
 			}
 		}
 	}
-	
-	UE_LOG(LogTemp, Log, TEXT("Controller Set Steam Id or NickName Complete."));
 
 	/*if (HasAuthority())
 	{
@@ -132,35 +162,7 @@ void AAAPlayerController::BeginPlay()
 		ServerSetSteamID(NewID, NewNickName);
 	}*/
 
-	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		GameMode->OnAllPlayersReady.AddDynamic(this, &AAAPlayerController::HandleSeamlessTravelComplete);
-	}
-}
-
-void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	Super::EndPlay(EndPlayReason);
-
-	RemoveUI();
-
-	if (AGameModeBase* GameMode = GetWorld()->GetAuthGameMode())
-	{
-		if (AAAGameMode* MyGameMode = Cast<AAAGameMode>(GameMode))
-		{
-			MyGameMode->OnSeamlessTravelComplete.RemoveDynamic(this, &AAAPlayerController::OnLevelChanged);
-		}
-	}
-}
-
-void AAAPlayerController::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-
-void AAAPlayerController::OnPossess(APawn* InPawn)
-{
-	Super::OnPossess(InPawn);
+	UE_LOG(LogTemp, Log, TEXT("Controller Set Steam Id or NickName Complete."));
 
 	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
 	{
