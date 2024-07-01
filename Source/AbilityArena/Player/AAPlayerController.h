@@ -28,7 +28,14 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	
+	virtual void Tick(float DeltaTime) override;
+	virtual void OnPossess(APawn* InPawn) override;
+
+	// ver 0.13.5a
+	// Others Hp Bar Section
+	UFUNCTION()
+	void HandleSeamlessTravelComplete();
+
 private:
 	UPROPERTY()
 	TObjectPtr<class UAAGameInstance> pc;
@@ -98,7 +105,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void CreateGameResultUI(const FString& InSteamNickName);
 
-	void AddScore(const FString& InSteamID);
+	void AddScore(const FString& InSteamID, int32 InScore);
 
 	UFUNCTION(BlueprintCallable)
 	int32 GetScore(const FString& InSteamID) const;
@@ -120,17 +127,15 @@ private:
 
 	void SetSteamIDInPlayerState();
 
-//ver 0.13.4a
+// ver 0.13.5a
+// User Synchronize & Score UI
 public:
-	UPROPERTY(BlueprintReadOnly)
-	int32 PlayerScore = 0;
-
-	UFUNCTION(BlueprintCallable)
-	void GetScoreFromServer();
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRPCRequestScore(const FString& InSteamID);
+	UFUNCTION(Client, Reliable)
+	void ClientRPCAddScoreWidget(TSubclassOf<UUserWidget> WidgetClass, const TArray<FString>& PlayerNickNames, const TArray<int32>& PlayerScores);
 
 	UFUNCTION(Client, Reliable)
-	void ClientRPCReceiveScore(const FString& InSteamID, int32 InScore);
+	void ClientRPCRemoveScoreWidget();
+
+private:
+	UUserWidget* ScoreWidget;
 };

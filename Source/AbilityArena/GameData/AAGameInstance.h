@@ -79,8 +79,16 @@ public:
 	// Score Section
 	void AddScore(const FString& SteamID, int32 Points);
 	int32 GetScore(const FString& SteamID) const;
+	bool CheckScore(const FString& SteamID) const;
 
-protected:
 	UPROPERTY(BlueprintReadOnly)
 	TMap<FString, int32> Score;
+
+	// ver 0.13.5a
+	// NickName Section
+	void AddPlayerNickname(const FString& SteamID, const FString& Nickname);
+	FString GetPlayerNickname(const FString& SteamID) const;
+
+	UPROPERTY(BlueprintReadOnly)
+	TMap<FString, FString> PlayerNicknames;
 };
