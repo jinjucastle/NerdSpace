@@ -87,12 +87,6 @@ void AAAPlayerController::BeginPlay()
 	}
 }
 
-void AAAPlayerController::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-
-}
-
 void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
@@ -106,11 +100,6 @@ void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			MyGameMode->OnSeamlessTravelComplete.RemoveDynamic(this, &AAAPlayerController::OnLevelChanged);
 		}
 	}
-}
-
-void AAAPlayerController::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }
 
 void AAAPlayerController::OnPossess(APawn* InPawn)
@@ -165,6 +154,8 @@ void AAAPlayerController::OnPossess(APawn* InPawn)
 
 	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
 	{
+		UE_LOG(LogTemp, Log, TEXT("Controller Possess Pawn Complete."));
+		GameMode->PlayerPossessCompleted(this);
 		GameMode->OnAllPlayersReady.AddDynamic(this, &AAAPlayerController::HandleSeamlessTravelComplete);
 	}
 }
