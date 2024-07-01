@@ -807,7 +807,7 @@ void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
 		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
 
 		RPM = FMath::Clamp(WeaponData->WeaponStat.RPM + (WeaponData->WeaponStat.RPM * NewAbilityStat.RPM), 0.05f, 10.f);
-		AmmoDamage = WeaponData->AmmoDamage * NewAbilityStat.Damage;
+		AmmoDamage = FMath::Clamp(WeaponData->AmmoDamage * NewAbilityStat.Damage, 1, 999);
 		AmmoSpeed = WeaponData->AmmoSpeed * NewAbilityStat.AmmoSpeed;
 		AmmoScale = NewAbilityStat.AmmoScale;
 		Acceleration = NewAbilityStat.Acceleration;

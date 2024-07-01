@@ -342,18 +342,14 @@ void AAAGameMode::StartGame()
 		AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get());
 		if (PlayerController && HasAuthority())
 		{
-			AAACharacterPlayerState* PS = Cast<AAACharacterPlayerState>(PlayerController->GetPawn()->GetPlayerState());
-			if (PS)
+			FString SteamID = PlayerController->GetSteamID();
+			FString SteamNickName = PlayerController->GetSteamNickName();
+			UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+			if (GameInstance)
 			{
-				FString SteamID = PS->GetSteamID();
-				FString SteamNickName = PS->GetSteamNickName();
-				UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
-				if (GameInstance)
-				{
-					UE_LOG(LogTemp, Warning, TEXT("%s is in game now (%s)"), *SteamNickName, *SteamID);
-					GameInstance->AddScore(SteamID, 0);
-					GameInstance->AddPlayerNickname(SteamID, SteamNickName);
-				}
+				UE_LOG(LogTemp, Warning, TEXT("%s is in game now (%s)"), *SteamNickName, *SteamID);
+				GameInstance->AddScore(SteamID, 0);
+				GameInstance->AddPlayerNickname(SteamID, SteamNickName);
 			}
 		}
 	}
