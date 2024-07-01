@@ -81,31 +81,6 @@ void AAAPlayerController::BeginPlay()
 
 	BindSeamlessTravelEvent();
 
-	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		GameMode->OnAllPlayersReady.AddDynamic(this, &AAAPlayerController::HandleSeamlessTravelComplete);
-	}
-}
-
-void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	Super::EndPlay(EndPlayReason);
-
-	RemoveUI();
-
-	if (AGameModeBase* GameMode = GetWorld()->GetAuthGameMode())
-	{
-		if (AAAGameMode* MyGameMode = Cast<AAAGameMode>(GameMode))
-		{
-			MyGameMode->OnSeamlessTravelComplete.RemoveDynamic(this, &AAAPlayerController::OnLevelChanged);
-		}
-	}
-}
-
-void AAAPlayerController::OnPossess(APawn* InPawn)
-{
-	Super::OnPossess(InPawn);
-
 	if (IsLocalController())
 	{
 		IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get(STEAM_SUBSYSTEM);
@@ -154,9 +129,33 @@ void AAAPlayerController::OnPossess(APawn* InPawn)
 
 	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
 	{
+		GameMode->OnAllPlayersReady.AddDynamic(this, &AAAPlayerController::HandleSeamlessTravelComplete);
+	}
+}
+
+void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	RemoveUI();
+
+	if (AGameModeBase* GameMode = GetWorld()->GetAuthGameMode())
+	{
+		if (AAAGameMode* MyGameMode = Cast<AAAGameMode>(GameMode))
+		{
+			MyGameMode->OnSeamlessTravelComplete.RemoveDynamic(this, &AAAPlayerController::OnLevelChanged);
+		}
+	}
+}
+
+void AAAPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
+	{
 		UE_LOG(LogTemp, Log, TEXT("Controller Possess Pawn Complete."));
 		GameMode->PlayerPossessCompleted(this);
-		GameMode->OnAllPlayersReady.AddDynamic(this, &AAAPlayerController::HandleSeamlessTravelComplete);
 	}
 }
 

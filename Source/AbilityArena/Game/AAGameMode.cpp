@@ -347,9 +347,12 @@ void AAAGameMode::StartGame()
 			UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
 			if (GameInstance)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("%s is in game now (%s)"), *SteamNickName, *SteamID);
-				GameInstance->AddScore(SteamID, 0);
-				GameInstance->AddPlayerNickname(SteamID, SteamNickName);
+				if (SteamID.Len() > 0 || SteamNickName.Len() > 0)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("%s is in game now (%s)"), *SteamNickName, *SteamID);
+					GameInstance->AddScore(SteamID, 0);
+					GameInstance->AddPlayerNickname(SteamID, SteamNickName);
+				}
 			}
 		}
 	}
@@ -388,13 +391,16 @@ void AAAGameMode::ShowScoreUI()
 
 					GameInstance->Score.GenerateKeyArray(PlayerIDs);
 
-					for (const FString& PlayerID : PlayerIDs)
+					if (PlayerIDs.Num() > 1)
 					{
-						FString PlayerNickName = GameInstance->GetPlayerNickname(PlayerID);
-						int32 PlayerScore = GameInstance->GetScore(PlayerID);
-						
-						PlayerNickNames.Add(PlayerNickName);
-						PlayerScores.Add(PlayerScore);
+						for (const FString& PlayerID : PlayerIDs)
+						{
+							FString PlayerNickName = GameInstance->GetPlayerNickname(PlayerID);
+							int32 PlayerScore = GameInstance->GetScore(PlayerID);
+
+							PlayerNickNames.Add(PlayerNickName);
+							PlayerScores.Add(PlayerScore);
+						}
 					}
 
 					PlayerController->ClientRPCAddScoreWidget(ScoreWidgetClass, PlayerNickNames, PlayerScores);
