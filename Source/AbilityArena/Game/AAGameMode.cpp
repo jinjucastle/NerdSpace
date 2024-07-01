@@ -15,15 +15,6 @@
 //0.10.1b add MapArray
 void AAAGameMode::AddLevelName()
 {
-	
-	/*FString ContentsPath = FPaths::ProjectContentDir() + TEXT("/Maps");
-	FPaths::NormalizeDirectoryName(ContentsPath);
-	IFileManager& FileManager = IFileManager::Get();
-	FString Searchpatten = TEXT("*.umap");
-	FileManager.FindFiles(LevelArrary, *(ContentsPath + "/" + Searchpatten), true, false);
-
-	UE_LOG(LogTemp, Log, TEXT("portoq") );
-	*/
 	for (const FString& FileNames : LevelArrary)
 	{
 		UE_LOG(LogTemp, Log, TEXT("portoq: %s"), *FileNames);
@@ -32,18 +23,6 @@ void AAAGameMode::AddLevelName()
 //0.10.1b find randommapURL
 FString AAAGameMode::SetTravelLevel()
 {
-	/*if (LevelArrary.Num() == 0)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Level is Empty"));
-		return TEXT("");
-	}
-  
-	do 
-	{
-		int32 RandomIndex = FMath::RandRange(0, LevelArrary.Num() - 1);
-		RandomLevel = LevelArrary[RandomIndex];
-	} while (RandomLevel == TEXT("TestTransitionMap.umap")|| RandomLevel == TEXT("Lobby.umap"));*/
-
 	FString RandomLevel;
 	
 	int32 RandomIndex = FMath::RandRange(0, LevelArrary.Num() - 1);
