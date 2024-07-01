@@ -92,9 +92,7 @@ protected:
 // ver 0.0.2a
 // WeaponData Get
 protected:
-	
 	float AmmoDamage;
-	
 	float AmmoSpeed;
 
 // ver 0.1.2a
@@ -316,4 +314,11 @@ protected:
 
 public:
 	FORCEINLINE bool GetIsAlive() const { return bIsAlive; }
+	float GetHpPercentage() const;
+
+// ver 0.13.5a
+// HpBar Section
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UI, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UWidgetComponent> HpBar;
 };

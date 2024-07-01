@@ -3,6 +3,7 @@
 
 #include "Character/AACharacterBase.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 #include "AACharacterControlData.h"
 #include "CharacterStat/AACharacterStatComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -110,6 +111,15 @@ AAACharacterBase::AAACharacterBase()
 	TargetRecoil = FRotator::ZeroRotator;
 
 	bIsAlive = true;
+
+	// ver 0.13.5a
+	// HpBar
+	HpBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("HpBar"));
+	HpBar->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform);
+	HpBar->SetWidgetSpace(EWidgetSpace::World);
+	HpBar->SetWorldLocation(FVector(0.f, 0.f, 100.f));
+	HpBar->SetVisibility(false);
+	HpBar->SetOwnerNoSee(true);
 }
 
 void AAACharacterBase::PostInitializeComponents()
@@ -527,6 +537,8 @@ void AAACharacterBase::SetDead()
 	GetMesh()->WakeAllRigidBodies();
 	GetMesh()->SetCollisionProfileName(TEXT("AARagDoll"));
 
+	HpBar->DestroyComponent();
+
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	AAAGameMode* CurrentGameMode = Cast<AAAGameMode>(UGameplayStatics::GetGameMode(this));
@@ -725,5 +737,10 @@ void AAACharacterBase::RecoverRecoil()
 	}
 
 	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &AAACharacterBase::RecoverRecoil);
+}
+
+float AAACharacterBase::GetHpPercentage() const
+{
+	return Stat->GetCurrentHp() / Stat->GetMaxHp();
 }
 
