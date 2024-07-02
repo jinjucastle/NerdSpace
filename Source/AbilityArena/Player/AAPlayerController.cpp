@@ -359,12 +359,15 @@ void AAAPlayerController::ServerSetSteamID_Implementation(const FString& InSteam
 
 void AAAPlayerController::SetSteamIDInPlayerState(const FString& InSteamID, const FString& InSteamNickName)
 {
-	if (AAACharacterPlayerState* PS = GetPawn()->GetPlayerState<AAACharacterPlayerState>())
+	if (AAACharacterPlayer* CP = GetPawn<AAACharacterPlayer>())
 	{
-		PS->SetSteamID(InSteamID);
-		PS->SetSteamNickName(InSteamNickName);
+		if (AAACharacterPlayerState* PS = CP->GetPlayerState<AAACharacterPlayerState>())
+		{
+			PS->SetSteamID(InSteamID);
+			PS->SetSteamNickName(InSteamNickName);
 
-		UE_LOG(LogTemp, Log, TEXT("%s(%s) is Set Player State"), *InSteamID, *InSteamNickName);
+			UE_LOG(LogTemp, Log, TEXT("%s(%s) is Set Player State"), *InSteamID, *InSteamNickName);
+		}
 	}
 }
 
