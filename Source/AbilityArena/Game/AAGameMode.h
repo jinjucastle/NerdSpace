@@ -101,7 +101,6 @@ private:
 	int32 NumPlayersPossessed;
 	int32 TotalPlayers;
 
-	void CheckAllPlayersReady();
 	void CheckAllPlayersPossessed();
 	void StartGame();
 

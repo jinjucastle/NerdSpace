@@ -201,8 +201,12 @@ void AAAGameMode::PostLogin(APlayerController* NewPlayer)
 
 	NumPlayersLoggedIn++;
 
-	CheckAllPlayersReady();
 	CheckAllPlayersPossessed();
+
+	if (AAAPlayerController* MyPlayerController = Cast<AAAPlayerController>(NewPlayer))
+	{
+		MyPlayerController->SetSteamIDAndNickName();
+	}
 }
 
 void AAAGameMode::BeginPlay()
@@ -316,19 +320,11 @@ void AAAGameMode::CreateWinnerUI(AAAPlayerController* WinnerController)
 	}
 }
 
-void AAAGameMode::CheckAllPlayersReady()
-{
-	if (NumPlayersLoggedIn >= TotalPlayers)
-	{
-		OnAllPlayersReady.Broadcast();
-		//StartGame();
-	}
-}
-
 void AAAGameMode::CheckAllPlayersPossessed()
 {
 	if (NumPlayersPossessed >= TotalPlayers)
 	{
+		OnAllPlayersReady.Broadcast();
 		StartGame();
 	}
 }

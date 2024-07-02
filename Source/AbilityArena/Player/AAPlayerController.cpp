@@ -83,49 +83,10 @@ void AAAPlayerController::BeginPlay()
 
 	if (IsLocalController())
 	{
-		IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get(STEAM_SUBSYSTEM);
-		if (OnlineSubsystem)
-		{
-			IOnlineIdentityPtr Identity = OnlineSubsystem->GetIdentityInterface();
-			if (Identity.IsValid())
-			{
-				FUniqueNetIdRepl UserId = Identity->GetUniquePlayerId(GetLocalPlayer()->GetControllerId());
-				if (UserId.IsValid())
-				{
-					if (HasAuthority())
-					{
-						FString NewID = UserId.ToString();
-						FString NewNickName = Identity->GetPlayerNickname(*UserId);
-						SteamID = NewID;
-						SteamNickName = NewNickName;
-						SetSteamIDInPlayerState();
-					}
-					else
-					{
-						FString NewID = UserId.ToString();
-						FString NewNickName = Identity->GetPlayerNickname(*UserId);
-						ServerSetSteamID(NewID, NewNickName);
-					}
-				}
-			}
-		}
+		SetSteamIDAndNickName();
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Controller Set Steam Id or NickName Complete."));
-
-	/*if (HasAuthority())
-	{
-		FString NewID = FString::FromInt(GetUniqueID());
-		FString NewNickName = "ServerNick";
-		SteamID = NewID;
-		ServerSetSteamID(NewID, NewNickName);
-	}
-	else
-	{
-		FString NewID = FString::FromInt(GetUniqueID());
-		FString NewNickName = "ClientNick";
-		ServerSetSteamID(NewID, NewNickName);
-	}*/
 
 	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
 	{
@@ -151,6 +112,11 @@ void AAAPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AAAPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+
+	if (IsLocalController())
+	{
+		SetSteamIDAndNickName();
+	}
 
 	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
 	{
@@ -367,6 +333,8 @@ void AAAPlayerController::ClientSetSteamID_Implementation(const FString& InSteam
 	{
 		SteamID = InSteamID;
 		SteamNickName = InSteamNickName;
+		//SetSteamIDInPlayerState(SteamID, SteamNickName);
+		UE_LOG(LogTemp, Log, TEXT("%s(%s) is ClientRPC SetSteamID"), *SteamID, *SteamNickName);
 	}
 }
 
@@ -381,16 +349,52 @@ void AAAPlayerController::ServerSetSteamID_Implementation(const FString& InSteam
 {
 	SteamID = InSteamID;
 	SteamNickName = InSteamNickName;
-	SetSteamIDInPlayerState();
 	ClientSetSteamID(SteamID, SteamNickName);
+	SetSteamIDInPlayerState(SteamID, SteamNickName);
+
+	UE_LOG(LogTemp, Log, TEXT("%s(%s) is ServerRPC SetSteamID"), *InSteamID, *InSteamNickName);
 }
 
-void AAAPlayerController::SetSteamIDInPlayerState()
+void AAAPlayerController::SetSteamIDInPlayerState(const FString& InSteamID, const FString& InSteamNickName)
 {
 	if (AAACharacterPlayerState* PS = GetPlayerState<AAACharacterPlayerState>())
 	{
-		PS->SetSteamID(SteamID);
-		PS->SetSteamNickName(SteamNickName);
+		PS->SetSteamID(InSteamID);
+		PS->SetSteamNickName(InSteamNickName);
+
+		UE_LOG(LogTemp, Log, TEXT("%s(%s) is Set Player State"), *InSteamID, *InSteamNickName);
+	}
+}
+
+void AAAPlayerController::SetSteamIDAndNickName()
+{
+	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get(STEAM_SUBSYSTEM);
+	if (OnlineSubsystem)
+	{
+		IOnlineIdentityPtr Identity = OnlineSubsystem->GetIdentityInterface();
+		if (Identity.IsValid())
+		{
+			FUniqueNetIdRepl UserId = Identity->GetUniquePlayerId(GetLocalPlayer()->GetControllerId());
+			if (UserId.IsValid())
+			{
+				FString NewID = UserId.ToString();
+				FString NewNickName = Identity->GetPlayerNickname(*UserId);
+				SteamID = NewID;
+				SteamNickName = NewNickName;
+				if (HasAuthority())
+				{
+					SetSteamIDInPlayerState(SteamID, SteamNickName);
+
+					UE_LOG(LogTemp, Log, TEXT("OnPossess: Set Steam ID and Nickname Complete Server"));
+				}
+				else
+				{
+					ServerSetSteamID(NewID, NewNickName);
+
+					UE_LOG(LogTemp, Log, TEXT("OnPossess: Set Steam ID and Nickname Complete Client"));
+				}
+			}
+		}
 	}
 }
 

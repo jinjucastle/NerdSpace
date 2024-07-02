@@ -124,7 +124,7 @@ private:
 
 	TObjectPtr<UUserWidget> GameResultUI;
 
-	void SetSteamIDInPlayerState();
+	void SetSteamIDInPlayerState(const FString& InSteamID, const FString& InSteamNickName);
 
 // ver 0.13.5a
 // User Synchronize & Score UI
@@ -135,6 +135,7 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPCRemoveScoreWidget();
 
+	void SetSteamIDAndNickName();
 private:
 	UUserWidget* ScoreWidget;
 };
