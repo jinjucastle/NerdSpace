@@ -30,6 +30,7 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void ReceivedPlayer() override;
+	virtual void PostSeamlessTravel() override;
 
 	// ver 0.13.5a
 	// Others Hp Bar Section

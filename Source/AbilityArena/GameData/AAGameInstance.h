@@ -86,9 +86,15 @@ public:
 
 	// ver 0.13.5a
 	// NickName Section
+	void SetSteamData(const FString& InSteamID, const FString& InSteamNickName);
+	void GetSteamData(FString& InSteamID, FString& InSteamNickName) const;
 	void AddPlayerNickname(const FString& SteamID, const FString& Nickname);
 	FString GetPlayerNickname(const FString& SteamID) const;
 
 	UPROPERTY(BlueprintReadOnly)
 	TMap<FString, FString> PlayerNicknames;
+
+private:
+	FString SteamID;
+	FString SteamNickName;
 };

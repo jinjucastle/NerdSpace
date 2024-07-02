@@ -79,6 +79,18 @@ bool UAAGameInstance::CheckScore(const FString& SteamID) const
 	return Score.Contains(SteamID);
 }
 
+void UAAGameInstance::SetSteamData(const FString& InSteamID, const FString& InSteamNickName)
+{
+	SteamID = InSteamID;
+	SteamNickName = InSteamNickName;
+}
+
+void UAAGameInstance::GetSteamData(FString& InSteamID, FString& InSteamNickName) const
+{
+	InSteamID = SteamID;
+	InSteamNickName = SteamNickName;
+}
+
 void UAAGameInstance::AddPlayerNickname(const FString& SteamID, const FString& Nickname)
 {
 	if (!PlayerNicknames.Contains(SteamID))

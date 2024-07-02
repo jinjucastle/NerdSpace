@@ -83,7 +83,6 @@ void AAAPlayerController::BeginPlay()
 
 	SetSteamIDAndNickName();
 	
-
 	UE_LOG(LogTemp, Log, TEXT("Controller Set Steam Id or NickName Complete."));
 
 	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
@@ -125,6 +124,24 @@ void AAAPlayerController::ReceivedPlayer()
 	Super::ReceivedPlayer();
 
 	SetSteamIDAndNickName();
+}
+
+void AAAPlayerController::PostSeamlessTravel()
+{
+	Super::PostSeamlessTravel();
+
+	UE_LOG(LogTemp, Log, TEXT("Called PostSeamlessTravel."));
+
+	UAAGameInstance* GI = Cast<UAAGameInstance>(GetGameInstance());
+	if (GI)
+	{
+		FString ID, NickName;
+		GI->GetSteamData(ID, NickName);
+
+		SetSteamIDInPlayerState(ID, NickName);
+
+		UE_LOG(LogTemp, Log, TEXT("Set SteamData in PostSeamlessTravel: %s(%s)"), *NickName, *ID);
+	}
 }
 
 void AAAPlayerController::HandleSeamlessTravelComplete()
@@ -359,14 +376,30 @@ void AAAPlayerController::ServerSetSteamID_Implementation(const FString& InSteam
 
 void AAAPlayerController::SetSteamIDInPlayerState(const FString& InSteamID, const FString& InSteamNickName)
 {
-	if (AAACharacterPlayer* CP = GetPawn<AAACharacterPlayer>())
+	UAAGameInstance* GI = Cast<UAAGameInstance>(GetGameInstance());
+	if (GI)
 	{
-		if (AAACharacterPlayerState* PS = CP->GetPlayerState<AAACharacterPlayerState>())
-		{
-			PS->SteamID = InSteamID;
-			PS->SteamNickName = InSteamNickName;
+		FString ID, NickName;
+		GI->GetSteamData(ID, NickName);
 
-			UE_LOG(LogTemp, Log, TEXT("%s(%s) is Set Player State"), *InSteamID, *InSteamNickName);
+		if (ID.IsEmpty() && NickName.IsEmpty())
+		{
+			GI->SetSteamData(InSteamID, InSteamNickName);
+
+			if (AAACharacterPlayerState* PS = GetPlayerState<AAACharacterPlayerState>())
+			{
+				PS->SteamID = InSteamID;
+				PS->SteamNickName = InSteamNickName;
+
+				UE_LOG(LogTemp, Log, TEXT("%s(%s) is Set Player State"), *InSteamID, *InSteamNickName);
+			}
+
+			GI->GetSteamData(ID, NickName);
+			UE_LOG(LogTemp, Log, TEXT("GameInstance Set NickName & ID: %s(%s) in SetSteamIDInPlayerState"), *NickName, *ID);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("Alread set NickName & ID: %s(%s) in SetSteamIDInPlayerState"), *NickName, *ID);
 		}
 	}
 }
@@ -392,13 +425,13 @@ void AAAPlayerController::SetSteamIDAndNickName()
 					{
 						SetSteamIDInPlayerState(SteamID, SteamNickName);
 
-						UE_LOG(LogTemp, Log, TEXT("OnPossess: Set Steam ID and Nickname Complete Server"));
+						UE_LOG(LogTemp, Log, TEXT("Set Steam ID and Nickname Complete Server: %s(%s)"), *SteamNickName, *SteamID);
 					}
 					else
 					{
 						ServerSetSteamID(NewID, NewNickName);
 
-						UE_LOG(LogTemp, Log, TEXT("OnPossess: Set Steam ID and Nickname Complete Client"));
+						UE_LOG(LogTemp, Log, TEXT("Set Steam ID and Nickname Complete Client: %s(%s)"), *SteamNickName, *SteamID);
 					}
 				}
 			}
