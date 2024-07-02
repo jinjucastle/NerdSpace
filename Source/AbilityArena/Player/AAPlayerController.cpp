@@ -359,7 +359,7 @@ void AAAPlayerController::ServerSetSteamID_Implementation(const FString& InSteam
 
 void AAAPlayerController::SetSteamIDInPlayerState(const FString& InSteamID, const FString& InSteamNickName)
 {
-	if (AAACharacterPlayerState* PS = GetPlayerState<AAACharacterPlayerState>())
+	if (AAACharacterPlayerState* PS = GetPawn()->GetPlayerState<AAACharacterPlayerState>())
 	{
 		PS->SetSteamID(InSteamID);
 		PS->SetSteamNickName(InSteamNickName);
