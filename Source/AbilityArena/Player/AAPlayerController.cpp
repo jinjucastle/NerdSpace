@@ -474,17 +474,6 @@ void AAAPlayerController::ClientRPCAddScoreWidget_Implementation(TSubclassOf<UUs
 			SetInputMode(UIOnlyInputMode);
 		}
 	}
-
-	UAAGameInstance* GI = Cast<UAAGameInstance>(GetGameInstance());
-	if (GI)
-	{
-		FString ID, NickName;
-		GI->GetSteamData(ID, NickName);
-
-		SetSteamIDInPlayerState(ID, NickName);
-
-		UE_LOG(LogTemp, Log, TEXT("Set SteamData in PostSeamlessTravel: %s(%s)"), *NickName, *ID);
-	}
 }
 
 void AAAPlayerController::ClientRPCRemoveScoreWidget_Implementation()
@@ -500,5 +489,16 @@ void AAAPlayerController::ClientRPCRemoveScoreWidget_Implementation()
 
 	FInputModeGameOnly GameOnlyInputMode;
 	SetInputMode(GameOnlyInputMode);
+
+	UAAGameInstance* GI = Cast<UAAGameInstance>(GetGameInstance());
+	if (GI)
+	{
+		FString ID, NickName;
+		GI->GetSteamData(ID, NickName);
+
+		SetSteamIDInPlayerState(ID, NickName);
+
+		UE_LOG(LogTemp, Log, TEXT("Set SteamData in PostSeamlessTravel: %s(%s)"), *NickName, *ID);
+	}
 }
 
