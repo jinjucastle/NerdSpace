@@ -52,31 +52,31 @@ bool UAAGameInstance::GetSavePlayerStat()
 	return bSetPlayerStatStay;
 }
 
-void UAAGameInstance::AddScore(const FString& SteamID, int32 Points)
+void UAAGameInstance::AddScore(const FString& InSteamID, int32 InPoints)
 {
-	if (Score.Contains(SteamID))
+	if (Score.Contains(InSteamID))
 	{
-		Score[SteamID] += Points;
+		Score[InSteamID] += InPoints;
 	}
 	else
 	{
-		Score.Add(SteamID, Points);
-		UE_LOG(LogTemp, Log, TEXT("Success Add %s"), *SteamID);
+		Score.Add(InSteamID, InPoints);
+		UE_LOG(LogTemp, Log, TEXT("Success Add %s"), *InSteamID);
 	}
 }
 
-int32 UAAGameInstance::GetScore(const FString& SteamID) const
+int32 UAAGameInstance::GetScore(const FString& InSteamID) const
 {
-	if (Score.Contains(SteamID))
+	if (Score.Contains(InSteamID))
 	{
-		return Score[SteamID];
+		return Score[InSteamID];
 	}
 	return 0;
 }
 
-bool UAAGameInstance::CheckScore(const FString& SteamID) const
+bool UAAGameInstance::CheckScore(const FString& InSteamID) const
 {
-	return Score.Contains(SteamID);
+	return Score.Contains(InSteamID);
 }
 
 void UAAGameInstance::SetSteamData(const FString& InSteamID, const FString& InSteamNickName)
@@ -91,20 +91,20 @@ void UAAGameInstance::GetSteamData(FString& InSteamID, FString& InSteamNickName)
 	InSteamNickName = SteamNickName;
 }
 
-void UAAGameInstance::AddPlayerNickname(const FString& SteamID, const FString& Nickname)
+void UAAGameInstance::AddPlayerNickname(const FString& InSteamID, const FString& InSteamNickname)
 {
-	if (!PlayerNicknames.Contains(SteamID))
+	if (!PlayerNicknames.Contains(InSteamID))
 	{
-		PlayerNicknames.Add(SteamID, Nickname);
-		UE_LOG(LogTemp, Log, TEXT("Added nickname %s for %s"), *Nickname, *SteamID);
+		PlayerNicknames.Add(InSteamID, InSteamNickname);
+		UE_LOG(LogTemp, Log, TEXT("Added nickname %s for %s"), *InSteamNickname, *InSteamID);
 	}
 }
 
-FString UAAGameInstance::GetPlayerNickname(const FString& SteamID) const
+FString UAAGameInstance::GetPlayerNickname(const FString& InSteamID) const
 {
-	if (PlayerNicknames.Contains(SteamID))
+	if (PlayerNicknames.Contains(InSteamID))
 	{
-		return PlayerNicknames[SteamID];
+		return PlayerNicknames[InSteamID];
 	}
 	return FString();
 }
