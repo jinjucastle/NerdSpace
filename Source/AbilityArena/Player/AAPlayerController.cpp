@@ -110,27 +110,11 @@ void AAAPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	SetSteamIDAndNickName();
-
 	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
 	{
 		UE_LOG(LogTemp, Log, TEXT("Controller Possess Pawn Complete."));
 		GameMode->PlayerPossessCompleted(this);
 	}
-}
-
-void AAAPlayerController::ReceivedPlayer()
-{
-	Super::ReceivedPlayer();
-
-	SetSteamIDAndNickName();
-}
-
-void AAAPlayerController::PostSeamlessTravel()
-{
-	Super::PostSeamlessTravel();
-
-	UE_LOG(LogTemp, Log, TEXT("Called PostSeamlessTravel."));
 }
 
 void AAAPlayerController::HandleSeamlessTravelComplete()
@@ -436,6 +420,27 @@ void AAAPlayerController::SetSteamIDAndNickName()
 	}
 }
 
+void AAAPlayerController::GetUserDataInGameInstance()
+{
+	UAAGameInstance* GI = Cast<UAAGameInstance>(GetGameInstance());
+	if (GI)
+	{
+		FString ID, NickName;
+		GI->GetSteamData(ID, NickName);
+
+		if (HasAuthority())
+		{
+			SetSteamIDInPlayerState(ID, NickName);
+		}
+		else
+		{
+			ServerSetSteamID(ID, NickName);
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("Set SteamData in PostSeamlessTravel: %s(%s)"), *NickName, *ID);
+	}
+}
+
 void AAAPlayerController::ClientRPCAddScoreWidget_Implementation(TSubclassOf<UUserWidget> WidgetClass, const TArray<FString>& PlayerNickNames, const TArray<int32>& PlayerScores)
 {
 	if (ScoreWidget != nullptr)
@@ -474,6 +479,8 @@ void AAAPlayerController::ClientRPCAddScoreWidget_Implementation(TSubclassOf<UUs
 			SetInputMode(UIOnlyInputMode);
 		}
 	}
+
+	GetUserDataInGameInstance();
 }
 
 void AAAPlayerController::ClientRPCRemoveScoreWidget_Implementation()
@@ -489,16 +496,5 @@ void AAAPlayerController::ClientRPCRemoveScoreWidget_Implementation()
 
 	FInputModeGameOnly GameOnlyInputMode;
 	SetInputMode(GameOnlyInputMode);
-
-	UAAGameInstance* GI = Cast<UAAGameInstance>(GetGameInstance());
-	if (GI)
-	{
-		FString ID, NickName;
-		GI->GetSteamData(ID, NickName);
-
-		SetSteamIDInPlayerState(ID, NickName);
-
-		UE_LOG(LogTemp, Log, TEXT("Set SteamData in PostSeamlessTravel: %s(%s)"), *NickName, *ID);
-	}
 }
 
