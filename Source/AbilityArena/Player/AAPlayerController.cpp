@@ -333,7 +333,7 @@ void AAAPlayerController::ClientSetSteamID_Implementation(const FString& InSteam
 	{
 		SteamID = InSteamID;
 		SteamNickName = InSteamNickName;
-		//SetSteamIDInPlayerState(SteamID, SteamNickName);
+		SetSteamIDInPlayerState(SteamID, SteamNickName);
 		UE_LOG(LogTemp, Log, TEXT("%s(%s) is ClientRPC SetSteamID"), *SteamID, *SteamNickName);
 	}
 }
