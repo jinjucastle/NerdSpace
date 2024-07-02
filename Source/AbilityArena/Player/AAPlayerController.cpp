@@ -120,6 +120,13 @@ void AAAPlayerController::OnPossess(APawn* InPawn)
 	}
 }
 
+void AAAPlayerController::ReceivedPlayer()
+{
+	Super::ReceivedPlayer();
+
+	SetSteamIDAndNickName();
+}
+
 void AAAPlayerController::HandleSeamlessTravelComplete()
 {
 	if (IsLocalController())
