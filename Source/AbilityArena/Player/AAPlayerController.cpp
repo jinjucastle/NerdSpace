@@ -131,17 +131,6 @@ void AAAPlayerController::PostSeamlessTravel()
 	Super::PostSeamlessTravel();
 
 	UE_LOG(LogTemp, Log, TEXT("Called PostSeamlessTravel."));
-
-	UAAGameInstance* GI = Cast<UAAGameInstance>(GetGameInstance());
-	if (GI)
-	{
-		FString ID, NickName;
-		GI->GetSteamData(ID, NickName);
-
-		SetSteamIDInPlayerState(ID, NickName);
-
-		UE_LOG(LogTemp, Log, TEXT("Set SteamData in PostSeamlessTravel: %s(%s)"), *NickName, *ID);
-	}
 }
 
 void AAAPlayerController::HandleSeamlessTravelComplete()
@@ -399,7 +388,15 @@ void AAAPlayerController::SetSteamIDInPlayerState(const FString& InSteamID, cons
 		}
 		else
 		{
-			UE_LOG(LogTemp, Log, TEXT("Alread set NickName & ID: %s(%s) in SetSteamIDInPlayerState"), *NickName, *ID);
+			UE_LOG(LogTemp, Log, TEXT("Already set NickName & ID: %s(%s) in SetSteamIDInPlayerState"), *NickName, *ID);
+
+			if (AAACharacterPlayerState* PS = GetPlayerState<AAACharacterPlayerState>())
+			{
+				PS->SteamID = InSteamID;
+				PS->SteamNickName = InSteamNickName;
+
+				UE_LOG(LogTemp, Log, TEXT("%s(%s) is Set Player State"), *InSteamID, *InSteamNickName);
+			}
 		}
 	}
 }
@@ -476,6 +473,17 @@ void AAAPlayerController::ClientRPCAddScoreWidget_Implementation(TSubclassOf<UUs
 			FInputModeUIOnly UIOnlyInputMode;
 			SetInputMode(UIOnlyInputMode);
 		}
+	}
+
+	UAAGameInstance* GI = Cast<UAAGameInstance>(GetGameInstance());
+	if (GI)
+	{
+		FString ID, NickName;
+		GI->GetSteamData(ID, NickName);
+
+		SetSteamIDInPlayerState(ID, NickName);
+
+		UE_LOG(LogTemp, Log, TEXT("Set SteamData in PostSeamlessTravel: %s(%s)"), *NickName, *ID);
 	}
 }
 
