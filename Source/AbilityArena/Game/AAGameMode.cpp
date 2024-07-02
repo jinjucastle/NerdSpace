@@ -145,6 +145,7 @@ void AAAGameMode::PostSeamlessTravel()
 		if (AAAPlayerController* MyPlayerController = Cast<AAAPlayerController>(It->Get()))
 		{
 			MyPlayerController->BindSeamlessTravelEvent();
+			MyPlayerController->SetSteamIDAndNickName();
 		}
 	}
 
