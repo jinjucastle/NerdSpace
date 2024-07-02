@@ -56,3 +56,15 @@ void AAACharacterPlayerState::SetSteamNickName(const FString& InSteamNickName)
 {
 	SteamNickName = InSteamNickName;
 }
+
+void AAACharacterPlayerState::OnRep_SetSteamID()
+{
+	SetSteamID(SteamID);
+	UE_LOG(LogTemp, Log, TEXT("OnRep_SetSteamID (%s)"), *SteamID);
+}
+
+void AAACharacterPlayerState::OnRep_SetSteamNickName()
+{
+	SetSteamNickName(SteamNickName);
+	UE_LOG(LogTemp, Log, TEXT("OnRep_SetSteamNickName (%s)"), *SteamNickName);
+}

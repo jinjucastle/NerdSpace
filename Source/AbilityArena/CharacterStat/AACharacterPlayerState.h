@@ -44,10 +44,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "PlayerState")
 	void SetSteamNickName(const FString& InSteamNickName);
 
-private:
-	UPROPERTY(Replicated)
+	UPROPERTY(replicatedUsing = OnRep_SetSteamID)
 	FString SteamID;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(replicatedUsing = OnRep_SetSteamNickName)
 	FString SteamNickName;
+
+	UFUNCTION()
+	void OnRep_SetSteamID();
+
+	UFUNCTION()
+	void OnRep_SetSteamNickName();
 };

@@ -363,8 +363,8 @@ void AAAPlayerController::SetSteamIDInPlayerState(const FString& InSteamID, cons
 	{
 		if (AAACharacterPlayerState* PS = CP->GetPlayerState<AAACharacterPlayerState>())
 		{
-			PS->SetSteamID(InSteamID);
-			PS->SetSteamNickName(InSteamNickName);
+			PS->SteamID = InSteamID;
+			PS->SteamNickName = InSteamNickName;
 
 			UE_LOG(LogTemp, Log, TEXT("%s(%s) is Set Player State"), *InSteamID, *InSteamNickName);
 		}
