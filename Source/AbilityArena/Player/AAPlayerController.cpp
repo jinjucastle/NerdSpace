@@ -81,10 +81,8 @@ void AAAPlayerController::BeginPlay()
 
 	BindSeamlessTravelEvent();
 
-	if (IsLocalController())
-	{
-		SetSteamIDAndNickName();
-	}
+	SetSteamIDAndNickName();
+	
 
 	UE_LOG(LogTemp, Log, TEXT("Controller Set Steam Id or NickName Complete."));
 
@@ -113,10 +111,7 @@ void AAAPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	if (IsLocalController())
-	{
-		SetSteamIDAndNickName();
-	}
+	SetSteamIDAndNickName();
 
 	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
 	{
@@ -368,30 +363,33 @@ void AAAPlayerController::SetSteamIDInPlayerState(const FString& InSteamID, cons
 
 void AAAPlayerController::SetSteamIDAndNickName()
 {
-	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get(STEAM_SUBSYSTEM);
-	if (OnlineSubsystem)
+	if (IsLocalController())
 	{
-		IOnlineIdentityPtr Identity = OnlineSubsystem->GetIdentityInterface();
-		if (Identity.IsValid())
+		IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get(STEAM_SUBSYSTEM);
+		if (OnlineSubsystem)
 		{
-			FUniqueNetIdRepl UserId = Identity->GetUniquePlayerId(GetLocalPlayer()->GetControllerId());
-			if (UserId.IsValid())
+			IOnlineIdentityPtr Identity = OnlineSubsystem->GetIdentityInterface();
+			if (Identity.IsValid())
 			{
-				FString NewID = UserId.ToString();
-				FString NewNickName = Identity->GetPlayerNickname(*UserId);
-				SteamID = NewID;
-				SteamNickName = NewNickName;
-				if (HasAuthority())
+				FUniqueNetIdRepl UserId = Identity->GetUniquePlayerId(GetLocalPlayer()->GetControllerId());
+				if (UserId.IsValid())
 				{
-					SetSteamIDInPlayerState(SteamID, SteamNickName);
+					FString NewID = UserId.ToString();
+					FString NewNickName = Identity->GetPlayerNickname(*UserId);
+					SteamID = NewID;
+					SteamNickName = NewNickName;
+					if (HasAuthority())
+					{
+						SetSteamIDInPlayerState(SteamID, SteamNickName);
 
-					UE_LOG(LogTemp, Log, TEXT("OnPossess: Set Steam ID and Nickname Complete Server"));
-				}
-				else
-				{
-					ServerSetSteamID(NewID, NewNickName);
+						UE_LOG(LogTemp, Log, TEXT("OnPossess: Set Steam ID and Nickname Complete Server"));
+					}
+					else
+					{
+						ServerSetSteamID(NewID, NewNickName);
 
-					UE_LOG(LogTemp, Log, TEXT("OnPossess: Set Steam ID and Nickname Complete Client"));
+						UE_LOG(LogTemp, Log, TEXT("OnPossess: Set Steam ID and Nickname Complete Client"));
+					}
 				}
 			}
 		}
