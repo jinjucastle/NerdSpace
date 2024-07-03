@@ -454,21 +454,36 @@ void AAAPlayerController::ClientRPCAddScoreWidget_Implementation(TSubclassOf<UUs
 		ScoreWidget = CreateWidget<UUserWidget>(this, WidgetClass);
 		if (ScoreWidget != nullptr)
 		{
-			for (int32 i = 0; i < PlayerNickNames.Num(); ++i)
+			if (PlayerNickNames.Num() > 1)
 			{
-				FString PlayerNickName = PlayerNickNames[i];
-				int32 PlayerScore = PlayerScores.IsValidIndex(i) ? PlayerScores[i] : 0;
-				UFunction* Func = ScoreWidget->FindFunction(FName("AddPlayerScore"));
+				for (int32 i = 0; i < PlayerNickNames.Num(); ++i)
+				{
+					FString PlayerNickName = PlayerNickNames[i];
+					int32 PlayerScore = PlayerScores.IsValidIndex(i) ? PlayerScores[i] : 0;
+					UFunction* Func = ScoreWidget->FindFunction(FName("AddPlayerScore"));
+					if (Func)
+					{
+						struct FPlayerScore
+						{
+							FString NickName;
+							int32 Score;
+						};
+						FPlayerScore Params;
+						Params.NickName = PlayerNickName;
+						Params.Score = PlayerScore;
+						ScoreWidget->ProcessEvent(Func, &Params);
+					}
+				}
+			}
+			else
+			{
+				UFunction* Func = ScoreWidget->FindFunction(FName("FirstRoundStart"));
 				if (Func)
 				{
-					struct FPlayerScore
+					struct FBlank
 					{
-						FString NickName;
-						int32 Score;
 					};
-					FPlayerScore Params;
-					Params.NickName = PlayerNickName;
-					Params.Score = PlayerScore;
+					FBlank Params;
 					ScoreWidget->ProcessEvent(Func, &Params);
 				}
 			}
