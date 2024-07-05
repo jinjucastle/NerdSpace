@@ -115,6 +115,11 @@ AAACharacterPlayer::AAACharacterPlayer()
 	ZoomInterpSpeed = 20.0f;
 
 	FollowCamera->FieldOfView = DefaultFOV;
+
+	NormalSensitiveX = 1.0f;
+	NormalSensitiveY = 1.0f;
+	ZoomInSensitiveX = 1.0f;
+	ZoomInSensitiveY = 1.0f;
 }
 
 void AAACharacterPlayer::BeginPlay()
@@ -275,8 +280,16 @@ void AAACharacterPlayer::Look(const FInputActionValue& Value)
 {
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-	AddControllerYawInput(LookAxisVector.X);
-	AddControllerPitchInput(LookAxisVector.Y);
+	if (CurrentCharacterZoomType == ECharacterZoomType::ZoomOut)
+	{
+		AddControllerYawInput(LookAxisVector.X * NormalSensitiveX);
+		AddControllerPitchInput(LookAxisVector.Y * NormalSensitiveY);
+	}
+	else
+	{
+		AddControllerYawInput(LookAxisVector.X * ZoomInSensitiveX);
+		AddControllerPitchInput(LookAxisVector.Y * ZoomInSensitiveY);
+	}
 }
 
 void AAACharacterPlayer::Run()

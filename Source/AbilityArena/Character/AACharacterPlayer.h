@@ -289,4 +289,18 @@ protected:
 
 	void ShowScopeWidget();
 	void HideScopeWidget();
+
+// ver 0.14.4a
+// Mouse Sensitive
+	UPROPERTY(BlueprintReadWrite, Category = Settings)
+	float NormalSensitiveX;
+
+	UPROPERTY(BlueprintReadWrite, Category = Settings)
+	float NormalSensitiveY;
+
+	UPROPERTY(BlueprintReadWrite, Category = Settings)
+	float ZoomInSensitiveX;
+
+	UPROPERTY(BlueprintReadWrite, Category = Settings)
+	float ZoomInSensitiveY;
 };
