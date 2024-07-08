@@ -5,12 +5,14 @@
 #include "CoreMinimal.h"
 #include "Character/AACharacterBase.h"
 #include "InputActionValue.h"
+
+#include "Engine/StreamableManager.h"
 #include "AACharacterPlayer.generated.h"
 
 /**
  * 
  */
-UCLASS()
+UCLASS(config=AbilityArena)
 class ABILITYARENA_API AAACharacterPlayer : public AAACharacterBase
 {
 	GENERATED_BODY()
@@ -33,6 +35,8 @@ public:
 protected:
 	void SetCharacterControl(ECharacterZoomType NewCharacterZoomType);
 	virtual void SetCharacterControlData(const class UAACharacterControlData* CharacterControlData) override;
+	virtual void PostInitializeComponents()override;
+
 
 // Camera Section
 protected:
@@ -222,6 +226,11 @@ protected:
 	UPROPERTY(Replicated, VisibleInstanceOnly, Category = Ability, Meta = (AllowPrivateAccess = "true"))
 	FAAAbilityStat SelectedAbility;
 
+	UPROPERTY(Config, EditAnywhere)
+	TArray<FSoftObjectPath> CharacterMesh;
+
+	TSharedPtr<FStreamableHandle> CharacterMeshHandle;
+
 public:
 	UFUNCTION(BlueprintCallable)
 	void SetAbility(const FAAAbilityStat& InAddAbility);
@@ -243,6 +252,8 @@ public:
 
 	void SetAbilityBeginPlay();
 
+	UFUNCTION(BlueprintCallable)
+	USkeletalMesh* SetChangeText();
 //Add extra stat
 protected:
 	float AmmoScale = 1.f;

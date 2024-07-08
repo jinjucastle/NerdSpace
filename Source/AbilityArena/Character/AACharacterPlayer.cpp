@@ -19,6 +19,7 @@
 #include "Components/PostProcessComponent.h"
 #include "Player/AAPlayerController.h"
 #include "GameData/AAGameInstance.h"
+#include "Engine/AssetManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Game/AAGameMode.h"
 #include "Blueprint/UserWidget.h"
@@ -260,6 +261,21 @@ void AAACharacterPlayer::SetCharacterControlData(const UAACharacterControlData* 
 	CameraBoom->bInheritYaw = CharacterControlData->bInheritYaw;
 	CameraBoom->bInheritRoll = CharacterControlData->bInheritRoll;
 	CameraBoom->bDoCollisionTest = CharacterControlData->bDoCollisionTest;
+}
+
+void AAACharacterPlayer::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	ensure(CharacterMesh.Num() > 0);
+	if (CharacterMesh.Num() > 0)
+	{
+		for (auto CharacterAsset : CharacterMesh)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Character Asset:%s"), *CharacterAsset.ToString());
+		}
+		
+	}
 }
 
 void AAACharacterPlayer::Move(const FInputActionValue& Value)
@@ -917,6 +933,13 @@ void AAACharacterPlayer::SetAbilityBeginPlay()
 	}
 }
 
+USkeletalMesh* AAACharacterPlayer::SetChangeText()
+{
+	int32 RandomIndex = FMath::RandRange(0, CharacterMesh.Num() - 1);
+	CharacterMeshHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(CharacterMesh[RandomIndex]);
+	USkeletalMesh* Asset = Cast<USkeletalMesh>(CharacterMeshHandle->GetLoadedAsset());
+	return Asset;
+}
 void AAACharacterPlayer::SetPlayerStopFire()
 {
 	bCanFire = false;
