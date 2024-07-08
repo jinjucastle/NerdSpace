@@ -93,7 +93,14 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	TMap<FString, FString> PlayerNicknames;
+	UPROPERTY(BlueprintReadWrite)
+	USkeletalMesh* CharacterMesh;
 
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE void SetCharacterMesh(USkeletalMesh* ChangeMesh) { CharacterMesh = ChangeMesh; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE USkeletalMesh* GetCharacterMesh() { return CharacterMesh;}
 private:
 	FString SteamID;
 	FString SteamNickName;
