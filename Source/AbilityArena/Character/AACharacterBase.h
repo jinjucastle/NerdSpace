@@ -187,7 +187,8 @@ public:
 
 // ver 0.7.4a
 // Dead Section
-	virtual void SetDead();
+	UFUNCTION(BlueprintCallable)
+	void SetDead();
 
 // ver 0.9.3a
 // Sound Section
