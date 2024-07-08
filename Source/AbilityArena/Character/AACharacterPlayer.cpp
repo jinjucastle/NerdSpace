@@ -89,6 +89,12 @@ AAACharacterPlayer::AAACharacterPlayer()
 	{
 		ReloadAction = InputActionReloadRef.Object;
 	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> PauseActionReloadRef(TEXT("/Script/EnhancedInput.InputAction'/Game/Input/Action/IA_Pause.IA_Pause'"));
+	if (nullptr != PauseActionReloadRef.Object)
+	{
+		PauseAction = PauseActionReloadRef.Object;
+	}
 	
 	CurrentCharacterZoomType = ECharacterZoomType::ZoomOut;
 
@@ -110,6 +116,11 @@ AAACharacterPlayer::AAACharacterPlayer()
 	ZoomInterpSpeed = 20.0f;
 
 	FollowCamera->FieldOfView = DefaultFOV;
+
+	NormalSensitiveX = 1.0f;
+	NormalSensitiveY = 1.0f;
+	ZoomInSensitiveX = 1.0f;
+	ZoomInSensitiveY = 1.0f;
 }
 
 void AAACharacterPlayer::BeginPlay()
@@ -174,6 +185,7 @@ void AAACharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::StartFire);
 	EnhancedInputComponent->BindAction(FireStopAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::StopFire);
 	EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::Reload);
+	EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &AAACharacterPlayer::ShowPauseUI);
 
 }
 
@@ -284,8 +296,16 @@ void AAACharacterPlayer::Look(const FInputActionValue& Value)
 {
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-	AddControllerYawInput(LookAxisVector.X);
-	AddControllerPitchInput(LookAxisVector.Y);
+	if (CurrentCharacterZoomType == ECharacterZoomType::ZoomOut)
+	{
+		AddControllerYawInput(LookAxisVector.X * NormalSensitiveX);
+		AddControllerPitchInput(LookAxisVector.Y * NormalSensitiveY);
+	}
+	else
+	{
+		AddControllerYawInput(LookAxisVector.X * ZoomInSensitiveX);
+		AddControllerPitchInput(LookAxisVector.Y * ZoomInSensitiveY);
+	}
 }
 
 void AAACharacterPlayer::Run()
@@ -342,6 +362,47 @@ void AAACharacterPlayer::ServerRPCStopRun_Implementation()
 	UE_LOG(LogTemp, Warning, TEXT("Stop Run"));
 
 	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+}
+
+void AAACharacterPlayer::ShowPauseUI()
+{
+	if (PauseWidgetClass && !PauseWidgetInstance)
+	{
+		PauseWidgetInstance = CreateWidget<UUserWidget>(GetWorld(), PauseWidgetClass);
+		if (PauseWidgetInstance)
+		{
+			AAAPlayerController* PC = Cast<AAAPlayerController>(GetController());
+			if (PC)
+			{
+				FInputModeUIOnly InputModeUIOnly;
+				PC->SetInputMode(InputModeUIOnly);
+				PC->SetShowMouseCursor(true);
+				PC->RemoveUI();
+			}
+			PauseWidgetInstance->AddToViewport(0);
+		}
+	}
+	else
+	{
+		HidePauseUI();
+	}
+}
+
+void AAACharacterPlayer::HidePauseUI()
+{
+	if (PauseWidgetInstance)
+	{
+		PauseWidgetInstance->RemoveFromParent();
+		PauseWidgetInstance = nullptr;
+		AAAPlayerController* PC = Cast<AAAPlayerController>(GetController());
+		if (PC)
+		{
+			FInputModeGameOnly InputModeGameOnly;
+			PC->SetInputMode(InputModeGameOnly);
+			PC->SetShowMouseCursor(false);
+			PC->CreateUI();
+		}
+	}
 }
 
 void AAACharacterPlayer::StartJump()

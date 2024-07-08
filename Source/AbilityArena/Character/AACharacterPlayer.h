@@ -79,6 +79,11 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> RunAction;
+
+	// ver 0.14.3a
+	// Input Options
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> PauseAction;
 	
 	//ver 0.3.2a
 	//Add Reload Action
@@ -89,6 +94,18 @@ protected:
 	void Look(const FInputActionValue& Value);
 	void Run();
 	void StopRun();
+
+	// ver 0.14.3a
+	// Pause
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = UI)
+	TSubclassOf<class UUserWidget> PauseWidgetClass;
+
+	TObjectPtr<class UUserWidget> PauseWidgetInstance;
+
+	void ShowPauseUI();
+
+	UFUNCTION(BlueprintCallable)
+	void HidePauseUI();
 
 	//ver 0.4.1 C
 	void StartJump();
@@ -284,4 +301,17 @@ protected:
 	void ShowScopeWidget();
 	void HideScopeWidget();
 
+// ver 0.14.4a
+// Mouse Sensitive
+	UPROPERTY(BlueprintReadWrite, Category = Settings)
+	float NormalSensitiveX;
+
+	UPROPERTY(BlueprintReadWrite, Category = Settings)
+	float NormalSensitiveY;
+
+	UPROPERTY(BlueprintReadWrite, Category = Settings)
+	float ZoomInSensitiveX;
+
+	UPROPERTY(BlueprintReadWrite, Category = Settings)
+	float ZoomInSensitiveY;
 };
