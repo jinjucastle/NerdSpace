@@ -110,27 +110,11 @@ void AAAPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	SetSteamIDAndNickName();
-
 	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
 	{
 		UE_LOG(LogTemp, Log, TEXT("Controller Possess Pawn Complete."));
 		GameMode->PlayerPossessCompleted(this);
 	}
-}
-
-void AAAPlayerController::ReceivedPlayer()
-{
-	Super::ReceivedPlayer();
-
-	SetSteamIDAndNickName();
-}
-
-void AAAPlayerController::PostSeamlessTravel()
-{
-	Super::PostSeamlessTravel();
-
-	UE_LOG(LogTemp, Log, TEXT("Called PostSeamlessTravel."));
 }
 
 void AAAPlayerController::HandleSeamlessTravelComplete()
@@ -436,6 +420,27 @@ void AAAPlayerController::SetSteamIDAndNickName()
 	}
 }
 
+void AAAPlayerController::GetUserDataInGameInstance()
+{
+	UAAGameInstance* GI = Cast<UAAGameInstance>(GetGameInstance());
+	if (GI)
+	{
+		FString ID, NickName;
+		GI->GetSteamData(ID, NickName);
+
+		if (HasAuthority())
+		{
+			SetSteamIDInPlayerState(ID, NickName);
+		}
+		else
+		{
+			ServerSetSteamID(ID, NickName);
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("Set SteamData in PostSeamlessTravel: %s(%s)"), *NickName, *ID);
+	}
+}
+
 void AAAPlayerController::ClientRPCAddScoreWidget_Implementation(TSubclassOf<UUserWidget> WidgetClass, const TArray<FString>& PlayerNickNames, const TArray<int32>& PlayerScores)
 {
 	if (ScoreWidget != nullptr)
@@ -449,21 +454,36 @@ void AAAPlayerController::ClientRPCAddScoreWidget_Implementation(TSubclassOf<UUs
 		ScoreWidget = CreateWidget<UUserWidget>(this, WidgetClass);
 		if (ScoreWidget != nullptr)
 		{
-			for (int32 i = 0; i < PlayerNickNames.Num(); ++i)
+			if (PlayerNickNames.Num() > 1)
 			{
-				FString PlayerNickName = PlayerNickNames[i];
-				int32 PlayerScore = PlayerScores.IsValidIndex(i) ? PlayerScores[i] : 0;
-				UFunction* Func = ScoreWidget->FindFunction(FName("AddPlayerScore"));
+				for (int32 i = 0; i < PlayerNickNames.Num(); ++i)
+				{
+					FString PlayerNickName = PlayerNickNames[i];
+					int32 PlayerScore = PlayerScores.IsValidIndex(i) ? PlayerScores[i] : 0;
+					UFunction* Func = ScoreWidget->FindFunction(FName("AddPlayerScore"));
+					if (Func)
+					{
+						struct FPlayerScore
+						{
+							FString NickName;
+							int32 Score;
+						};
+						FPlayerScore Params;
+						Params.NickName = PlayerNickName;
+						Params.Score = PlayerScore;
+						ScoreWidget->ProcessEvent(Func, &Params);
+					}
+				}
+			}
+			else
+			{
+				UFunction* Func = ScoreWidget->FindFunction(FName("FirstRoundStart"));
 				if (Func)
 				{
-					struct FPlayerScore
+					struct FBlank
 					{
-						FString NickName;
-						int32 Score;
 					};
-					FPlayerScore Params;
-					Params.NickName = PlayerNickName;
-					Params.Score = PlayerScore;
+					FBlank Params;
 					ScoreWidget->ProcessEvent(Func, &Params);
 				}
 			}
@@ -474,6 +494,8 @@ void AAAPlayerController::ClientRPCAddScoreWidget_Implementation(TSubclassOf<UUs
 			SetInputMode(UIOnlyInputMode);
 		}
 	}
+
+	GetUserDataInGameInstance();
 }
 
 void AAAPlayerController::ClientRPCRemoveScoreWidget_Implementation()
@@ -489,16 +511,5 @@ void AAAPlayerController::ClientRPCRemoveScoreWidget_Implementation()
 
 	FInputModeGameOnly GameOnlyInputMode;
 	SetInputMode(GameOnlyInputMode);
-
-	UAAGameInstance* GI = Cast<UAAGameInstance>(GetGameInstance());
-	if (GI)
-	{
-		FString ID, NickName;
-		GI->GetSteamData(ID, NickName);
-
-		SetSteamIDInPlayerState(ID, NickName);
-
-		UE_LOG(LogTemp, Log, TEXT("Set SteamData in PostSeamlessTravel: %s(%s)"), *NickName, *ID);
-	}
 }
 
