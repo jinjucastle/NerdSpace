@@ -632,7 +632,7 @@ FVector AAACharacterPlayer::GetMovementSpreadDirection(const FVector& InAimDirec
 	float MaxSpeed = GetCharacterMovement()->MaxWalkSpeed;
 	float SpeedRatio = FMath::Clamp(Speed / MaxSpeed, 0.0f, 1.0f);
 
-	float SpreadAngle = SpeedRatio * 2.0f;
+	float SpreadAngle = SpeedRatio;
 	FRotator SpreadRotator(0.0f, FMath::FRandRange(-SpreadAngle, SpreadAngle), 0.0f);
 
 	FVector SpreadDirection = SpreadRotator.RotateVector(InAimDirection);
