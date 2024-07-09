@@ -3,6 +3,7 @@
 
 #include "Character/AACharacterBase.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
 #include "AACharacterControlData.h"
 #include "CharacterStat/AACharacterStatComponent.h"
@@ -27,8 +28,8 @@ AAACharacterBase::AAACharacterBase()
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationYaw = true;
 
-	GetCapsuleComponent()->SetCapsuleSize(43.f, 95.f);
-	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
+	BoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
+	RootComponent = BoxCollision;
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
@@ -39,7 +40,7 @@ AAACharacterBase::AAACharacterBase()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 
 	// Mesh
-	GetMesh()->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -95.0f), FRotator(0.0f, -90.0f, 0.0f));
+	GetMesh()->SetRelativeLocationAndRotation(FVector(-14.0f, -11.0f, -95.0f), FRotator(0.0f, -90.0f, 0.0f));
 	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 	GetMesh()->SetCollisionProfileName(TEXT("PhysicsActor"));
 

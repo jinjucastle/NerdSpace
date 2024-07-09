@@ -34,7 +34,7 @@ AAACharacterPlayer::AAACharacterPlayer()
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	FollowCamera->SetRelativeLocation(FVector(0.0f, 45.0f, 85.0f));
+	FollowCamera->SetRelativeLocation(FVector(-14.0f, 34.0f, 85.0f));
 	FollowCamera->bUsePawnControlRotation = false;
 
 	//Input
