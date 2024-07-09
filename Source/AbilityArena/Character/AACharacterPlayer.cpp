@@ -34,7 +34,7 @@ AAACharacterPlayer::AAACharacterPlayer()
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	FollowCamera->SetRelativeLocation(FVector(0.0f, 45.0f, 85.0f));
+	FollowCamera->SetRelativeLocation(FVector(-14.0f, 34.0f, 85.0f));
 	FollowCamera->bUsePawnControlRotation = false;
 
 	//Input
@@ -632,7 +632,7 @@ FVector AAACharacterPlayer::GetMovementSpreadDirection(const FVector& InAimDirec
 	float MaxSpeed = GetCharacterMovement()->MaxWalkSpeed;
 	float SpeedRatio = FMath::Clamp(Speed / MaxSpeed, 0.0f, 1.0f);
 
-	float SpreadAngle = SpeedRatio * 2.0f;
+	float SpreadAngle = SpeedRatio;
 	FRotator SpreadRotator(0.0f, FMath::FRandRange(-SpreadAngle, SpreadAngle), 0.0f);
 
 	FVector SpreadDirection = SpreadRotator.RotateVector(InAimDirection);
