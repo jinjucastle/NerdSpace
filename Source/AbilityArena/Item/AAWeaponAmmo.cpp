@@ -243,7 +243,7 @@ void AAAWeaponAmmo::ApplySplashDamage()
 
 	float BaseDamage = Damage;
 	float MinimumDamage = Damage / 10;
-	float DamageInnerRadius = 100.f * SplashRound;
+	float DamageInnerRadius = 150.f * SplashRound;
 	float DamageOuterRadius = 300.0f * SplashRound;
 	float DamageFalloff = 5.0f;
 

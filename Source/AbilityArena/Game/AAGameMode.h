@@ -30,9 +30,7 @@ public:
 	TArray<FString>LevelArrary;
 
 protected:
-
 	virtual void PostInitializeComponents() override;
-
 	virtual void DefaultGameTimer();
 	
 	//ver 0.5.1b 
@@ -62,6 +60,7 @@ protected:
 public:
 	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void Logout(AController* NewPlayer) override;
 
 protected:
 	virtual void BeginPlay() override;

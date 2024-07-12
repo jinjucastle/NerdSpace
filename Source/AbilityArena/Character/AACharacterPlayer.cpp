@@ -4,6 +4,7 @@
 #include "Character/AACharacterPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/SpectatorPawn.h"
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -22,6 +23,7 @@
 #include "Engine/AssetManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Game/AAGameMode.h"
+#include "Game/AAGameStateT.h"
 #include "Blueprint/UserWidget.h"
 
 AAACharacterPlayer::AAACharacterPlayer()
@@ -374,9 +376,10 @@ void AAACharacterPlayer::ShowPauseUI()
 			AAAPlayerController* PC = Cast<AAAPlayerController>(GetController());
 			if (PC)
 			{
-				FInputModeUIOnly InputModeUIOnly;
-				PC->SetInputMode(InputModeUIOnly);
-				PC->SetShowMouseCursor(true);
+				if (PC->GetCurrentInputMode() == EControllerInputMode::GameOnly)
+				{
+					PC->SetupUIInputmode();
+				}
 				PC->RemoveUI();
 			}
 			PauseWidgetInstance->AddToViewport(0);
@@ -397,8 +400,10 @@ void AAACharacterPlayer::HidePauseUI()
 		AAAPlayerController* PC = Cast<AAAPlayerController>(GetController());
 		if (PC)
 		{
-			FInputModeGameOnly InputModeGameOnly;
-			PC->SetInputMode(InputModeGameOnly);
+			if (PC->GetCurrentInputMode() == EControllerInputMode::UIOnly)
+			{
+				PC->SetupGameInputMode();
+			}
 			PC->SetShowMouseCursor(false);
 			PC->CreateUI();
 		}
@@ -499,7 +504,7 @@ void AAACharacterPlayer::ClearPool()
 
 void AAACharacterPlayer::Fire()
 {
-	if (bCanFire && CurrentAmmoSize > 0)
+	if (bCanFire && CurrentAmmoSize > 0 && bIsAlive)
 	{
 		// Add Delay
 		float CurrentTime = GetWorld()->GetTimeSeconds();
@@ -963,5 +968,27 @@ void AAACharacterPlayer::HideScopeWidget()
 	{
 		ScopeWidgetInstance->RemoveFromParent();
 		ScopeWidgetInstance = nullptr;
+	}
+}
+
+void AAACharacterPlayer::SetDead()
+{
+	Super::SetDead();
+
+	FActorSpawnParameters SpawnParameter;
+	SpawnParameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	ASpectatorPawn* SpectatorCam = GetWorld()->SpawnActor<ASpectatorPawn>(SpectatorCamera, FollowCamera->GetComponentTransform(), SpawnParameter);
+	AAAPlayerController* MyController = Cast<AAAPlayerController>(GetController());
+
+	if (IsValid(SpectatorCam) && IsValid(MyController))
+	{
+		AAAGameStateT* GS = Cast<AAAGameStateT>(GetWorld()->GetGameState());
+		if (GS->GetAlivePlayer() > 2)
+		{
+			MyController->OnPlayerDeath();
+			MyController->Possess(SpectatorCam);
+			MyController->SetupGameInputMode();
+		}
 	}
 }
