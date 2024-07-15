@@ -253,7 +253,12 @@ public:
 	void SetAbilityBeginPlay();
 
 	UFUNCTION(BlueprintCallable)
-	USkeletalMesh* SetChangeText();
+	USkeletalMesh* SetChangeSkeletalMesh(bool bChange);
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	int32 CurrentIndex;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 MaxIndex;
 //Add extra stat
 protected:
 	float AmmoScale = 1.f;

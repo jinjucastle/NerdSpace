@@ -274,8 +274,9 @@ void AAACharacterPlayer::PostInitializeComponents()
 		{
 			UE_LOG(LogTemp, Error, TEXT("Character Asset:%s"), *CharacterAsset.ToString());
 		}
-		
+		MaxIndex = CharacterMesh.Num();
 	}
+
 }
 
 void AAACharacterPlayer::Move(const FInputActionValue& Value)
@@ -933,10 +934,14 @@ void AAACharacterPlayer::SetAbilityBeginPlay()
 	}
 }
 
-USkeletalMesh* AAACharacterPlayer::SetChangeText()
+USkeletalMesh* AAACharacterPlayer::SetChangeSkeletalMesh(bool bChange)
 {
-	int32 RandomIndex = FMath::RandRange(0, CharacterMesh.Num() - 1);
-	CharacterMeshHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(CharacterMesh[RandomIndex]);
+	
+	bChange ? CurrentIndex++ : CurrentIndex--;
+	if (CurrentIndex == -1) CurrentIndex = MaxIndex - 1;
+	if (CurrentIndex == MaxIndex) CurrentIndex = 0;
+
+	CharacterMeshHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(CharacterMesh[CurrentIndex]);
 	USkeletalMesh* Asset = Cast<USkeletalMesh>(CharacterMeshHandle->GetLoadedAsset());
 	return Asset;
 }
