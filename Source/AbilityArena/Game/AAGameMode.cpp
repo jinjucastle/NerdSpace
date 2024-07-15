@@ -168,7 +168,6 @@ void AAAGameMode::RandomCardPick()
 	}
 }
 
-
 // ver 0.11.4a
 // Spawn Point Setting
 AActor* AAAGameMode::ChoosePlayerStart_Implementation(AController* Player)
@@ -252,7 +251,6 @@ void AAAGameMode::PlayerDied(AController* PlayerController)
 	AAAGameStateT* GS = Cast<AAAGameStateT>(GameState);
 	GS->SetAlivePlayer(NumPlayersPossessed);
 
-	// 플레이어가 죽을 때마다 라운드 종료 조건을 확인합니다.
 	CheckForRoundEnd();
 
 	UE_LOG(LogTemp, Warning, TEXT("Current %d Alive Player"), NumPlayersPossessed);

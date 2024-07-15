@@ -517,7 +517,7 @@ void AAACharacterPlayer::Fire()
 			FVector AimDirection = GetAdjustedAim();
 			FVector FinalDirection;
 
-			if (WeaponData->Type == EWeaponType::SniperRifle || WeaponData->Type == EWeaponType::Panzerfaust)
+			if (WeaponData->Type == EWeaponType::Panzerfaust)
 			{
 				FinalDirection = AimDirection;
 			}
@@ -889,20 +889,20 @@ void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
 		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
 
 		RPM = FMath::Clamp(WeaponData->WeaponStat.RPM + (WeaponData->WeaponStat.RPM * NewAbilityStat.RPM), 0.05f, 10.f);
-		AmmoDamage = FMath::Clamp(WeaponData->AmmoDamage * NewAbilityStat.Damage, 1, 999);
-		AmmoSpeed = WeaponData->AmmoSpeed * NewAbilityStat.AmmoSpeed;
-		AmmoScale = NewAbilityStat.AmmoScale;
-		Acceleration = NewAbilityStat.Acceleration;
+		AmmoDamage = FMath::Clamp(WeaponData->AmmoDamage * NewAbilityStat.Damage, 1, 1024);
+		AmmoSpeed = FMath::Clamp(WeaponData->AmmoSpeed * NewAbilityStat.AmmoSpeed, 1, 2147483647);
+		AmmoScale = FMath::Clamp(NewAbilityStat.AmmoScale, 0.1f, 10.f);
+		Acceleration = FMath::Clamp(NewAbilityStat.Acceleration, 0.1f, 10.f);
 
-		MaxAmmoSize = (int32)(WeaponData->AmmoPoolExpandSize * NewAbilityStat.AmmoSize);
+		MaxAmmoSize = (int32)(FMath::Clamp(WeaponData->AmmoPoolExpandSize * NewAbilityStat.AmmoSize, 1, 1024));
 		CurrentAmmoSize = MaxAmmoSize;
 
-		ReloadSpeed = NewAbilityStat.ReloadSpeed;
-		SplashRound = NewAbilityStat.SplashRound;
+		ReloadSpeed = FMath::Clamp(NewAbilityStat.ReloadSpeed, 0.1f, 10.f);
+		SplashRound = FMath::Clamp(NewAbilityStat.SplashRound, 0.1f, 10.f);
 
 		bBloodDrain = (bool)NewAbilityStat.BloodDrain;
 
-		Magnification = NewAbilityStat.Magnification;
+		Magnification = FMath::Clamp(NewAbilityStat.Magnification, 1, 8);
 }
 
 void AAACharacterPlayer::SetAbilityInController(const FAAAbilityStat& NewAbilityStat)
@@ -981,14 +981,32 @@ void AAACharacterPlayer::SetDead()
 	ASpectatorPawn* SpectatorCam = GetWorld()->SpawnActor<ASpectatorPawn>(SpectatorCamera, FollowCamera->GetComponentTransform(), SpawnParameter);
 	AAAPlayerController* MyController = Cast<AAAPlayerController>(GetController());
 
-	if (IsValid(SpectatorCam) && IsValid(MyController))
+	if (IsValid(SpectatorCam))
 	{
-		AAAGameStateT* GS = Cast<AAAGameStateT>(GetWorld()->GetGameState());
-		if (GS->GetAlivePlayer() > 2)
+		if (IsValid(MyController))
 		{
-			MyController->OnPlayerDeath();
-			MyController->Possess(SpectatorCam);
-			MyController->SetupGameInputMode();
+			AAAGameStateT* GS = Cast<AAAGameStateT>(GetWorld()->GetGameState());
+			if (GS->GetAlivePlayer() > 2)
+			{
+				MyController->OnPlayerDeath();
+				MyController->Possess(SpectatorCam);
+				MyController->SetupGameInputMode();
+				SpectatorCam->GetMovementComponent()->SetActive(true);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Log, TEXT("Now Alive player count is less than 2"));
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("Controller is failed possess to Spectatle Camera"));
 		}
 	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Spawn fail : Spectatle Camera "));
+	}
+
+	GetCharacterMovement()->DisableMovement();
 }

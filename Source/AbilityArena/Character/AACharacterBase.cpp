@@ -169,11 +169,14 @@ void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* Ch
 // Equip Weapon & Apply Stat
 void AAACharacterBase::ApplyStat(const FAACharacterStat& BaseStat, const FAACharacterStat& WeaponStat)
 {
-	BaseMovementSpeed = (BaseStat + WeaponStat).MovementSpeed;
-	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
-	AmmoDamage = WeaponData->AmmoDamage;
-	AmmoSpeed = WeaponData->AmmoSpeed;
-	RPM = WeaponData->WeaponStat.RPM;
+	if (WeaponData)
+	{
+		BaseMovementSpeed = (BaseStat + WeaponStat).MovementSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+		AmmoDamage = WeaponData->AmmoDamage;
+		AmmoSpeed = WeaponData->AmmoSpeed;
+		RPM = WeaponData->WeaponStat.RPM;
+	}
 }
 
 void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
@@ -191,7 +194,10 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 			//ver0.8.1b
 			//client saveWeaponData
 			SetWeaponDataBegin();
-
+		}
+		else
+		{
+			WeaponData = WeaponItemData;
 		}
 
 		if(IsLocallyControlled())
@@ -323,28 +329,29 @@ void AAACharacterBase::PlayReloadAnimation()
 	{
 		FOnMontageEnded EndDelegate;
 
-		if (WeaponData->Type == EWeaponType::Pistol)
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
 		{
-			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-			if (AnimInstance)
+			AnimInstance->StopAllMontages(0.1f);
+
+			if (WeaponData)
 			{
-				AnimInstance->StopAllMontages(0.1f);
-				AnimInstance->Montage_Play(PistolReloadMontage, ReloadSpeed);
-				EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
-				AnimInstance->Montage_SetEndDelegate(EndDelegate, PistolReloadMontage);
+				switch (WeaponData->Type)
+				{
+				case EWeaponType::Pistol:
+					AnimInstance->Montage_Play(PistolReloadMontage, ReloadSpeed);
+					EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
+					AnimInstance->Montage_SetEndDelegate(EndDelegate, PistolReloadMontage);
+					break;
+				default:
+					AnimInstance->Montage_Play(ReloadMontage, ReloadSpeed);
+					EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
+					AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
+					break;
+				}
 			}
 		}
-		else
-		{
-			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-			if (AnimInstance)
-			{
-				AnimInstance->StopAllMontages(0.1f);
-				AnimInstance->Montage_Play(ReloadMontage, ReloadSpeed);
-				EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
-				AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
-			}
-		}
+
 		ServerSetCanFire(false);
 
 		UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
@@ -558,7 +565,7 @@ void AAACharacterBase::SetDead()
 		APlayerController* PlayerController = Cast<APlayerController>(GetController());
 		if (PlayerController)
 		{
-			UE_LOG(LogTemp, Error, TEXT("%s is Dead"), *PlayerController->GetName())
+			UE_LOG(LogTemp, Error, TEXT("%s is Dead"), *PlayerController->GetName());
 			CurrentGameMode->PlayerDied(PlayerController);
 		}
 	}

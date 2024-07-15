@@ -15,8 +15,6 @@ class ABILITYARENA_API AAAGameStateT : public AGameState
 	GENERATED_BODY()
 
 public:
-
-
 	AAAGameStateT();
 
 	virtual void GetLifetimeReplicatedProps(TArray <FLifetimeProperty>& OutLifetimeProps) const;
@@ -29,6 +27,6 @@ public:
 	FORCEINLINE int32 GetAlivePlayer() const { return AlivePlayers; }
 
 protected:
-	UPROPERTY()
+	UPROPERTY(Transient, Replicated)
 	int32 AlivePlayers = 0;
 };
