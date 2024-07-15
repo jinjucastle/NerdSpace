@@ -93,8 +93,8 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	TMap<FString, FString> PlayerNicknames;
-	UPROPERTY(BlueprintReadWrite)
-	USkeletalMesh* CharacterMesh;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	TObjectPtr<USkeletalMesh> CharacterMesh;
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE void SetCharacterMesh(USkeletalMesh* ChangeMesh) { CharacterMesh = ChangeMesh; }
