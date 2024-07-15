@@ -21,5 +21,5 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FString SetFirstRandomLevel();
 
-	
+	virtual void PostSeamlessTravel() override;
 };

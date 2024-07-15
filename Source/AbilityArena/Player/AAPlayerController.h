@@ -10,6 +10,13 @@
 /**
  * 
  */
+UENUM(BlueprintType)
+enum class EControllerInputMode : uint8
+{
+	GameOnly,
+	UIOnly
+};
+
 UCLASS()
 class ABILITYARENA_API AAAPlayerController : public APlayerController
 {
@@ -143,4 +150,22 @@ private:
 // Get GameInstance Store Data
 public:
 	void GetUserDataInGameInstance();
+
+// ver 0.15.2a
+// Save Pre-InputMode
+private:
+	EControllerInputMode CurrentInputMode;
+
+public:
+	FORCEINLINE EControllerInputMode GetCurrentInputMode() const { return CurrentInputMode; }
+	void SetupGameInputMode();
+	void SetupUIInputmode();
+
+// ver 0.15.3a
+// Spactator Camera Section
+	void OnPlayerDeath();
+	void PossessLastPlayerPawn();
+
+protected:
+	TObjectPtr<APawn> LastPlayerPawn = nullptr;
 };

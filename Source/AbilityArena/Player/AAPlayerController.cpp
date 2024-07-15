@@ -110,10 +110,15 @@ void AAAPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
+	AAACharacterPlayer* NewPawn = Cast<AAACharacterPlayer>(InPawn);
+
+	if (NewPawn && NewPawn->GetIsAlive())
 	{
-		UE_LOG(LogTemp, Log, TEXT("Controller Possess Pawn Complete."));
-		GameMode->PlayerPossessCompleted(this);
+		if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
+		{
+			UE_LOG(LogTemp, Log, TEXT("Controller Possess Pawn Complete."));
+			GameMode->PlayerPossessCompleted(this);
+		}
 	}
 }
 
@@ -174,7 +179,7 @@ void AAAPlayerController::RefreshUI()
 
 			// ver 0.10.1a
 			// Only RefreshUI is client can moved character
-			SetInputMode(FInputModeGameOnly());
+			SetupGameInputMode();
 		}
 	}
 }
@@ -213,8 +218,7 @@ void AAAPlayerController::CreateCardSelectUI(TSubclassOf<UUserWidget> CardSelect
 				}
 			}
 
-			FInputModeUIOnly UIOnlyInputMode;
-			SetInputMode(UIOnlyInputMode);
+			SetupUIInputmode();
 
 			bIsPick = false;
 		}
@@ -233,12 +237,15 @@ void AAAPlayerController::SimulateRandomButtonClick()
 	if (PlayerUI && !bIsPick)
 	{
 		UAACardSelectUI* CardSelectUI = Cast<UAACardSelectUI>(PlayerUI->GetWidgetFromName(TEXT("WBP_CardSelectUI")));
-		if (UUserWidget* RandomWidget = CardSelectUI->GetRandomWidget())
+		if (CardSelectUI)
 		{
-			if (UButton* Button = Cast<UButton>(RandomWidget->GetWidgetFromName(TEXT("Button"))))
+			if (UUserWidget* RandomWidget = CardSelectUI->GetRandomWidget())
 			{
-				Button->OnClicked.Broadcast();
-				UE_LOG(LogTemp, Error, TEXT("Success Random Card Pick"));
+				if (UButton* Button = Cast<UButton>(RandomWidget->GetWidgetFromName(TEXT("Button"))))
+				{
+					Button->OnClicked.Broadcast();
+					UE_LOG(LogTemp, Error, TEXT("Success Random Card Pick"));
+				}
 			}
 		}
 	}
@@ -441,6 +448,37 @@ void AAAPlayerController::GetUserDataInGameInstance()
 	}
 }
 
+void AAAPlayerController::SetupGameInputMode()
+{
+	FInputModeGameOnly InputMode;
+	SetInputMode(InputMode);
+	bShowMouseCursor = false;
+	CurrentInputMode = EControllerInputMode::GameOnly;
+}
+
+void AAAPlayerController::SetupUIInputmode()
+{
+	FInputModeUIOnly InputMode;
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
+	CurrentInputMode = EControllerInputMode::UIOnly;
+}
+
+void AAAPlayerController::OnPlayerDeath()
+{
+	LastPlayerPawn = GetPawn();
+}
+
+void AAAPlayerController::PossessLastPlayerPawn()
+{
+	if (LastPlayerPawn != nullptr)
+	{
+		Possess(LastPlayerPawn);
+		LastPlayerPawn = nullptr;
+		SetupGameInputMode();
+	}
+}
+
 void AAAPlayerController::ClientRPCAddScoreWidget_Implementation(TSubclassOf<UUserWidget> WidgetClass, const TArray<FString>& PlayerNickNames, const TArray<int32>& PlayerScores)
 {
 	if (ScoreWidget != nullptr)
@@ -490,8 +528,7 @@ void AAAPlayerController::ClientRPCAddScoreWidget_Implementation(TSubclassOf<UUs
 
 			ScoreWidget->AddToViewport();
 
-			FInputModeUIOnly UIOnlyInputMode;
-			SetInputMode(UIOnlyInputMode);
+			SetupUIInputmode();
 		}
 	}
 
@@ -506,10 +543,9 @@ void AAAPlayerController::ClientRPCRemoveScoreWidget_Implementation()
 		ScoreWidget = nullptr;
 	}
 
-	RefreshUI();
+	RemoveUI();
 	CreateUI();
 
-	FInputModeGameOnly GameOnlyInputMode;
-	SetInputMode(GameOnlyInputMode);
+	SetupGameInputMode();
 }
 

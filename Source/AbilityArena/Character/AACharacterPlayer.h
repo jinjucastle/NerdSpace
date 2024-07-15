@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Character/AACharacterBase.h"
 #include "InputActionValue.h"
-
 #include "Engine/StreamableManager.h"
 #include "AACharacterPlayer.generated.h"
 
@@ -253,7 +252,12 @@ public:
 	void SetAbilityBeginPlay();
 
 	UFUNCTION(BlueprintCallable)
-	USkeletalMesh* SetChangeText();
+	USkeletalMesh* SetChangeSkeletalMesh(bool bChange);
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	int32 CurrentIndex;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 MaxIndex;
 //Add extra stat
 protected:
 	float AmmoScale = 1.f;
@@ -314,4 +318,11 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, Category = Settings)
 	float ZoomInSensitiveY;
+
+// ver 0.15.2a
+// Spectator Camera Section
+	virtual void SetDead() override;
+
+	UPROPERTY(EditDefaultsOnly, Category = Spectator)
+	TSubclassOf<class ASpectatorPawn> SpectatorCamera;
 };
