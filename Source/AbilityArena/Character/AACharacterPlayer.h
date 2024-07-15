@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Character/AACharacterBase.h"
 #include "InputActionValue.h"
-
 #include "Engine/StreamableManager.h"
 #include "AACharacterPlayer.generated.h"
 
@@ -319,4 +318,11 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, Category = Settings)
 	float ZoomInSensitiveY;
+
+// ver 0.15.2a
+// Spectator Camera Section
+	virtual void SetDead() override;
+
+	UPROPERTY(EditDefaultsOnly, Category = Spectator)
+	TSubclassOf<class ASpectatorPawn> SpectatorCamera;
 };

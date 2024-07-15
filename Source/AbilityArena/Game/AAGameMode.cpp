@@ -128,6 +128,7 @@ void AAAGameMode::FinishGame()
 
 			if (!isFinishGame)
 			{
+				PlayerController->PossessLastPlayerPawn();
 				PlayerController->ClientRPCCreateCardSelectUI(CardSelectUIClass);
 			}
 		}
@@ -167,7 +168,6 @@ void AAAGameMode::RandomCardPick()
 	}
 }
 
-
 // ver 0.11.4a
 // Spawn Point Setting
 AActor* AAAGameMode::ChoosePlayerStart_Implementation(AController* Player)
@@ -202,6 +202,13 @@ void AAAGameMode::PostLogin(APlayerController* NewPlayer)
 	NumPlayersLoggedIn++;
 
 	CheckAllPlayersPossessed();
+}
+
+void AAAGameMode::Logout(AController* NewPlayer)
+{
+	Super::Logout(NewPlayer);
+
+	NumPlayersPossessed--;
 }
 
 void AAAGameMode::BeginPlay()
@@ -239,17 +246,19 @@ AActor* AAAGameMode::GetRandomAvailableSpawnPoint()
 
 void AAAGameMode::PlayerDied(AController* PlayerController)
 {
-	AlivePlayers--;
+	NumPlayersPossessed--;
 
-	// 플레이어가 죽을 때마다 라운드 종료 조건을 확인합니다.
+	AAAGameStateT* GS = Cast<AAAGameStateT>(GameState);
+	GS->SetAlivePlayer(NumPlayersPossessed);
+
 	CheckForRoundEnd();
 
-	UE_LOG(LogTemp, Warning, TEXT("Current %d Alive Player"), AlivePlayers);
+	UE_LOG(LogTemp, Warning, TEXT("Current %d Alive Player"), NumPlayersPossessed);
 }
 
 void AAAGameMode::CheckForRoundEnd()
 {
-	if (AlivePlayers <= 1)
+	if (NumPlayersPossessed <= 1)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Last Man Standing"));
 
@@ -293,6 +302,7 @@ APlayerController* AAAGameMode::GetLastPlayerController()
 			if (LastManCharacter && LastManCharacter->GetIsAlive())
 			{
 				UE_LOG(LogTemp, Warning, TEXT("%s: %s is Alive"), *PC->GetSteamID(), *LastManCharacter->GetActorLocation().ToString());
+				LastManCharacter->SetInvincibility();
 				return PC;
 			}
 		}
@@ -326,7 +336,7 @@ void AAAGameMode::CheckAllPlayersPossessed()
 
 void AAAGameMode::StartGame()
 {
-	UE_LOG(LogTemp, Warning, TEXT("All players are ready. Starting the game..."));
+	UE_LOG(LogTemp, Warning, TEXT("All players (%d) are ready. Starting the game..."), NumPlayersPossessed);
 
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
