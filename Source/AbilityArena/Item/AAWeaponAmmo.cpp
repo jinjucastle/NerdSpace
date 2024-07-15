@@ -4,6 +4,7 @@
 #include "Item/AAWeaponAmmo.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Character/AACharacterPlayer.h"
+#include "Player/AAPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
@@ -63,18 +64,18 @@ void AAAWeaponAmmo::Tick(float DeltaTime)
 
 void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (AAACharacterPlayer* Other = Cast<AAACharacterPlayer>(OtherActor))
+	if (HasAuthority())
 	{
-		if (Other == Owner || AmmoType != EAmmoType::Normal)
+		if (AAACharacterPlayer* Other = Cast<AAACharacterPlayer>(OtherActor))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Ignore"));
-			return;
+			if (Other == Owner || AmmoType != EAmmoType::Normal)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Ignore"));
+				return;
+			}
 		}
-	}
 
-	if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
-	{
-		if (HasAuthority())
+		if (!OtherActor->IsA(AAAWeaponAmmo::StaticClass()))
 		{
 			//Character Damage
 			if (OtherActor->IsA(AAACharacterPlayer::StaticClass()))
@@ -145,38 +146,34 @@ void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimi
 {
 	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
 
-	if (AAACharacterPlayer* OtherActor = Cast<AAACharacterPlayer>(Other))
+	if (HasAuthority())
 	{
-		if (OtherActor->GetController() == Owner->GetController())
+		if (AAACharacterPlayer* OtherActor = Cast<AAACharacterPlayer>(Other))
+		{
+			if (Cast<AAAPlayerController>(OtherActor->GetController()) == Cast<AAAPlayerController>(Owner->GetController()))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Ignore"));
+				return;
+			}
+		}
+
+		if (AmmoType != EAmmoType::Rocket)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Ignore"));
 			return;
 		}
-	}
 
-	if (AmmoType != EAmmoType::Rocket)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Ignore"));
-		return;
-	}
-
-	if (!Other->IsA(AAAWeaponAmmo::StaticClass()))
-	{
-		if (HasAuthority())
+		if (!Other->IsA(AAAWeaponAmmo::StaticClass()))
 		{
 			UE_LOG(LogTemp, Log, TEXT("Hit: %s"), *Hit.GetActor()->GetName());
-
 			ApplySplashDamage();
-
 			if (AmmoEffect)
 			{
 				MulticastRPCPlayEffect(AmmoEffect, GetActorLocation());
 
 				PlaySoundCue();
 			}
-
 			Destroy();
-
 			UE_LOG(LogTemp, Log, TEXT("Destroy"));
 		}
 	}
@@ -243,9 +240,9 @@ void AAAWeaponAmmo::ApplySplashDamage()
 
 	float BaseDamage = Damage;
 	float MinimumDamage = Damage / 10;
-	float DamageInnerRadius = 100.f * SplashRound;
+	float DamageInnerRadius = 150.f * SplashRound;
 	float DamageOuterRadius = 300.0f * SplashRound;
-	float DamageFalloff = 5.0f;
+	float DamageFalloff = 1.0f;
 
 	UGameplayStatics::ApplyRadialDamageWithFalloff(
 		this,

@@ -187,8 +187,7 @@ public:
 
 // ver 0.7.4a
 // Dead Section
-	UFUNCTION(BlueprintCallable)
-	void SetDead();
+	virtual void SetDead();
 
 // ver 0.9.3a
 // Sound Section
@@ -311,6 +310,7 @@ protected:
 
 // ver 0.11.6a
 // Alive check
+	UPROPERTY(Replicated)
 	bool bIsAlive;
 
 public:
@@ -322,4 +322,12 @@ public:
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UI, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UWidgetComponent> HpBar;
+
+// ver 0.15.4a
+// Winner is unDying
+	UPROPERTY(Replicated)
+	bool bInvincibility = false;
+
+public:
+	FORCEINLINE void SetInvincibility() { bInvincibility = true; }
 };

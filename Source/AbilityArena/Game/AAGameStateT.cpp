@@ -18,5 +18,5 @@ void AAAGameStateT::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AAAGameStateT, RemainingTime);
-
+	DOREPLIFETIME(AAAGameStateT, AlivePlayers);
 }

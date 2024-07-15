@@ -137,6 +137,8 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(AAACharacterBase, MaxAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, CurrentAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, bCanFire);
+	DOREPLIFETIME(AAACharacterBase, bIsAlive);
+	DOREPLIFETIME(AAACharacterBase, bInvincibility);
 }
 
 // Called when the game starts or when spawned
@@ -167,11 +169,14 @@ void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* Ch
 // Equip Weapon & Apply Stat
 void AAACharacterBase::ApplyStat(const FAACharacterStat& BaseStat, const FAACharacterStat& WeaponStat)
 {
-	BaseMovementSpeed = (BaseStat + WeaponStat).MovementSpeed;
-	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
-	AmmoDamage = WeaponData->AmmoDamage;
-	AmmoSpeed = WeaponData->AmmoSpeed;
-	RPM = WeaponData->WeaponStat.RPM;
+	if (WeaponData)
+	{
+		BaseMovementSpeed = (BaseStat + WeaponStat).MovementSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+		AmmoDamage = WeaponData->AmmoDamage;
+		AmmoSpeed = WeaponData->AmmoSpeed;
+		RPM = WeaponData->WeaponStat.RPM;
+	}
 }
 
 void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
@@ -189,7 +194,10 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 			//ver0.8.1b
 			//client saveWeaponData
 			SetWeaponDataBegin();
-
+		}
+		else
+		{
+			WeaponData = WeaponItemData;
 		}
 
 		if(IsLocallyControlled())
@@ -294,7 +302,6 @@ void AAACharacterBase::SetWeaponDataBegin()
 			UAAGameInstance* PC = Cast<UAAGameInstance>(testController->GetGameInstance());
 			PC->SetWeaponItemData(WeaponData);
 			//UE_LOG(LogAACharacter, Error, TEXT("WeaponData:%s"), *PC->GetName());
-
 		}
 	}
 	
@@ -322,28 +329,29 @@ void AAACharacterBase::PlayReloadAnimation()
 	{
 		FOnMontageEnded EndDelegate;
 
-		if (WeaponData->Type == EWeaponType::Pistol)
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
 		{
-			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-			if (AnimInstance)
+			AnimInstance->StopAllMontages(0.1f);
+
+			if (WeaponData)
 			{
-				AnimInstance->StopAllMontages(0.1f);
-				AnimInstance->Montage_Play(PistolReloadMontage, ReloadSpeed);
-				EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
-				AnimInstance->Montage_SetEndDelegate(EndDelegate, PistolReloadMontage);
+				switch (WeaponData->Type)
+				{
+				case EWeaponType::Pistol:
+					AnimInstance->Montage_Play(PistolReloadMontage, ReloadSpeed);
+					EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
+					AnimInstance->Montage_SetEndDelegate(EndDelegate, PistolReloadMontage);
+					break;
+				default:
+					AnimInstance->Montage_Play(ReloadMontage, ReloadSpeed);
+					EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
+					AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
+					break;
+				}
 			}
 		}
-		else
-		{
-			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-			if (AnimInstance)
-			{
-				AnimInstance->StopAllMontages(0.1f);
-				AnimInstance->Montage_Play(ReloadMontage, ReloadSpeed);
-				EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
-				AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
-			}
-		}
+
 		ServerSetCanFire(false);
 
 		UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
@@ -489,30 +497,33 @@ float AAACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 {
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	if (ActualDamage > 0.f)
+	if (!bInvincibility)
 	{
-		Stat->ApplyDamage(ActualDamage);
-		if (ActualDamage > 30.f)
+		if (ActualDamage > 0.f)
 		{
-			PlaySound(LargeHitSoundCue, GetActorLocation());
+			Stat->ApplyDamage(ActualDamage);
+			if (ActualDamage > 30.f)
+			{
+				PlaySound(LargeHitSoundCue, GetActorLocation());
+			}
+			else if (ActualDamage > 15.f)
+			{
+				PlaySound(MidiumHitSoundCue, GetActorLocation());
+			}
+			else
+			{
+				PlaySound(SmallHitSoundCue, GetActorLocation());
+			}
 		}
-		else if (ActualDamage > 15.f)
-		{
-			PlaySound(MidiumHitSoundCue, GetActorLocation());
-		}
-		else
-		{
-			PlaySound(SmallHitSoundCue, GetActorLocation());
-		}
-	}
 
 
-	if (AAAPlayerController* InstigatorController = Cast<AAAPlayerController>(EventInstigator))
-	{
-		if (AAACharacterBase* InstigatingCharacter = Cast<AAACharacterBase>(InstigatorController->GetPawn()))
+		if (AAAPlayerController* InstigatorController = Cast<AAAPlayerController>(EventInstigator))
 		{
-			InstigatingCharacter->ClientRPCPlayHitSuccessSound();
-			UE_LOG(LogTemp, Warning, TEXT("Controller : %s, Pawn : %s"), *InstigatorController->GetName(), *InstigatingCharacter->GetName());
+			if (AAACharacterBase* InstigatingCharacter = Cast<AAACharacterBase>(InstigatorController->GetPawn()))
+			{
+				InstigatingCharacter->ClientRPCPlayHitSuccessSound();
+				UE_LOG(LogTemp, Warning, TEXT("Controller : %s, Pawn : %s"), *InstigatorController->GetName(), *InstigatingCharacter->GetName());
+			}
 		}
 	}
 
@@ -532,6 +543,12 @@ void AAACharacterBase::SetDead()
 {
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
 
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->StopAllMontages(0.1f);
+	}
+
 	GetMesh()->SetSimulatePhysics(true);
 	GetMesh()->SetEnableGravity(true);
 	GetMesh()->WakeAllRigidBodies();
@@ -545,9 +562,12 @@ void AAACharacterBase::SetDead()
 	if (CurrentGameMode && bIsAlive)
 	{
 		bIsAlive = false;
-		UE_LOG(LogTemp, Error, TEXT("Set bIsAlive is false"));
 		APlayerController* PlayerController = Cast<APlayerController>(GetController());
-		CurrentGameMode->PlayerDied(PlayerController);
+		if (PlayerController)
+		{
+			UE_LOG(LogTemp, Error, TEXT("%s is Dead"), *PlayerController->GetName());
+			CurrentGameMode->PlayerDied(PlayerController);
+		}
 	}
 
 	FTimerHandle DeadTimerHandle;
@@ -555,6 +575,7 @@ void AAACharacterBase::SetDead()
 	GetWorld()->GetTimerManager().SetTimer(
 		DeadTimerHandle,
 		FTimerDelegate::CreateLambda([this]() {
+			GetMesh()->SetSimulatePhysics(false);
 			SetActorHiddenInGame(true);
 			}), 10.0f, false);
 }
