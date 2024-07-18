@@ -636,14 +636,24 @@ FVector AAACharacterPlayer::GetAdjustedAim() const
 
 	GetWorld()->LineTraceSingleByChannel(HitResult, StartTrace, EndTrace, ECC_Visibility, CollisionParams);
 
+	FVector BarrelSocketLocation = Weapon->GetSocketLocation(TEXT("BarrelEndSocket"));
+
 	if (HitResult.bBlockingHit)
 	{
-		return (HitResult.ImpactPoint - Weapon->GetSocketLocation(TEXT("BarrelEndSocket"))).GetSafeNormal();
+		if (FVector::Dist(HitResult.ImpactPoint, StartTrace) < 120)
+		{
+			FVector CameraStartLocation = FollowCamera->GetComponentLocation();
+			FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 2000.f;
+
+			return (CameraEndLocation - BarrelSocketLocation).GetSafeNormal();
+		}
+
+		return (HitResult.ImpactPoint - BarrelSocketLocation).GetSafeNormal();
 	}
 
 
 	FVector CameraStartLocation = FollowCamera->GetComponentLocation();
-	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 1500.f;
+	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 2000.f;
 
 	return (CameraEndLocation - Weapon->GetSocketLocation(TEXT("BarrelEndSocket"))).GetSafeNormal();
 }
