@@ -45,6 +45,12 @@ void UAACharacterStatComponent::OnRep_WeaponStat()
 	OnStatChanged.Broadcast(BaseStat, WeaponStat);
 }
 
+void UAACharacterStatComponent::HealHp(float InHealAmount)
+{
+	CurrentHp = FMath::Clamp(CurrentHp + InHealAmount, 0, MaxHp);
+	OnHpChanged.Broadcast(CurrentHp, MaxHp);
+}
+
 float UAACharacterStatComponent::ApplyDamage(float InDamage)
 {
 	const float PrevHp = CurrentHp;
