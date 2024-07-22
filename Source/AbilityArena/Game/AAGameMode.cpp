@@ -97,8 +97,29 @@ void AAAGameMode::DefaultGameTimer()
 				}
 				else
 				{
-					FString LobbyMap = TEXT("/Game/Maps/Lobby");
-					GetWorld()->ServerTravel(*LobbyMap, true);
+					for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+					{
+						if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
+						{
+							PlayerController->ResetPlayerStat();
+						}
+					}
+
+					UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+					if (GameInstance)
+					{
+						GameInstance->ResetAllScore();
+					}
+
+					FTimerHandle DelayTimerHandle;
+
+					GetWorld()->GetTimerManager().SetTimer(
+						DelayTimerHandle,
+						FTimerDelegate::CreateLambda([&]() {
+							GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
+							FString LobbyMap = TEXT("/Game/Maps/Lobby");
+							GetWorld()->ServerTravel(*LobbyMap, true);
+							}), 0.3f, false);
 				}
 			}
 		}

@@ -173,4 +173,19 @@ public:
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<APawn> LastPlayerPawn = nullptr;
+
+// ver 0.17.1a
+// Reset Stat
+public:
+	void ResetPlayerStat();
+
+	UFUNCTION(Client, Reliable)
+	void ClientRPCResetPlayerStat();
+
+private:
+	UPROPERTY(EditDefaultsOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UAAWeaponItemData> DefaultWeaponData;
+
+	UPROPERTY(EditDefaultsOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class AAAWeaponAmmo> DefaultAmmoClass;
 };

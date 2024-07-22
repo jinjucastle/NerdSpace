@@ -49,7 +49,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
 	int32 Magnification;
 
-
 	FAAAbilityStat operator+(const FAAAbilityStat& Other) const
 	{
 		const float* const ThisPtr = reinterpret_cast<const float* const>(this);

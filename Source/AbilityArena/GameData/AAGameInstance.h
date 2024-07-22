@@ -79,6 +79,7 @@ public:
 	// Score Section
 	void AddScore(const FString& InSteamID, int32 InPoints);
 	int32 GetScore(const FString& InSteamID) const;
+	void ResetAllScore();
 	bool CheckScore(const FString& InSteamID) const;
 
 	UPROPERTY(BlueprintReadOnly)

@@ -4,9 +4,11 @@
 #include "Player/AAPlayerController.h"
 #include "Game/AAGameMode.h"
 #include "GameData/AAGameInstance.h"
+#include "GameData/AAAbilityStat.h"
 #include "Character/AACharacterPlayer.h"
 #include "CharacterStat/AACharacterPlayerState.h"
 #include "Item/AAWeaponItemData.h"
+#include "Item/AAWeaponAmmo.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Button.h"
 #include "Components/ProgressBar.h"
@@ -530,11 +532,66 @@ void AAAPlayerController::PossessLastPlayerPawn()
 	}
 }
 
+void AAAPlayerController::ResetPlayerStat()
+{
+	if (HasAuthority())
+	{
+		if (IsLocalController())
+		{
+			UAAGameInstance* PC = Cast<UAAGameInstance>(GetGameInstance());
+			if (PC)
+			{
+				if (DefaultWeaponData && DefaultAmmoClass)
+				{
+					PC->SetWeaponItemData(DefaultWeaponData);
+					PC->SetAmmoClass(DefaultAmmoClass);
+				}
+
+				PC->SetPlayerStat(FAAAbilityStat());
+
+				if (GameResultUI)
+				{
+					GameResultUI->RemoveFromParent();
+				}
+				RemoveUI();
+			}
+		}
+		else
+		{
+			ClientRPCResetPlayerStat();
+		}
+	}
+}
+
+void AAAPlayerController::ClientRPCResetPlayerStat_Implementation()
+{
+	if (IsLocalController())
+	{
+		UAAGameInstance* PC = Cast<UAAGameInstance>(GetGameInstance());
+		if (PC)
+		{
+			if (DefaultWeaponData && DefaultAmmoClass)
+			{
+				PC->SetWeaponItemData(DefaultWeaponData);
+				PC->SetAmmoClass(DefaultAmmoClass);
+			}
+
+			PC->SetPlayerStat(FAAAbilityStat());
+
+			if (GameResultUI)
+			{
+				GameResultUI->RemoveFromParent();
+			}
+			RemoveUI();
+		}
+	}
+}
+
 void AAAPlayerController::ClientRPCAddScoreWidget_Implementation(TSubclassOf<UUserWidget> WidgetClass, const TArray<FString>& PlayerNickNames, const TArray<int32>& PlayerScores)
 {
 	if (ScoreWidget != nullptr)
 	{
-		ScoreWidget->RemoveFromViewport();
+		ScoreWidget->RemoveFromParent();
 		ScoreWidget = nullptr;
 	}
 
@@ -590,7 +647,7 @@ void AAAPlayerController::ClientRPCRemoveScoreWidget_Implementation()
 {
 	if (ScoreWidget != nullptr)
 	{
-		ScoreWidget->RemoveFromViewport();
+		ScoreWidget->RemoveFromParent();
 		ScoreWidget = nullptr;
 	}
 
