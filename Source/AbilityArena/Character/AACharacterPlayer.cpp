@@ -979,6 +979,13 @@ USkeletalMesh* AAACharacterPlayer::SetChangeSkeletalMesh(bool bChange)
 	return Asset;
 }
 
+USkeletalMesh* AAACharacterPlayer::updateSkeletalMesh(int32 NewIndex)
+{
+	CharacterMeshHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(CharacterMesh[NewIndex]);
+	USkeletalMesh* Asset = Cast<USkeletalMesh>(CharacterMeshHandle->GetLoadedAsset());
+	return Asset;
+}
+
 void AAACharacterPlayer::SetPlayerStopFire()
 {
 	bCanFire = false;

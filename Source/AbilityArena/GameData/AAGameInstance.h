@@ -95,7 +95,15 @@ public:
 	TMap<FString, FString> PlayerNicknames;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TObjectPtr<USkeletalMesh> CharacterMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 CharacterIndex;
 
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE void SetCharacterIndex(int32 NewIndex) { CharacterIndex = NewIndex; }
+	
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE int32 GetCharacterIndex() { return CharacterIndex; }
+	
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE void SetCharacterMesh(USkeletalMesh* ChangeMesh) { CharacterMesh = ChangeMesh; }
 
