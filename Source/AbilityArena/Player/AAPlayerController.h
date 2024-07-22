@@ -93,9 +93,12 @@ private:
 protected:
 	bool bIsPick;
 
+	UFUNCTION(Server, Unreliable)
+	void ServerRPCSetPickUpCard();
+
 public:
 	UFUNCTION(BlueprintCallable)
-	FORCEINLINE void SetPickUpCard() { bIsPick = true; }
+	void SetPickUpCard();
 
 // ver 0.12.1a
 // Score Section & Access Steam ID
@@ -163,9 +166,11 @@ public:
 
 // ver 0.15.3a
 // Spactator Camera Section
+	UFUNCTION(BlueprintCallable)
 	void OnPlayerDeath();
 	void PossessLastPlayerPawn();
 
 protected:
+	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<APawn> LastPlayerPawn = nullptr;
 };

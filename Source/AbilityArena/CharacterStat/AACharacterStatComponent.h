@@ -70,7 +70,10 @@ protected:
 public:
 	FORCEINLINE float GetMaxHp() const { return MaxHp; }
 	FORCEINLINE float GetCurrentHp() const { return CurrentHp; }
-	FORCEINLINE void HealHp(float InHealAmount) { CurrentHp = FMath::Clamp(CurrentHp + InHealAmount, 0, MaxHp); OnHpChanged.Broadcast(CurrentHp, MaxHp); }
+
+	UFUNCTION(BlueprintCallable)
+	void HealHp(float InHealAmount);
+
 	float ApplyDamage(float InDamage);
 	void SetHp(float NewHp);
 	void ResetStat();

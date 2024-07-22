@@ -13,8 +13,10 @@
 #include "Components/TextBlock.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
+#include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerState.h"
+#include "GameFramework/PlayerInput.h"
 #include "UI/AACardSelectUI.h"
 #include "OnlineSubsystem.h"
 #include "Interfaces/OnlineIdentityInterface.h"
@@ -202,11 +204,22 @@ void AAAPlayerController::CreateCardSelectUI(TSubclassOf<UUserWidget> CardSelect
 	{
 		RemoveUI();
 
+		if (PlayerInput)
+		{
+			PlayerInput->FlushPressedKeys();
+			UE_LOG(LogTemp, Log, TEXT("FlushPressedKeys called."));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerInput is nullptr. Cannot flush pressed keys."));
+		}
+
+		SetupUIInputmode();
+
 		PlayerUI = CreateWidget<UUserWidget>(this, CardSelectUI);
 		if (PlayerUI)
 		{
 			PlayerUI->AddToViewport();
-			SetShowMouseCursor(true);
 
 			if (AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(GetPawn()))
 			{
@@ -218,8 +231,6 @@ void AAAPlayerController::CreateCardSelectUI(TSubclassOf<UUserWidget> CardSelect
 				}
 			}
 
-			SetupUIInputmode();
-
 			bIsPick = false;
 		}
 	}
@@ -227,6 +238,16 @@ void AAAPlayerController::CreateCardSelectUI(TSubclassOf<UUserWidget> CardSelect
 
 void AAAPlayerController::ClientRPCCreateCardSelectUI_Implementation(TSubclassOf<UUserWidget> CardSelectUI)
 {
+	FTimerHandle CreateUITimerHandle;
+
+	SetIgnoreMoveInput(true);
+
+	GetWorld()->GetTimerManager().SetTimer(
+		CreateUITimerHandle,
+		FTimerDelegate::CreateLambda([&]() {
+			GetWorld()->GetTimerManager().ClearTimer(CreateUITimerHandle);
+			}), 0.1f, false);
+
 	CreateCardSelectUI(CardSelectUI);
 }
 
@@ -259,6 +280,33 @@ void AAAPlayerController::ClientRPCCreateGameResultUI_Implementation(const FStri
 void AAAPlayerController::ClientRPCSimulateRandomButtonClick_Implementation()
 {
 	SimulateRandomButtonClick();
+}
+
+void AAAPlayerController::ServerRPCSetPickUpCard_Implementation()
+{
+	bIsPick = true;
+
+	if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GameMode->PlayerSelectCompleted();
+	}
+}
+
+void AAAPlayerController::SetPickUpCard()
+{
+	if (HasAuthority())
+	{
+		bIsPick = true;
+
+		if (AAAGameMode* GameMode = Cast<AAAGameMode>(GetWorld()->GetAuthGameMode()))
+		{
+			GameMode->PlayerSelectCompleted();
+		}
+	}
+	else
+	{
+		ServerRPCSetPickUpCard();
+	}
 }
 
 FString AAAPlayerController::GetSteamID() const
@@ -473,9 +521,12 @@ void AAAPlayerController::PossessLastPlayerPawn()
 {
 	if (LastPlayerPawn != nullptr)
 	{
+		UnPossess();
+		LastPlayerPawn->SetActorEnableCollision(true);
+		LastPlayerPawn->SetActorHiddenInGame(false);
 		Possess(LastPlayerPawn);
+
 		LastPlayerPawn = nullptr;
-		SetupGameInputMode();
 	}
 }
 

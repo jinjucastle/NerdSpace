@@ -4,12 +4,12 @@
 #include "Character/AACharacterPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "GameFramework/SpectatorPawn.h"
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "AACharacterControlData.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpectatorPawn.h"
 #include "CharacterStat/AACharacterStatComponent.h"
 #include "Item/AAWeaponAmmo.h"
 #include "Item/AAWeaponitemData.h"
@@ -152,9 +152,12 @@ void AAACharacterPlayer::Tick(float DeltaTime)
 
 	float NewZoomedFov = ZoomedFOV / Magnification;
 
-	float TargetFOV = (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn && WeaponData->Type == EWeaponType::SniperRifle) ? NewZoomedFov : DefaultFOV;
-	float NewFOV = FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaTime, ZoomInterpSpeed);
-	FollowCamera->SetFieldOfView(NewFOV);
+	if (WeaponData)
+	{
+		float TargetFOV = (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn && WeaponData->Type == EWeaponType::SniperRifle) ? NewZoomedFov : DefaultFOV;
+		float NewFOV = FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaTime, ZoomInterpSpeed);
+		FollowCamera->SetFieldOfView(NewFOV);
+	}
 
 	if (!CurrentRecoil.IsNearlyZero())
 	{
@@ -208,20 +211,26 @@ void AAACharacterPlayer::ChangeZoom()
 		SetCharacterControl(ECharacterZoomType::ZoomIn);
 
 		//SniferRifle UI
-		if (WeaponData->Type == EWeaponType::SniperRifle)
+		if (WeaponData)
 		{
-			FollowCamera->SetRelativeLocation(FVector(160.f, 30.f, 30.f));
-			ShowScopeWidget();
+			if (WeaponData->Type == EWeaponType::SniperRifle)
+			{
+				FollowCamera->SetRelativeLocation(FVector(160.f, 30.f, 30.f));
+				ShowScopeWidget();
+			}
 		}
 	}
 	else if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
 	{
 		SetCharacterControl(ECharacterZoomType::ZoomOut);
 
-		if (WeaponData->Type == EWeaponType::SniperRifle)
+		if (WeaponData)
 		{
-			FollowCamera->SetRelativeLocation(FVector(0.0f, 45.0f, 85.0f));
-			HideScopeWidget();
+			if (WeaponData->Type == EWeaponType::SniperRifle)
+			{
+				FollowCamera->SetRelativeLocation(FVector(0.0f, 45.0f, 85.0f));
+				HideScopeWidget();
+			}
 		}
 	}
 }
@@ -518,49 +527,55 @@ void AAACharacterPlayer::Fire()
 			FVector AimDirection = GetAdjustedAim();
 			FVector FinalDirection;
 
-			if (WeaponData->Type == EWeaponType::Panzerfaust)
+			if (WeaponData)
 			{
-				FinalDirection = AimDirection;
-			}
-			else
-			{
-				FinalDirection = GetMovementSpreadDirection(AimDirection);
+				if (WeaponData->Type == EWeaponType::Panzerfaust)
+				{
+					FinalDirection = AimDirection;
+				}
+				else
+				{
+					FinalDirection = GetMovementSpreadDirection(AimDirection);
+				}
 			}
 			
 
 			ServerRPCFire(MuzzleLocation, FinalDirection);
 
-			switch (WeaponData->Type)
+			if (WeaponData)
 			{
-			case EWeaponType::Pistol:
-				ApplyRecoil(AmmoDamage / 10);
-				PlaySound(PSTFireSoundCue, MuzzleLocation);
-				break;
-			case EWeaponType::Rifle:
-				ApplyRecoil(AmmoDamage / 20);
-				PlaySound(ARFireSoundCue, MuzzleLocation);
-				break;
-			case EWeaponType::Shotgun:
-				ApplyRecoil(AmmoDamage);
-				PlaySound(SGFireSoundCue, MuzzleLocation);
-				break;
-			case EWeaponType::SniperRifle:
-				ApplyRecoil(AmmoDamage / 10);
-				PlaySound(SRFireSoundCue, MuzzleLocation);
-				break;
-			case EWeaponType::Panzerfaust:
-				PlaySound(RPGFireSoundCue, MuzzleLocation);
-				break;
-			default:
-				ApplyRecoil(AmmoDamage);
-				PlaySound(PSTFireSoundCue, MuzzleLocation);
-				break; 
-			}
+				switch (WeaponData->Type)
+				{
+				case EWeaponType::Pistol:
+					ApplyRecoil(AmmoDamage / 10);
+					PlaySound(PSTFireSoundCue, MuzzleLocation);
+					break;
+				case EWeaponType::Rifle:
+					ApplyRecoil(AmmoDamage / 20);
+					PlaySound(ARFireSoundCue, MuzzleLocation);
+					break;
+				case EWeaponType::Shotgun:
+					ApplyRecoil(AmmoDamage);
+					PlaySound(SGFireSoundCue, MuzzleLocation);
+					break;
+				case EWeaponType::SniperRifle:
+					ApplyRecoil(AmmoDamage / 10);
+					PlaySound(SRFireSoundCue, MuzzleLocation);
+					break;
+				case EWeaponType::Panzerfaust:
+					PlaySound(RPGFireSoundCue, MuzzleLocation);
+					break;
+				default:
+					ApplyRecoil(AmmoDamage);
+					PlaySound(PSTFireSoundCue, MuzzleLocation);
+					break;
+				}
 
-			if (WeaponData->Type != EWeaponType::Panzerfaust && WeaponData->Type != EWeaponType::Shotgun)
-			{
-				FTransform ShellTransform = Weapon->GetSocketTransform(FName("ShellSocket"));
-				SpawnShell(ShellTransform);
+				if (WeaponData->Type != EWeaponType::Panzerfaust && WeaponData->Type != EWeaponType::Shotgun)
+				{
+					FTransform ShellTransform = Weapon->GetSocketTransform(FName("ShellSocket"));
+					SpawnShell(ShellTransform);
+				}
 			}
 			NextFireTime = CurrentTime + RPM;
 
@@ -570,7 +585,10 @@ void AAACharacterPlayer::Fire()
 	else
 	{
 		StopFire();
-		PlaySound(MagEmptySoundCue, GetActorLocation());
+		if (CurrentAmmoSize == 0)
+		{
+			PlaySound(MagEmptySoundCue, GetActorLocation());
+		}
 	}
 }
 
@@ -618,14 +636,24 @@ FVector AAACharacterPlayer::GetAdjustedAim() const
 
 	GetWorld()->LineTraceSingleByChannel(HitResult, StartTrace, EndTrace, ECC_Visibility, CollisionParams);
 
+	FVector BarrelSocketLocation = Weapon->GetSocketLocation(TEXT("BarrelEndSocket"));
+
 	if (HitResult.bBlockingHit)
 	{
-		return (HitResult.ImpactPoint - Weapon->GetSocketLocation(TEXT("BarrelEndSocket"))).GetSafeNormal();
+		if (FVector::Dist(HitResult.ImpactPoint, StartTrace) < 120)
+		{
+			FVector CameraStartLocation = FollowCamera->GetComponentLocation();
+			FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 2000.f;
+
+			return (CameraEndLocation - BarrelSocketLocation).GetSafeNormal();
+		}
+
+		return (HitResult.ImpactPoint - BarrelSocketLocation).GetSafeNormal();
 	}
 
 
 	FVector CameraStartLocation = FollowCamera->GetComponentLocation();
-	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 1500.f;
+	FVector CameraEndLocation = CameraStartLocation + FollowCamera->GetForwardVector() * 2000.f;
 
 	return (CameraEndLocation - Weapon->GetSocketLocation(TEXT("BarrelEndSocket"))).GetSafeNormal();
 }
@@ -950,6 +978,14 @@ USkeletalMesh* AAACharacterPlayer::SetChangeSkeletalMesh(bool bChange)
 	USkeletalMesh* Asset = Cast<USkeletalMesh>(CharacterMeshHandle->GetLoadedAsset());
 	return Asset;
 }
+
+USkeletalMesh* AAACharacterPlayer::updateSkeletalMesh(int32 NewIndex)
+{
+	CharacterMeshHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(CharacterMesh[NewIndex]);
+	USkeletalMesh* Asset = Cast<USkeletalMesh>(CharacterMeshHandle->GetLoadedAsset());
+	return Asset;
+}
+
 void AAACharacterPlayer::SetPlayerStopFire()
 {
 	bCanFire = false;
@@ -985,33 +1021,18 @@ void AAACharacterPlayer::SetDead()
 
 	ASpectatorPawn* SpectatorCam = GetWorld()->SpawnActor<ASpectatorPawn>(SpectatorCamera, FollowCamera->GetComponentTransform(), SpawnParameter);
 	AAAPlayerController* MyController = Cast<AAAPlayerController>(GetController());
-
-	if (IsValid(SpectatorCam))
+	if (IsValid(SpectatorCam) && IsValid(MyController))
 	{
-		if (IsValid(MyController))
+		AAAGameStateT* GS = Cast<AAAGameStateT>(GetWorld()->GetGameState());
+		if (GS->GetAlivePlayer() >= 2)
 		{
-			AAAGameStateT* GS = Cast<AAAGameStateT>(GetWorld()->GetGameState());
-			if (GS->GetAlivePlayer() > 2)
-			{
-				MyController->OnPlayerDeath();
-				MyController->Possess(SpectatorCam);
-				MyController->SetupGameInputMode();
-				SpectatorCam->GetMovementComponent()->SetActive(true);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Log, TEXT("Now Alive player count is less than 2"));
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Log, TEXT("Controller is failed possess to Spectatle Camera"));
+			MyController->OnPlayerDeath();
+			MyController->Possess(SpectatorCam);
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Spawn fail : Spectatle Camera "));
+		UE_LOG(LogTemp, Log, TEXT("Cast Fail to AAAPlayerControler in SetDead"));
 	}
-
 	GetCharacterMovement()->DisableMovement();
 }

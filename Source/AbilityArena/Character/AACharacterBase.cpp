@@ -319,6 +319,19 @@ void AAACharacterBase::SetWeaponDataStore()
 		if (PC->GetsetWeaponItemData())
 		{
 			WeaponData = testController->SetInitData();
+
+			FTimerHandle DelayTimerHandle;
+
+			GetWorld()->GetTimerManager().SetTimer(
+				DelayTimerHandle,
+				FTimerDelegate::CreateLambda([&]() {
+					GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
+					}), 0.1f, false);
+
+			if (!IsValid(WeaponData))
+			{
+				SetWeaponDataStore();
+			}
 		}
 	}
 }
@@ -554,7 +567,10 @@ void AAACharacterBase::SetDead()
 	GetMesh()->WakeAllRigidBodies();
 	GetMesh()->SetCollisionProfileName(TEXT("AARagDoll"));
 
-	HpBar->DestroyComponent();
+	if (HpBar)
+	{
+		HpBar->DestroyComponent();
+	}
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
@@ -569,15 +585,6 @@ void AAACharacterBase::SetDead()
 			CurrentGameMode->PlayerDied(PlayerController);
 		}
 	}
-
-	FTimerHandle DeadTimerHandle;
-
-	GetWorld()->GetTimerManager().SetTimer(
-		DeadTimerHandle,
-		FTimerDelegate::CreateLambda([this]() {
-			GetMesh()->SetSimulatePhysics(false);
-			SetActorHiddenInGame(true);
-			}), 10.0f, false);
 }
 
 bool AAACharacterBase::ServerRPCPlaySound_Validate(USoundCue* SoundCue, FVector Location)

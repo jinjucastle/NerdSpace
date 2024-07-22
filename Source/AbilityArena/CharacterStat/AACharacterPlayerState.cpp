@@ -35,6 +35,7 @@ void AAACharacterPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AAACharacterPlayerState, SteamID);
 	DOREPLIFETIME(AAACharacterPlayerState, SteamNickName);
+	
 }
 
 FString AAACharacterPlayerState::GetSteamID() const
@@ -68,3 +69,4 @@ void AAACharacterPlayerState::OnRep_SetSteamNickName()
 	SetSteamNickName(SteamNickName);
 	UE_LOG(LogTemp, Log, TEXT("OnRep_SetSteamNickName (%s)"), *SteamNickName);
 }
+
