@@ -96,15 +96,17 @@ public:
 // ver 0.13.5a
 // User Synchronize
 private:
-	int32 NumPlayersLoggedIn;
 	int32 NumPlayersPossessed;
+	int32 NumPlayersSelected;
 	int32 TotalPlayers;
 
 	void CheckAllPlayersPossessed();
+	void CheckAllPlayersSelected();
 	void StartGame();
 
 public:
 	void PlayerPossessCompleted(APlayerController* NewPlayer);
+	void PlayerSelectCompleted();
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnAllPlayersReady OnAllPlayersReady;

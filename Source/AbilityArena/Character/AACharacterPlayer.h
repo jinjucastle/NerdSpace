@@ -331,6 +331,6 @@ protected:
 // Spectator Camera Section
 	virtual void SetDead() override;
 
-	UPROPERTY(EditDefaultsOnly, Category = Spectator)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Spectator)
 	TSubclassOf<class ASpectatorPawn> SpectatorCamera;
 };
