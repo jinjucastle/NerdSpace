@@ -11,6 +11,7 @@
 #include "CharacterStat/AACharacterPlayerState.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
 
 //0.10.1b add MapArray
 void AAAGameMode::AddLevelName()
@@ -43,7 +44,6 @@ AAAGameMode::AAAGameMode()
 
 	AlivePlayers = 0;
 
-	NumPlayersLoggedIn = 0;
 	TotalPlayers = 2;
 }
 
@@ -65,7 +65,6 @@ void AAAGameMode::DefaultGameTimer()
 	{
 		if (GetMatchState() == MatchState::WaitingPostMatch)
 		{
-
 			AAGameStateT->RemainingTime--;
 			if (!isFinishGame)
 			{
@@ -73,7 +72,7 @@ void AAAGameMode::DefaultGameTimer()
 				UE_LOG(LogTemp, Log, TEXT("Card Select RemainingTime: %d"), AAGameStateT->RemainingTime);
 				// ver 0.10.2a
 				// until doesn't card pick 2 seconds before the level change
-				if (AAGameStateT->RemainingTime == 2)
+				if (AAGameStateT->RemainingTime == 4)
 				{
 					RandomCardPick();
 				}
@@ -129,6 +128,17 @@ void AAAGameMode::FinishGame()
 			if (!isFinishGame)
 			{
 				PlayerController->PossessLastPlayerPawn();
+				PlayerController->SetIgnoreMoveInput(true);
+
+				FTimerHandle DelayTimerHandle;
+
+				GetWorld()->GetTimerManager().SetTimer(
+					DelayTimerHandle,
+					FTimerDelegate::CreateLambda([&]() {
+						GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
+						}), 0.1f, false);
+
+				PlayerController->SetupUIInputmode();
 				PlayerController->ClientRPCCreateCardSelectUI(CardSelectUIClass);
 			}
 		}
@@ -196,11 +206,6 @@ void AAAGameMode::PostLogin(APlayerController* NewPlayer)
 		UE_LOG(LogTemp, Warning, TEXT("Used Spawn Point: %s"), *SpawnPoint->GetName());
 	}
 
-	AlivePlayers++;
-	UE_LOG(LogTemp, Warning, TEXT("Found %d Alive Player"), AlivePlayers);
-
-	NumPlayersLoggedIn++;
-
 	CheckAllPlayersPossessed();
 }
 
@@ -209,6 +214,7 @@ void AAAGameMode::Logout(AController* NewPlayer)
 	Super::Logout(NewPlayer);
 
 	NumPlayersPossessed--;
+	AlivePlayers--;
 }
 
 void AAAGameMode::BeginPlay()
@@ -246,19 +252,19 @@ AActor* AAAGameMode::GetRandomAvailableSpawnPoint()
 
 void AAAGameMode::PlayerDied(AController* PlayerController)
 {
-	NumPlayersPossessed--;
+	AlivePlayers--;
 
 	AAAGameStateT* GS = Cast<AAAGameStateT>(GameState);
-	GS->SetAlivePlayer(NumPlayersPossessed);
+	GS->SetAlivePlayer(AlivePlayers);
 
 	CheckForRoundEnd();
 
-	UE_LOG(LogTemp, Warning, TEXT("Current %d Alive Player"), NumPlayersPossessed);
+	UE_LOG(LogTemp, Warning, TEXT("Current %d Alive Player"), AlivePlayers);
 }
 
 void AAAGameMode::CheckForRoundEnd()
 {
-	if (NumPlayersPossessed <= 1)
+	if (AlivePlayers <= 1)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Last Man Standing"));
 
@@ -273,7 +279,7 @@ void AAAGameMode::CheckForRoundEnd()
 			if (GameInstance)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("%s(%s) Score: %d after ClientRPCAddScore"), *SteamNickName, *SteamID, GameInstance->GetScore(SteamID));
-				if (GameInstance->GetScore(SteamID) >= 5)
+				if (GameInstance->GetScore(SteamID) >= 3)
 				{
 					isFinishGame = true;
 					CreateWinnerUI(UserController);
@@ -327,16 +333,31 @@ void AAAGameMode::CreateWinnerUI(AAAPlayerController* WinnerController)
 
 void AAAGameMode::CheckAllPlayersPossessed()
 {
-	if (NumPlayersPossessed >= TotalPlayers)
+	if (AlivePlayers >= TotalPlayers)
 	{
 		OnAllPlayersReady.Broadcast();
 		StartGame();
 	}
 }
 
+void AAAGameMode::CheckAllPlayersSelected()
+{
+	if (NumPlayersSelected == NumPlayersPossessed)
+	{
+		AAAGameStateT* const AAGameStateT = Cast<AAAGameStateT>(GameState);
+		if (AAGameStateT->RemainingTime >= 5)
+		{
+			AAGameStateT->RemainingTime = 3;
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Card Select Finish Players : %d / %d"), NumPlayersSelected, NumPlayersPossessed);
+
+}
+
 void AAAGameMode::StartGame()
 {
-	UE_LOG(LogTemp, Warning, TEXT("All players (%d) are ready. Starting the game..."), NumPlayersPossessed);
+	UE_LOG(LogTemp, Warning, TEXT("All players (%d) are ready. Starting the game..."), AlivePlayers);
 
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
@@ -367,7 +388,14 @@ void AAAGameMode::StartGame()
 void AAAGameMode::PlayerPossessCompleted(APlayerController* NewPlayer)
 {
 	NumPlayersPossessed++;
+	AlivePlayers++;
 	CheckAllPlayersPossessed();
+}
+
+void AAAGameMode::PlayerSelectCompleted()
+{
+	NumPlayersSelected++;
+	CheckAllPlayersSelected();
 }
 
 void AAAGameMode::ShowScoreUI()
