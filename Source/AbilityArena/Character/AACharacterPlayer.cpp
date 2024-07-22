@@ -208,16 +208,17 @@ void AAACharacterPlayer::ChangeZoom()
 		SetCharacterControl(ECharacterZoomType::ZoomIn);
 
 		//SniferRifle UI
-		if (WeaponData->Type == EWeaponType::SniperRifle)
-		{
-			FollowCamera->SetRelativeLocation(FVector(160.f, 30.f, 30.f));
-			ShowScopeWidget();
-		}
+		
+			if (WeaponData->Type == EWeaponType::SniperRifle)
+			{
+				FollowCamera->SetRelativeLocation(FVector(160.f, 30.f, 30.f));
+				ShowScopeWidget();
+			}
+		
 	}
 	else if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
 	{
 		SetCharacterControl(ECharacterZoomType::ZoomOut);
-
 		if (WeaponData->Type == EWeaponType::SniperRifle)
 		{
 			FollowCamera->SetRelativeLocation(FVector(0.0f, 45.0f, 85.0f));
@@ -947,6 +948,12 @@ USkeletalMesh* AAACharacterPlayer::SetChangeSkeletalMesh(bool bChange)
 	if (CurrentIndex == MaxIndex) CurrentIndex = 0;
 
 	CharacterMeshHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(CharacterMesh[CurrentIndex]);
+	USkeletalMesh* Asset = Cast<USkeletalMesh>(CharacterMeshHandle->GetLoadedAsset());
+	return Asset;
+}
+USkeletalMesh* AAACharacterPlayer::updateSkeletalMesh(int32 NewIndex)
+{
+	CharacterMeshHandle = UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(CharacterMesh[NewIndex]);
 	USkeletalMesh* Asset = Cast<USkeletalMesh>(CharacterMeshHandle->GetLoadedAsset());
 	return Asset;
 }

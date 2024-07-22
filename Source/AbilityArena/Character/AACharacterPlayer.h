@@ -256,8 +256,16 @@ public:
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	int32 CurrentIndex;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 MaxIndex;
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE int32 GetCurrentIndex() { return CurrentIndex; }
+
+	UFUNCTION(BlueprintCallable)
+	USkeletalMesh* updateSkeletalMesh(int32 NewIndex);
+
 //Add extra stat
 protected:
 	float AmmoScale = 1.f;
