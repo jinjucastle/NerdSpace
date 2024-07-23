@@ -510,7 +510,7 @@ float AAACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 {
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	if (!bInvincibility)
+	if (!bInvincibility && bIsAlive)
 	{
 		if (ActualDamage > 0.f)
 		{

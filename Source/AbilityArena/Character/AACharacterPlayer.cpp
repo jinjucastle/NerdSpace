@@ -442,6 +442,11 @@ void AAACharacterPlayer::Landed(const FHitResult& Hit)
 
 	PlaySound(LandSoundCue, GetActorLocation());
 	bIsJump = false;
+
+	if (GetCharacterMovement()->IsFalling())
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	}
 }
 
 AAAWeaponAmmo* AAACharacterPlayer::GetPooledAmmo()
