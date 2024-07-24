@@ -512,6 +512,23 @@ void AAAPlayerController::SetupUIInputmode()
 	SetInputMode(InputMode);
 	bShowMouseCursor = true;
 	CurrentInputMode = EControllerInputMode::UIOnly;
+
+	if (PlayerInput)
+	{
+		PlayerInput->FlushPressedKeys();
+	}
+}
+
+void AAAPlayerController::SetupFreeze()
+{
+	FInputModeUIOnly InputMode;
+	SetInputMode(InputMode);
+	CurrentInputMode = EControllerInputMode::UIOnly;
+
+	if (PlayerInput)
+	{
+		PlayerInput->FlushPressedKeys();
+	}
 }
 
 void AAAPlayerController::OnPlayerDeath()

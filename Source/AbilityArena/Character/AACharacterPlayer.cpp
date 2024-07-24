@@ -200,6 +200,7 @@ void AAACharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
 	DOREPLIFETIME(AAACharacterPlayer, PooledAmmoClass);
 	DOREPLIFETIME(AAACharacterPlayer, SelectedAbility);
+	DOREPLIFETIME(AAACharacterPlayer, bIsSlowly);
 }
 
 void AAACharacterPlayer::ChangeZoom()
@@ -334,7 +335,14 @@ void AAACharacterPlayer::Run()
 
 	if (!HasAuthority())
 	{
-		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.5f);
+		if (bIsSlowly)
+		{
+			GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed / 3 + (BaseMovementSpeed / 3 * 0.5f);
+		}
+		else
+		{
+			GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.5f);
+		}
 	}
 
 	ServerRPCRun();
@@ -346,7 +354,14 @@ void AAACharacterPlayer::StopRun()
 
 	if (!HasAuthority())
 	{
-		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+		if (bIsSlowly)
+		{
+			GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed / 3;
+		}
+		else
+		{
+			GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+		}
 	}
 
 	ServerRPCStopRun();
@@ -361,7 +376,14 @@ void AAACharacterPlayer::ServerRPCRun_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Run"));
 
-	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.5f);
+	if (bIsSlowly)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed / 3 + (BaseMovementSpeed / 3 * 0.5f);
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.5f);
+	}
 }
 
 bool AAACharacterPlayer::ServerRPCStopRun_Validate()
@@ -373,7 +395,14 @@ void AAACharacterPlayer::ServerRPCStopRun_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Stop Run"));
 
-	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+	if (bIsSlowly)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed / 3;
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+	}
 }
 
 void AAACharacterPlayer::ShowPauseUI()
@@ -1040,4 +1069,16 @@ void AAACharacterPlayer::SetDead()
 		UE_LOG(LogTemp, Log, TEXT("Cast Fail to AAAPlayerControler in SetDead"));
 	}
 	GetCharacterMovement()->DisableMovement();
+}
+
+void AAACharacterPlayer::ApplySlow()
+{
+	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed / 3;
+	bIsSlowly = true;
+}
+
+void AAACharacterPlayer::EndSlow()
+{
+	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+	bIsSlowly = false;
 }
