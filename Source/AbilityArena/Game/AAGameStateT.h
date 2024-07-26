@@ -21,7 +21,7 @@ public:
 	UPROPERTY(Transient, Replicated)
 		int32 RemainingTime;
 
-	int32 ShowResultWaitingTime = 15;
+	int32 ShowResultWaitingTime = 25;
 
 	FORCEINLINE void SetAlivePlayer(const int32 NewCount) { AlivePlayers = NewCount; }
 	FORCEINLINE int32 GetAlivePlayer() const { return AlivePlayers; }

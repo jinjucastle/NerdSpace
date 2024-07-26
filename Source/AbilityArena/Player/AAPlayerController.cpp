@@ -519,11 +519,28 @@ void AAAPlayerController::SetupUIInputmode()
 	}
 }
 
+void AAAPlayerController::SetupDefrost()
+{
+	switch (CurrentInputMode)
+	{
+	case EControllerInputMode::UIOnly:
+		SetupUIInputmode();
+		break;
+	case EControllerInputMode::GameOnly:
+		SetupGameInputMode();
+		break;
+	}
+
+	if (PlayerInput)
+	{
+		PlayerInput->FlushPressedKeys();
+	}
+}
+
 void AAAPlayerController::SetupFreeze()
 {
 	FInputModeUIOnly InputMode;
 	SetInputMode(InputMode);
-	CurrentInputMode = EControllerInputMode::UIOnly;
 
 	if (PlayerInput)
 	{

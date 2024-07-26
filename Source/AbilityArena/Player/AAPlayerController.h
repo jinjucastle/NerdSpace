@@ -168,6 +168,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetupUIInputmode();
 
+	UFUNCTION(BlueprintCallable)
+	void SetupDefrost();
+
 	// ver 0.17.3a
 	// freeze effect
 	UFUNCTION(BlueprintCallable)

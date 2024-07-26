@@ -106,6 +106,13 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void HidePauseUI();
 
+public:
+	void RemoveAllUI();
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCRemoveAllUI();
+
+protected:
 	//ver 0.4.1 C
 	void StartJump();
 

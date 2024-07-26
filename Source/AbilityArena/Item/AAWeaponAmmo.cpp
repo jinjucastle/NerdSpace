@@ -292,9 +292,6 @@ void AAAWeaponAmmo::ApplySplashDamage()
 			}
 		}
 	}
-
-	DrawDebugSphere(GetWorld(), GetActorLocation(), DamageInnerRadius, 32, FColor::Red, false, 2.0f);
-	DrawDebugSphere(GetWorld(), GetActorLocation(), DamageOuterRadius, 32, FColor::Cyan, false, 2.0f);
 }
 
 void AAAWeaponAmmo::PlaySoundCue()

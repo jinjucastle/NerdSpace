@@ -440,9 +440,10 @@ void AAACharacterBase::SpawnShell(FTransform InSocketTransform)
 
 		GetWorld()->GetTimerManager().SetTimer(
 			ShellTimerHandle,
-			FTimerDelegate::CreateLambda([this]() {
+			FTimerDelegate::CreateLambda([&]() {
 				PlayBoundShellSound();
-				}), 0.3f, false);
+				GetWorld()->GetTimerManager().ClearTimer(ShellTimerHandle);
+				}), 0.25f, false);
 	}
 }
 
