@@ -125,4 +125,8 @@ protected:
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UUserWidget> ScoreWidgetClass;
+
+// ver 0.17.4a
+// All Object's Clear Timer in Level
+	void ClearAllTimersInLevel(UWorld* World);
 };

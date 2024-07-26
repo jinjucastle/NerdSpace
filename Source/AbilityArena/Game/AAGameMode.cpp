@@ -72,7 +72,7 @@ void AAAGameMode::DefaultGameTimer()
 				UE_LOG(LogTemp, Log, TEXT("Card Select RemainingTime: %d"), AAGameStateT->RemainingTime);
 				// ver 0.10.2a
 				// until doesn't card pick 2 seconds before the level change
-				if (AAGameStateT->RemainingTime == 4)
+				if (AAGameStateT->RemainingTime == 5)
 				{
 					RandomCardPick();
 				}
@@ -89,12 +89,19 @@ void AAAGameMode::DefaultGameTimer()
 			{
 				if (!isFinishGame)
 				{
-					// 0.9.1b
-					//feat: change function SeamlessTravel->Servertravel
-					FString ChangeMap = SetTravelLevel();
-					//UE_LOG(LogTemp, Log, TEXT("TEXT: %s"), *ChangeMap);
-					GetWorld()->ServerTravel(*ChangeMap, true);
+					ClearAllTimersInLevel(GetWorld());
+
+					FTimerHandle DelayTimerHandle;
+
+					GetWorld()->GetTimerManager().SetTimer(
+						DelayTimerHandle,
+						FTimerDelegate::CreateLambda([&]() {
+							GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
+							FString ChangeMap = SetTravelLevel();
+							GetWorld()->ServerTravel(*ChangeMap, true);
+							}), 0.3f, false);
 				}
+
 				else
 				{
 					for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
@@ -102,6 +109,12 @@ void AAAGameMode::DefaultGameTimer()
 						if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
 						{
 							PlayerController->ResetPlayerStat();
+
+							AAACharacterPlayer* ControlledPawn = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
+							if (ControlledPawn)
+							{
+								ControlledPawn->RemoveAllUI();
+							}
 						}
 					}
 
@@ -110,6 +123,8 @@ void AAAGameMode::DefaultGameTimer()
 					{
 						GameInstance->ResetAllScore();
 					}
+
+					ClearAllTimersInLevel(GetWorld());
 
 					FTimerHandle DelayTimerHandle;
 
@@ -368,7 +383,7 @@ void AAAGameMode::CheckAllPlayersSelected()
 		AAAGameStateT* const AAGameStateT = Cast<AAAGameStateT>(GameState);
 		if (AAGameStateT->RemainingTime >= 5)
 		{
-			AAGameStateT->RemainingTime = 3;
+			AAGameStateT->RemainingTime = 4;
 		}
 	}
 
@@ -468,6 +483,19 @@ void AAAGameMode::HideScoreUI()
 		if (PlayerController)
 		{
 			PlayerController->ClientRPCRemoveScoreWidget();
+		}
+	}
+}
+
+void AAAGameMode::ClearAllTimersInLevel(UWorld* World)
+{
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		AActor* Actor = *It;
+		if (Actor)
+		{
+			// 타이머 매니저를 가져와 타이머 클리어
+			Actor->GetWorldTimerManager().ClearAllTimersForObject(Actor);
 		}
 	}
 }

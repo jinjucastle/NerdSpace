@@ -106,6 +106,13 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void HidePauseUI();
 
+public:
+	void RemoveAllUI();
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCRemoveAllUI();
+
+protected:
 	//ver 0.4.1 C
 	void StartJump();
 
@@ -333,4 +340,17 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Spectator)
 	TSubclassOf<class ASpectatorPawn> SpectatorCamera;
+
+// ver 0.17.3a
+// Slow Event
+public:
+	UFUNCTION(BlueprintCallable)
+	void ApplySlow();
+
+	UFUNCTION(BlueprintCallable)
+	void EndSlow();
+
+protected:
+	UPROPERTY(Replicated)
+	bool bIsSlowly;
 };

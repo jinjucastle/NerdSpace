@@ -440,9 +440,10 @@ void AAACharacterBase::SpawnShell(FTransform InSocketTransform)
 
 		GetWorld()->GetTimerManager().SetTimer(
 			ShellTimerHandle,
-			FTimerDelegate::CreateLambda([this]() {
+			FTimerDelegate::CreateLambda([&]() {
 				PlayBoundShellSound();
-				}), 0.3f, false);
+				GetWorld()->GetTimerManager().ClearTimer(ShellTimerHandle);
+				}), 0.25f, false);
 	}
 }
 
@@ -510,7 +511,7 @@ float AAACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 {
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	if (!bInvincibility)
+	if (!bInvincibility && bIsAlive)
 	{
 		if (ActualDamage > 0.f)
 		{
