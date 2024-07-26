@@ -161,8 +161,20 @@ private:
 
 public:
 	FORCEINLINE EControllerInputMode GetCurrentInputMode() const { return CurrentInputMode; }
+
+	UFUNCTION(BlueprintCallable)
 	void SetupGameInputMode();
+
+	UFUNCTION(BlueprintCallable)
 	void SetupUIInputmode();
+
+	UFUNCTION(BlueprintCallable)
+	void SetupDefrost();
+
+	// ver 0.17.3a
+	// freeze effect
+	UFUNCTION(BlueprintCallable)
+	void SetupFreeze();
 
 // ver 0.15.3a
 // Spactator Camera Section

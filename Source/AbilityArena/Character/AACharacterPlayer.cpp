@@ -200,6 +200,7 @@ void AAACharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
 	DOREPLIFETIME(AAACharacterPlayer, PooledAmmoClass);
 	DOREPLIFETIME(AAACharacterPlayer, SelectedAbility);
+	DOREPLIFETIME(AAACharacterPlayer, bIsSlowly);
 }
 
 void AAACharacterPlayer::ChangeZoom()
@@ -334,7 +335,14 @@ void AAACharacterPlayer::Run()
 
 	if (!HasAuthority())
 	{
-		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.5f);
+		if (bIsSlowly)
+		{
+			GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed / 3 + (BaseMovementSpeed / 3 * 0.5f);
+		}
+		else
+		{
+			GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.5f);
+		}
 	}
 
 	ServerRPCRun();
@@ -346,7 +354,14 @@ void AAACharacterPlayer::StopRun()
 
 	if (!HasAuthority())
 	{
-		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+		if (bIsSlowly)
+		{
+			GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed / 3;
+		}
+		else
+		{
+			GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+		}
 	}
 
 	ServerRPCStopRun();
@@ -361,7 +376,14 @@ void AAACharacterPlayer::ServerRPCRun_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Run"));
 
-	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.5f);
+	if (bIsSlowly)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed / 3 + (BaseMovementSpeed / 3 * 0.5f);
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed + (BaseMovementSpeed * 0.5f);
+	}
 }
 
 bool AAACharacterPlayer::ServerRPCStopRun_Validate()
@@ -373,7 +395,14 @@ void AAACharacterPlayer::ServerRPCStopRun_Implementation()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Stop Run"));
 
-	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+	if (bIsSlowly)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed / 3;
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+	}
 }
 
 void AAACharacterPlayer::ShowPauseUI()
@@ -386,7 +415,7 @@ void AAACharacterPlayer::ShowPauseUI()
 			AAAPlayerController* PC = Cast<AAAPlayerController>(GetController());
 			if (PC)
 			{
-				if (PC->GetCurrentInputMode() == EControllerInputMode::GameOnly)
+				if (PC->GetCurrentInputMode() != EControllerInputMode::UIOnly)
 				{
 					PC->SetupUIInputmode();
 				}
@@ -410,12 +439,55 @@ void AAACharacterPlayer::HidePauseUI()
 		AAAPlayerController* PC = Cast<AAAPlayerController>(GetController());
 		if (PC)
 		{
-			if (PC->GetCurrentInputMode() == EControllerInputMode::UIOnly)
+			if (PC->GetCurrentInputMode() != EControllerInputMode::GameOnly)
 			{
 				PC->SetupGameInputMode();
 			}
 			PC->SetShowMouseCursor(false);
 			PC->CreateUI();
+		}
+	}
+}
+
+void AAACharacterPlayer::RemoveAllUI()
+{
+	if (HasAuthority())
+	{
+		if (IsLocallyControlled())
+		{
+			if (PauseWidgetInstance)
+			{
+				PauseWidgetInstance->RemoveFromParent();
+				PauseWidgetInstance = nullptr;
+			}
+
+			if (ScopeWidgetInstance)
+			{
+				ScopeWidgetInstance->RemoveFromParent();
+				ScopeWidgetInstance = nullptr;
+			}
+		}
+		else
+		{
+			ClientRPCRemoveAllUI();
+		}
+	}
+}
+
+void AAACharacterPlayer::ClientRPCRemoveAllUI_Implementation()
+{
+	if (IsLocallyControlled())
+	{
+		if (PauseWidgetInstance)
+		{
+			PauseWidgetInstance->RemoveFromParent();
+			PauseWidgetInstance = nullptr;
+		}
+
+		if (ScopeWidgetInstance)
+		{
+			ScopeWidgetInstance->RemoveFromParent();
+			ScopeWidgetInstance = nullptr;
 		}
 	}
 }
@@ -442,6 +514,11 @@ void AAACharacterPlayer::Landed(const FHitResult& Hit)
 
 	PlaySound(LandSoundCue, GetActorLocation());
 	bIsJump = false;
+
+	if (GetCharacterMovement()->IsFalling())
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	}
 }
 
 AAAWeaponAmmo* AAACharacterPlayer::GetPooledAmmo()
@@ -585,6 +662,7 @@ void AAACharacterPlayer::Fire()
 	else
 	{
 		StopFire();
+
 		if (CurrentAmmoSize == 0)
 		{
 			PlaySound(MagEmptySoundCue, GetActorLocation());
@@ -597,6 +675,8 @@ void AAACharacterPlayer::StartFire()
 	//ver 0.4.1 C
 	bIsFiring = true;
 
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_AutomaticFire);
+
 	if (bIsRun)
 	{
 		StopRun();
@@ -604,7 +684,7 @@ void AAACharacterPlayer::StartFire()
 
 	if (WeaponData)
 	{
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutomaticFire, this, &AAACharacterPlayer::Fire, RPM + 0.015f, true, 0.f);
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AutomaticFire, this, &AAACharacterPlayer::Fire, RPM + 0.015f, true, 0.001f);
 	}
 }
 
@@ -912,6 +992,8 @@ void AAACharacterPlayer::SetAbility(const FAAAbilityStat& InAddAbility)
 
 void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
 {
+	if (WeaponData)
+	{
 		Stat->SetNewMaxHp(Stat->GetBaseStat().MaxHp * NewAbilityStat.MaxHp);
 
 		BaseMovementSpeed = Stat->GetTotalStat().MovementSpeed * NewAbilityStat.MovementSpeed;
@@ -932,6 +1014,7 @@ void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
 		bBloodDrain = (bool)NewAbilityStat.BloodDrain;
 
 		Magnification = FMath::Clamp(NewAbilityStat.Magnification, 1, 8);
+	}
 }
 
 void AAACharacterPlayer::SetAbilityInController(const FAAAbilityStat& NewAbilityStat)
@@ -1035,4 +1118,16 @@ void AAACharacterPlayer::SetDead()
 		UE_LOG(LogTemp, Log, TEXT("Cast Fail to AAAPlayerControler in SetDead"));
 	}
 	GetCharacterMovement()->DisableMovement();
+}
+
+void AAACharacterPlayer::ApplySlow()
+{
+	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed / 3;
+	bIsSlowly = true;
+}
+
+void AAACharacterPlayer::EndSlow()
+{
+	GetCharacterMovement()->MaxWalkSpeed = BaseMovementSpeed;
+	bIsSlowly = false;
 }
