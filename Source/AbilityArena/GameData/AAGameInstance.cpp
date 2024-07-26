@@ -2,7 +2,7 @@
 
 
 #include "GameData/AAGameInstance.h"
-
+#include "Item/AAWeaponAmmo.h"
 #include "Game/AAGameMode.h"
 
 UAAGameInstance::UAAGameInstance()
@@ -112,6 +112,17 @@ FString UAAGameInstance::GetPlayerNickname(const FString& InSteamID) const
 		return PlayerNicknames[InSteamID];
 	}
 	return FString();
+}
+
+void UAAGameInstance::SetDefaultStat()
+{
+	if (GameDefaultWeaponData && GameDefaultAmmoClass)
+	{
+		SetWeaponItemData(GameDefaultWeaponData);
+		SetAmmoClass(GameDefaultAmmoClass);
+	}
+
+	SetPlayerStat(FAAAbilityStat());
 }
 
 void UAAGameInstance::CreateSession()
