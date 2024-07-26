@@ -96,6 +96,7 @@ public:
 	TMap<FString, FString> PlayerNicknames;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TObjectPtr<USkeletalMesh> CharacterMesh;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 CharacterIndex;
 
@@ -110,7 +111,17 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE USkeletalMesh* GetCharacterMesh() { return CharacterMesh;}
+	
+	UFUNCTION(BlueprintCallable)
+	void SetDefaultStat();
+
 private:
 	FString SteamID;
 	FString SteamNickName;
+
+	UPROPERTY(EditDefaultsOnly, Category = DefaultsState, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UAAWeaponItemData> GameDefaultWeaponData;
+
+	UPROPERTY(EditDefaultsOnly, Category = DefaultsState, Meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class AAAWeaponAmmo> GameDefaultAmmoClass;
 };
