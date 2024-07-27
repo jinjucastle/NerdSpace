@@ -109,6 +109,14 @@ public:
 	void SetWeaponDataBegin();
 	void SetWeaponDataStore();
 
+	// ver 0.18.1a
+	// Server Replicate WeaponData
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCSetWeaponDataStore(class UAAWeaponItemData* NewWeaponData);
+
+	UFUNCTION(Client, UnReliable)
+	void ClientRPCSetWeaponDataStore(class UAAWeaponItemData* NewWeaponData, AAACharacterBase* CharacterToPlay);
+
 // ver 0.3.2a
 // AmmoSize
 	UPROPERTY(Replicated, BlueprintReadOnly)
