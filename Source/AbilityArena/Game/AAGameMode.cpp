@@ -200,8 +200,9 @@ void AAAGameMode::PostSeamlessTravel()
 		}
 	}
 
-	PlayerStartPoints.Empty();
-	UsedPlayerStartPoints.Empty();
+	InitializeSpawnPoints();
+
+	UE_LOG(LogTemp, Warning, TEXT("Spawn points initialized. Total points: %d"), PlayerStartPoints.Num());
 
 	OnSeamlessTravelComplete.Broadcast();
 }
@@ -243,12 +244,18 @@ void AAAGameMode::Logout(AController* NewPlayer)
 	NumPlayersPossessed--;
 	AlivePlayers--;
 	TotalPlayers--;
+
+	UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+
+	if (GameInstance)
+	{
+		GameInstance->CurrentSessionNumber--;
+	}
 	
 	if(TotalPlayers == 1)
 	{
 		NoOneOtherPlayers();
 	}
-	
 	else
 	{
 		AAAPlayerController* LogoutPlayer = Cast<AAAPlayerController>(NewPlayer);
@@ -257,7 +264,6 @@ void AAAGameMode::Logout(AController* NewPlayer)
 			if (LogoutPlayer && HasAuthority())
 			{
 				FString SteamID = LogoutPlayer->GetSteamID();
-				UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
 				if (GameInstance)
 				{
 					GameInstance->RemoveScore(SteamID);
@@ -270,10 +276,6 @@ void AAAGameMode::Logout(AController* NewPlayer)
 void AAAGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-
-	InitializeSpawnPoints();
-
-	UE_LOG(LogTemp, Warning, TEXT("Spawn points initialized. Total points: %d"), PlayerStartPoints.Num());
 }
 
 // ver 0.11.4a
