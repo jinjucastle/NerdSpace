@@ -101,6 +101,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 CharacterIndex;
 
+	UPROPERTY(BlueprintReadWrite)
+	int32 CurrentSessionNumber;
+
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE void SetCharacterIndex(int32 NewIndex) { CharacterIndex = NewIndex; }
 	
@@ -113,6 +116,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE USkeletalMesh* GetCharacterMesh() { return CharacterMesh;}
 	
+	UFUNCTION(BlueprintCallable)
+	void SetCurrentSesstionNumber(int32 InputSessionNumber) { CurrentSessionNumber = InputSessionNumber; }
+
+
 	UFUNCTION(BlueprintCallable)
 	void SetDefaultStat();
 
