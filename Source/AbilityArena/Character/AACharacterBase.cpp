@@ -311,28 +311,88 @@ void AAACharacterBase::SetWeaponDataStore()
 {
 	//ver0.8.1b
 	// bring in WeaponData
-	AAAPlayerController* testController = Cast<AAAPlayerController>(GetController());
-	if (testController)
+	if (IsLocallyControlled())
 	{
-		UAAGameInstance* PC = Cast<UAAGameInstance>(testController->GetGameInstance());
-		
-		if (PC->GetsetWeaponItemData())
+		AAAPlayerController* testController = Cast<AAAPlayerController>(GetController());
+		if (testController)
 		{
-			WeaponData = testController->SetInitData();
+			UAAGameInstance* PC = Cast<UAAGameInstance>(testController->GetGameInstance());
 
-			FTimerHandle DelayTimerHandle;
-
-			GetWorld()->GetTimerManager().SetTimer(
-				DelayTimerHandle,
-				FTimerDelegate::CreateLambda([&]() {
-					GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
-					}), 0.1f, false);
-
-			if (!IsValid(WeaponData))
+			if (PC->GetsetWeaponItemData())
 			{
-				SetWeaponDataStore();
+				WeaponData = testController->SetInitData();
+
+				FTimerHandle DelayTimerHandle;
+
+				GetWorld()->GetTimerManager().SetTimer(
+					DelayTimerHandle,
+					FTimerDelegate::CreateLambda([&]() {
+						GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
+						}), 0.1f, false);
+
+				if (!IsValid(WeaponData))
+				{
+					SetWeaponDataStore();
+				}
+				else
+				{
+					if (!HasAuthority())
+					{
+						ServerRPCSetWeaponDataStore(WeaponData);
+					}
+					else
+					{
+						for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+						{
+							if (PlayerController && GetController() != PlayerController)
+							{
+								if (!PlayerController->IsLocalController())
+								{
+									AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(PlayerController->GetPawn());
+									if (OtherPlayer)
+									{
+										ClientRPCSetWeaponDataStore(WeaponData, OtherPlayer);
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		}
+	}
+}
+
+bool AAACharacterBase::ServerRPCSetWeaponDataStore_Validate(UAAWeaponItemData* NewWeaponData)
+{
+	return IsValid(NewWeaponData);
+}
+
+void AAACharacterBase::ServerRPCSetWeaponDataStore_Implementation(UAAWeaponItemData* NewWeaponData)
+{
+	WeaponData = NewWeaponData;
+
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(PlayerController->GetPawn());
+				if (OtherPlayer)
+				{
+					ClientRPCSetWeaponDataStore(WeaponData, OtherPlayer);
+				}
+			}
+		}
+	}
+}
+
+void AAACharacterBase::ClientRPCSetWeaponDataStore_Implementation(UAAWeaponItemData* NewWeaponData, AAACharacterBase* CharacterToPlay)
+{
+	if (CharacterToPlay)
+	{
+		WeaponData = NewWeaponData;
 	}
 }
 

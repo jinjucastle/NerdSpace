@@ -44,14 +44,7 @@ TObjectPtr<class UAAWeaponItemData> AAAPlayerController::SetInitData()
 			newPoint = PC->GetsetWeaponItemData();
 		}
 	}
-	else
-	{
-		UAAGameInstance* PC = Cast<UAAGameInstance>(GetGameInstance());
-		if (PC)
-		{
-			newPoint = PC->GetsetWeaponItemData();
-		}
-	}
+	
 	return newPoint;
 }
 

@@ -214,20 +214,6 @@ void AAAGameMode::RandomCardPick()
 	}
 }
 
-// ver 0.11.4a
-// Spawn Point Setting
-AActor* AAAGameMode::ChoosePlayerStart_Implementation(AController* Player)
-{
-	AActor* ChosenSpawnPoint = GetRandomAvailableSpawnPoint();
-	if (ChosenSpawnPoint)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Chosen Spawn Point: %s"), *ChosenSpawnPoint->GetName());
-		return ChosenSpawnPoint;
-	}
-
-	return Super::ChoosePlayerStart_Implementation(Player);
-}
-
 void AAAGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
@@ -251,6 +237,30 @@ void AAAGameMode::Logout(AController* NewPlayer)
 
 	NumPlayersPossessed--;
 	AlivePlayers--;
+	//TotalPlayers--;
+	/*
+	if(TotalPlayers == 1)
+	{
+		NoOneOtherPlayers();
+	}
+	
+	else
+	{
+		AAAPlayerController* LogoutPlayer = Cast<AAAPlayerCharacter>(NewPlayer)
+		if(LogoutPlayer)
+		{
+			if (UserController && HasAuthority())
+			{
+				FString SteamID = UserController->GetSteamID();
+				UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+				if (GameInstance)
+				{
+					GameInstance->RemoveScore(SteamID);
+				}
+			}
+		}
+	}
+	*/
 }
 
 void AAAGameMode::BeginPlay()
@@ -262,28 +272,69 @@ void AAAGameMode::BeginPlay()
 	UE_LOG(LogTemp, Warning, TEXT("Spawn points initialized. Total points: %d"), PlayerStartPoints.Num());
 }
 
+// ver 0.11.4a
+// Spawn Point Setting
 void AAAGameMode::InitializeSpawnPoints()
 {
 	PlayerStartPoints.Empty();
 	UsedPlayerStartPoints.Empty();
+	AvailableSpawnPoints.Empty();
 
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAASpawnPoint::StaticClass(), PlayerStartPoints);
 
 	UE_LOG(LogTemp, Warning, TEXT("Found %d spawn points."), PlayerStartPoints.Num());
 }
 
+AActor* AAAGameMode::ChoosePlayerStart_Implementation(AController* Player)
+{
+	AActor* ChosenSpawnPoint = GetRandomAvailableSpawnPoint();
+	if (ChosenSpawnPoint)
+	{
+		UsedPlayerStartPoints.Add(ChosenSpawnPoint);
+		UE_LOG(LogTemp, Warning, TEXT("Chosen Spawn Point: %s"), *ChosenSpawnPoint->GetName());
+		return ChosenSpawnPoint;
+	}
+
+	return Super::ChoosePlayerStart_Implementation(Player);
+}
+
 AActor* AAAGameMode::GetRandomAvailableSpawnPoint()
 {
 	for (AActor* SpawnPoint : PlayerStartPoints)
 	{
-		if (!UsedPlayerStartPoints.Contains(SpawnPoint))
+		if (!UsedPlayerStartPoints.Contains(SpawnPoint) && !IsSpawnPointOccupied(SpawnPoint))
 		{
-			UsedPlayerStartPoints.Add(SpawnPoint);
-			return SpawnPoint;
+			AvailableSpawnPoints.Add(SpawnPoint);
 		}
 	}
 
-	return Super::ChoosePlayerStart_Implementation(nullptr);
+	if (AvailableSpawnPoints.Num() > 0)
+	{
+		int32 RandomIndex = FMath::RandRange(0, AvailableSpawnPoints.Num() - 1);
+		return AvailableSpawnPoints[RandomIndex];
+	}
+
+	return nullptr;
+}
+
+bool AAAGameMode::IsSpawnPointOccupied(AActor* InSpawnPoint)
+{
+	FVector SpawnLocation = InSpawnPoint->GetActorLocation();
+	float Radius = 100.0f;
+	TArray<FOverlapResult> Overlaps;
+
+	FCollisionShape CollisionShape;
+	CollisionShape.SetSphere(Radius);
+
+	bool bHasOverlap = GetWorld()->OverlapMultiByChannel(
+		Overlaps,
+		SpawnLocation,
+		FQuat::Identity,
+		ECC_Pawn,
+		CollisionShape
+	);
+
+	return bHasOverlap;
 }
 
 void AAAGameMode::PlayerDied(AController* PlayerController)
@@ -323,13 +374,31 @@ void AAAGameMode::CheckForRoundEnd()
 				}
 			}
 		}
-		StartNextRound();
+		FinishGame();
 	}
 }
 
-void AAAGameMode::StartNextRound()
+void AAAGameMode::NoOneOtherPlayers()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Move to Next round"));
+	AAAPlayerController* UserController = Cast<AAAPlayerController>(GetLastPlayerController());
+	if (UserController && HasAuthority())
+	{
+		FString SteamID = UserController->GetSteamID();
+		FString SteamNickName = UserController->GetSteamNickName();
+		UE_LOG(LogTemp, Warning, TEXT("Calling ClientRPCAddScore for %s(%s)"), *SteamNickName, *SteamID);
+		UserController->AddScore(SteamID, 3);
+		UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+		if (GameInstance)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s(%s) Score: %d after ClientRPCAddScore"), *SteamNickName, *SteamID, GameInstance->GetScore(SteamID));
+			if (GameInstance->GetScore(SteamID) >= 3)
+			{
+				isFinishGame = true;
+				CreateWinnerUI(UserController);
+				UE_LOG(LogTemp, Error, TEXT("Winner is %s!!!"), *SteamNickName);
+			}
+		}
+	}
 	FinishGame();
 }
 
