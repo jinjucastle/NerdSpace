@@ -43,8 +43,6 @@ AAAGameMode::AAAGameMode()
 	bUseSeamlessTravel = true;
 
 	AlivePlayers = 0;
-
-	TotalPlayers = 2;
 }
 
 void AAAGameMode::PostInitializeComponents()
@@ -185,6 +183,13 @@ void AAAGameMode::PostSeamlessTravel()
 {
 	Super::PostSeamlessTravel();
 
+	UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
+
+	if (GameInstance)
+	{
+		TotalPlayers = GameInstance->CurrentSessionNumber;
+	}
+
 	UE_LOG(LogTemp, Error, TEXT("PostSeamlessTravel"));
 
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
@@ -237,8 +242,8 @@ void AAAGameMode::Logout(AController* NewPlayer)
 
 	NumPlayersPossessed--;
 	AlivePlayers--;
-	//TotalPlayers--;
-	/*
+	TotalPlayers--;
+	
 	if(TotalPlayers == 1)
 	{
 		NoOneOtherPlayers();
@@ -246,12 +251,12 @@ void AAAGameMode::Logout(AController* NewPlayer)
 	
 	else
 	{
-		AAAPlayerController* LogoutPlayer = Cast<AAAPlayerCharacter>(NewPlayer)
+		AAAPlayerController* LogoutPlayer = Cast<AAAPlayerController>(NewPlayer);
 		if(LogoutPlayer)
 		{
-			if (UserController && HasAuthority())
+			if (LogoutPlayer && HasAuthority())
 			{
-				FString SteamID = UserController->GetSteamID();
+				FString SteamID = LogoutPlayer->GetSteamID();
 				UAAGameInstance* GameInstance = Cast<UAAGameInstance>(GetGameInstance());
 				if (GameInstance)
 				{
@@ -260,7 +265,6 @@ void AAAGameMode::Logout(AController* NewPlayer)
 			}
 		}
 	}
-	*/
 }
 
 void AAAGameMode::BeginPlay()
