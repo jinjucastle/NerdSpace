@@ -888,16 +888,27 @@ void AAACharacterPlayer::ClientRPCSetPooledAmmoClass_Implementation(AAACharacter
 
 void AAACharacterPlayer::Reload()
 {
-	if (CurrentAmmoSize < MaxAmmoSize)
+	if (CurrentAmmoSize < MaxAmmoSize && CurrentAmmoSize!=0)
 	{
 		if (bIsRun)
 		{
 			StopRun();
 		}
 
-		if (IsLocallyControlled() && bCanFire)
+		if (HasAuthority())
 		{
-			ServerRPCPlayReloadAnimation();
+			if (IsLocallyControlled() )
+			{
+				MulticastRPCPlayReloadAnimation();
+			}
+		}
+
+		else
+		{
+			if (IsLocallyControlled() )
+			{
+				ServerRPCPlayReloadAnimation();
+			}
 		}
 
 		if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
