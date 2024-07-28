@@ -74,6 +74,14 @@ int32 UAAGameInstance::GetScore(const FString& InSteamID) const
 	return 0;
 }
 
+void UAAGameInstance::RemoveScore(const FString& InSteamID)
+{
+	if (Score.Contains(InSteamID))
+	{
+		Score.Remove(InSteamID);
+	}
+}
+
 void UAAGameInstance::ResetAllScore()
 {
 	Score.Empty();
