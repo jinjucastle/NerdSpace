@@ -4,6 +4,7 @@
 #include "Game/AAGameMode.h"
 #include "Game/AAGameStateT.h"
 #include "GameData/AAGameInstance.h"
+#include "GameFramework/PlayerStart.h"
 #include "Player/AAPlayerController.h"
 #include "Player/AASpawnPoint.h"
 #include "Character/AACharacterPlayer.h"
@@ -200,8 +201,6 @@ void AAAGameMode::PostSeamlessTravel()
 		}
 	}
 
-	InitializeSpawnPoints();
-
 	UE_LOG(LogTemp, Warning, TEXT("Spawn points initialized. Total points: %d"), PlayerStartPoints.Num());
 
 	OnSeamlessTravelComplete.Broadcast();
@@ -276,6 +275,8 @@ void AAAGameMode::Logout(AController* NewPlayer)
 void AAAGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	InitializeSpawnPoints();
 }
 
 // ver 0.11.4a
@@ -286,14 +287,17 @@ void AAAGameMode::InitializeSpawnPoints()
 	UsedPlayerStartPoints.Empty();
 	AvailableSpawnPoints.Empty();
 
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAASpawnPoint::StaticClass(), PlayerStartPoints);
+	for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
+	{
+		PlayerStartPoints.Add(*It);
+	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Found %d spawn points."), PlayerStartPoints.Num());
 }
 
 AActor* AAAGameMode::ChoosePlayerStart_Implementation(AController* Player)
 {
-	AActor* ChosenSpawnPoint = GetRandomAvailableSpawnPoint();
+	APlayerStart* ChosenSpawnPoint = GetRandomAvailableSpawnPoint();
 	if (ChosenSpawnPoint)
 	{
 		UsedPlayerStartPoints.Add(ChosenSpawnPoint);
@@ -304,9 +308,9 @@ AActor* AAAGameMode::ChoosePlayerStart_Implementation(AController* Player)
 	return Super::ChoosePlayerStart_Implementation(Player);
 }
 
-AActor* AAAGameMode::GetRandomAvailableSpawnPoint()
+APlayerStart* AAAGameMode::GetRandomAvailableSpawnPoint()
 {
-	for (AActor* SpawnPoint : PlayerStartPoints)
+	for (APlayerStart* SpawnPoint : PlayerStartPoints)
 	{
 		if (!UsedPlayerStartPoints.Contains(SpawnPoint) && !IsSpawnPointOccupied(SpawnPoint))
 		{
@@ -323,7 +327,7 @@ AActor* AAAGameMode::GetRandomAvailableSpawnPoint()
 	return nullptr;
 }
 
-bool AAAGameMode::IsSpawnPointOccupied(AActor* InSpawnPoint)
+bool AAAGameMode::IsSpawnPointOccupied(APlayerStart* InSpawnPoint)
 {
 	FVector SpawnLocation = InSpawnPoint->GetActorLocation();
 	float Radius = 100.0f;

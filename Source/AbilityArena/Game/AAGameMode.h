@@ -67,12 +67,12 @@ protected:
 
 private:
 	void InitializeSpawnPoints();
-	AActor* GetRandomAvailableSpawnPoint();
-	bool IsSpawnPointOccupied(AActor* InSpawnPoint);
+	class APlayerStart* GetRandomAvailableSpawnPoint();
+	bool IsSpawnPointOccupied(class APlayerStart* InSpawnPoint);
 
-	TArray<AActor*> PlayerStartPoints;
-	TSet<AActor*> UsedPlayerStartPoints;
-	TArray<AActor*> AvailableSpawnPoints;
+	TArray<class APlayerStart*> PlayerStartPoints;
+	TSet<class APlayerStart*> UsedPlayerStartPoints;
+	TArray<class APlayerStart*> AvailableSpawnPoints;
 
 // ver 0.11.6a
 // Round Change Gimmik
