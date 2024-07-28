@@ -68,9 +68,11 @@ protected:
 private:
 	void InitializeSpawnPoints();
 	AActor* GetRandomAvailableSpawnPoint();
+	bool IsSpawnPointOccupied(AActor* InSpawnPoint);
 
 	TArray<AActor*> PlayerStartPoints;
 	TSet<AActor*> UsedPlayerStartPoints;
+	TArray<AActor*> AvailableSpawnPoints;
 
 // ver 0.11.6a
 // Round Change Gimmik
@@ -81,7 +83,7 @@ private:
 	int32 AlivePlayers;
 
 	void CheckForRoundEnd();
-	void StartNextRound();
+	void NoOneOtherPlayers();
 
 // ver 0.12.1a
 // Score Section
