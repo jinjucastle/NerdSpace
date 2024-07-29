@@ -202,29 +202,22 @@ void AAAPlayerController::CreateCardSelectUI(TSubclassOf<UUserWidget> CardSelect
 		if (PlayerInput)
 		{
 			PlayerInput->FlushPressedKeys();
-			UE_LOG(LogTemp, Log, TEXT("FlushPressedKeys called."));
 		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("PlayerInput is nullptr. Cannot flush pressed keys."));
-		}
-
-		SetupUIInputmode();
 
 		PlayerUI = CreateWidget<UUserWidget>(this, CardSelectUI);
 		if (PlayerUI)
 		{
-			PlayerUI->AddToViewport();
-
 			if (AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(GetPawn()))
 			{
 				PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
-
+				PlayerCharacter->SetPlayerStopFire();
 				if (PlayerCharacter->GetCurrentCharacterZoomType() == ECharacterZoomType::ZoomIn)
 				{
 					PlayerCharacter->ChangeZoom();
 				}
 			}
+
+			PlayerUI->AddToViewport();
 
 			bIsPick = false;
 		}
@@ -236,13 +229,11 @@ void AAAPlayerController::ClientRPCCreateCardSelectUI_Implementation(TSubclassOf
 	FTimerHandle CreateUITimerHandle;
 
 	SetIgnoreMoveInput(true);
-
-	GetWorld()->GetTimerManager().SetTimer(
-		CreateUITimerHandle,
-		FTimerDelegate::CreateLambda([&]() {
-			GetWorld()->GetTimerManager().ClearTimer(CreateUITimerHandle);
-			}), 0.1f, false);
-
+	SetupUIInputmode();
+	if (PlayerInput)
+	{
+		PlayerInput->FlushPressedKeys();
+	}
 	CreateCardSelectUI(CardSelectUI);
 }
 

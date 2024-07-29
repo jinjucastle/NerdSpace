@@ -29,7 +29,6 @@ AAAWeaponAmmo::AAAWeaponAmmo()
 	AmmoMovement->SetUpdatedComponent(AmmoMesh);
 	AmmoMovement->bRotationFollowsVelocity = true;
 	AmmoMovement->bShouldBounce = false;
-	AmmoMovement->StopMovementImmediately();
 
 	AmmoMovement->ProjectileGravityScale = 0.0f;
 
@@ -144,19 +143,19 @@ void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, cl
 
 void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
 {
+	if (AAACharacterPlayer* OtherActor = Cast<AAACharacterPlayer>(Other))
+	{
+		if (Cast<AAAPlayerController>(OtherActor->GetController()) == Cast<AAAPlayerController>(Owner->GetController()))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Ignore"));
+			return;
+		}
+	}
+
 	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
 
 	if (HasAuthority())
 	{
-		if (AAACharacterPlayer* OtherActor = Cast<AAACharacterPlayer>(Other))
-		{
-			if (Cast<AAAPlayerController>(OtherActor->GetController()) == Cast<AAAPlayerController>(Owner->GetController()))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Ignore"));
-				return;
-			}
-		}
-
 		if (AmmoType != EAmmoType::Rocket)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Ignore"));
@@ -165,7 +164,6 @@ void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimi
 
 		if (!Other->IsA(AAAWeaponAmmo::StaticClass()))
 		{
-			UE_LOG(LogTemp, Log, TEXT("Hit: %s"), *Hit.GetActor()->GetName());
 			ApplySplashDamage();
 			if (AmmoEffect)
 			{
@@ -176,12 +174,17 @@ void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimi
 			Destroy();
 			UE_LOG(LogTemp, Log, TEXT("Destroy"));
 		}
+
+		UE_LOG(LogTemp, Log, TEXT("Server Hit: %s"), *Hit.GetActor()->GetName());
 	}
+
+	UE_LOG(LogTemp, Log, TEXT("All Hit: %s"), *Hit.GetActor()->GetName());
 }
 
 void AAAWeaponAmmo::Fire(const FVector& FireDirection) const
 {
 	AmmoMovement->Velocity = FireDirection * AmmoMovement->InitialSpeed;
+	UE_LOG(LogTemp, Log, TEXT("Fire called with direction: %s"), *FireDirection.ToString());
 }
 
 void AAAWeaponAmmo::MulticastRPCApplyImpulse_Implementation(UPrimitiveComponent* OverlappedComp, const FVector& Impulse)

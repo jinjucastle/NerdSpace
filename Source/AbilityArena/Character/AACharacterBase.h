@@ -141,8 +141,8 @@ protected:
 
 public:
 	void PlayReloadAnimation();
-	virtual void ReloadActionEnded(UAnimMontage* Montage, bool IsEnded);
 	void ServerSetCanFire(bool NewCanFire);
+	void CompleteReload();
   
   //TODO : Delete
 	int32 TestNum;

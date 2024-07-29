@@ -189,6 +189,7 @@ protected:
 // ver 0.17.1a
 // Reset Stat
 public:
+	UFUNCTION(BlueprintCallable)
 	void ResetPlayerStat();
 
 	UFUNCTION(Client, Reliable)

@@ -164,15 +164,6 @@ void AAAGameMode::FinishGame()
 			{
 				PlayerController->PossessLastPlayerPawn();
 				PlayerController->SetIgnoreMoveInput(true);
-
-				FTimerHandle DelayTimerHandle;
-
-				GetWorld()->GetTimerManager().SetTimer(
-					DelayTimerHandle,
-					FTimerDelegate::CreateLambda([&]() {
-						GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
-						}), 0.1f, false);
-
 				PlayerController->SetupUIInputmode();
 				PlayerController->ClientRPCCreateCardSelectUI(CardSelectUIClass);
 			}
@@ -321,6 +312,19 @@ APlayerStart* AAAGameMode::GetRandomAvailableSpawnPoint()
 	if (AvailableSpawnPoints.Num() > 0)
 	{
 		int32 RandomIndex = FMath::RandRange(0, AvailableSpawnPoints.Num() - 1);
+
+		if (IsSpawnPointOccupied(AvailableSpawnPoints[RandomIndex]))
+		{
+			FTimerHandle DelayTimerHandle;
+
+			GetWorld()->GetTimerManager().SetTimer(
+				DelayTimerHandle,
+				FTimerDelegate::CreateLambda([&]() {
+					InitializeSpawnPoints();
+					GetRandomAvailableSpawnPoint();
+					GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
+					}), 0.1f, false);
+		}
 		return AvailableSpawnPoints[RandomIndex];
 	}
 

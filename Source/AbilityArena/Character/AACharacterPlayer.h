@@ -181,8 +181,14 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCFire(const FVector& NewLocation, const FVector& NewDirection);
 
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCFire(AAACharacterPlayer* CharacterToPlay, class AAAWeaponAmmo* AmmoClass, const FVector& NewLocation, const FVector& NewDirection);
+
 	UFUNCTION(NetMulticast, Unreliable)
-	void MulticastRPCFire(class AAAWeaponAmmo* AmmoClass, const FVector& NewLocation, const FVector& NewDirection);
+	void MulticastRPCFire(AAACharacterPlayer* CharacterToPlay, class AAAWeaponAmmo* AmmoClass, const FVector& NewLocation, const FVector& NewDirection);
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCSpawnShell();
 
 // ver 0.1.3a
 // AmmoMesh & AmmoStat Replicate
@@ -207,7 +213,13 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCPlayReloadAnimation();
 
-	UFUNCTION(NetMulticast, Unreliable)
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCPlayReloadAnimation(AAACharacterPlayer* CharacterToPlay);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCPlayEmptyReloadAnimation();
+
+	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCPlayReloadAnimation();
 
 // ver 0.3.4a

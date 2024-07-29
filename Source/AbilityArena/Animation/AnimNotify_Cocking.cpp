@@ -14,6 +14,8 @@ void UAnimNotify_Cocking::Notify(USkeletalMeshComponent* MeshComp, UAnimSequence
         if (Character)
         {
             Character->PlayCockingSound();
+            Character->ServerSetCanFire(true);
+            Character->CompleteReload();
         }
     }
 }

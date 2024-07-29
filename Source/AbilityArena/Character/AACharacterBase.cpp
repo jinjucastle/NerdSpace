@@ -188,28 +188,29 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 		if (!HasAuthority())
 		{
 			WeaponData = WeaponItemData;
-			
 			SetWeaponMesh(WeaponData);
-			
-			//ver0.8.1b
-			//client saveWeaponData
-			SetWeaponDataBegin();
+			Stat->SetWeaponStat(WeaponData->WeaponStat);
+
+			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
+			CurrentAmmoSize = MaxAmmoSize;
 		}
 		else
 		{
 			WeaponData = WeaponItemData;
 		}
 
+		SetWeaponDataBegin();
+
 		if(IsLocallyControlled())
 		{
-			ServerRPCChangeWeapon(WeaponItemData);
+			ServerRPCChangeWeapon(WeaponData);
 		}
 	}
 }
 
 bool AAACharacterBase::ServerRPCChangeWeapon_Validate(UAAWeaponItemData* NewWeaponData)
 {
-	return true;
+	return IsValid(NewWeaponData);
 }
 
 void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* NewWeaponData)
@@ -220,9 +221,6 @@ void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* N
 			SetWeaponMesh(WeaponData);
 			Stat->SetWeaponStat(WeaponData->WeaponStat);
 
-			//0.8.1b
-			//Server saved Weapondata
-			SetWeaponDataBegin();
 			// ver 0.3.2a
 			// Set Ammo Size
 			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
@@ -324,15 +322,14 @@ void AAACharacterBase::SetWeaponDataStore()
 
 				FTimerHandle DelayTimerHandle;
 
-				GetWorld()->GetTimerManager().SetTimer(
-					DelayTimerHandle,
-					FTimerDelegate::CreateLambda([&]() {
-						GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
-						}), 0.1f, false);
-
 				if (!IsValid(WeaponData))
 				{
-					SetWeaponDataStore();
+					GetWorld()->GetTimerManager().SetTimer(
+						DelayTimerHandle,
+						FTimerDelegate::CreateLambda([&]() {
+							SetWeaponDataStore();
+							GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
+							}), 0.1f, false);
 				}
 				else
 				{
@@ -351,12 +348,26 @@ void AAACharacterBase::SetWeaponDataStore()
 									AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(PlayerController->GetPawn());
 									if (OtherPlayer)
 									{
-										ClientRPCSetWeaponDataStore(WeaponData, OtherPlayer);
+										OtherPlayer->ClientRPCSetWeaponDataStore(WeaponData, this);
 									}
 								}
 							}
 						}
 					}
+				}
+			}
+			else
+			{
+				if (WeaponData == nullptr)
+				{
+					FTimerHandle DelayTimerHandle;
+
+					GetWorld()->GetTimerManager().SetTimer(
+						DelayTimerHandle,
+						FTimerDelegate::CreateLambda([&]() {
+							SetWeaponDataStore();
+							GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
+							}), 0.1f, false);
 				}
 			}
 		}
@@ -381,7 +392,7 @@ void AAACharacterBase::ServerRPCSetWeaponDataStore_Implementation(UAAWeaponItemD
 				AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(PlayerController->GetPawn());
 				if (OtherPlayer)
 				{
-					ClientRPCSetWeaponDataStore(WeaponData, OtherPlayer);
+					OtherPlayer->ClientRPCSetWeaponDataStore(WeaponData, this);
 				}
 			}
 		}
@@ -392,7 +403,7 @@ void AAACharacterBase::ClientRPCSetWeaponDataStore_Implementation(UAAWeaponItemD
 {
 	if (CharacterToPlay)
 	{
-		WeaponData = NewWeaponData;
+		CharacterToPlay->WeaponData = NewWeaponData;
 	}
 }
 
@@ -405,7 +416,7 @@ void AAACharacterBase::PlayReloadAnimation()
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance)
 		{
-			AnimInstance->StopAllMontages(0.1f);
+			//AnimInstance->StopAllMontages(0.1f);
 
 			if (WeaponData)
 			{
@@ -413,40 +424,26 @@ void AAACharacterBase::PlayReloadAnimation()
 				{
 				case EWeaponType::Pistol:
 					AnimInstance->Montage_Play(PistolReloadMontage, ReloadSpeed);
-					EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
-					AnimInstance->Montage_SetEndDelegate(EndDelegate, PistolReloadMontage);
 					break;
 				default:
 					AnimInstance->Montage_Play(ReloadMontage, ReloadSpeed);
-					EndDelegate.BindUObject(this, &AAACharacterBase::ReloadActionEnded);
-					AnimInstance->Montage_SetEndDelegate(EndDelegate, ReloadMontage);
 					break;
 				}
 			}
 		}
 
 		ServerSetCanFire(false);
-
-		UE_LOG(LogTemp, Warning, TEXT("[%s] Current Ammo Size : %d"), *GetName(), CurrentAmmoSize);
-	}
-}
-
-void AAACharacterBase::ReloadActionEnded(UAnimMontage* Montage, bool IsEnded)
-{
-	if (HasAuthority())
-	{
-		ServerSetCanFire(true);
-
-		CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
 	}
 }
 
 void AAACharacterBase::ServerSetCanFire(bool NewCanFire)
 {
-	if (HasAuthority())
-	{
-		bCanFire = NewCanFire;
-	}
+	bCanFire = NewCanFire;
+}
+
+void AAACharacterBase::CompleteReload()
+{
+	CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
 }
 
 void AAACharacterBase::TakeItem(UAAItemData* InItemData)
@@ -483,7 +480,7 @@ void AAACharacterBase::MakeShield(UAAItemData* InItemData)
 
 void AAACharacterBase::SpawnShell(FTransform InSocketTransform)
 {
-	if (ShellClass)
+	if (ShellClass && bIsAlive && WeaponData)
 	{
 		AAAWeaponShell* Shell = GetWorld()->SpawnActor<AAAWeaponShell>(ShellClass, InSocketTransform);
 		Shell->SetMesh(WeaponData->ShellMesh.Get());
@@ -496,14 +493,7 @@ void AAACharacterBase::SpawnShell(FTransform InSocketTransform)
 
 		Shell->ShellMesh->AddImpulse(ImpulseResult);
 
-		FTimerHandle ShellTimerHandle;
-
-		GetWorld()->GetTimerManager().SetTimer(
-			ShellTimerHandle,
-			FTimerDelegate::CreateLambda([&]() {
-				PlayBoundShellSound();
-				GetWorld()->GetTimerManager().ClearTimer(ShellTimerHandle);
-				}), 0.25f, false);
+		PlayBoundShellSound();
 	}
 }
 

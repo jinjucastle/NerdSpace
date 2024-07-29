@@ -591,81 +591,78 @@ void AAACharacterPlayer::ClearPool()
 
 void AAACharacterPlayer::Fire()
 {
-	if (bCanFire && CurrentAmmoSize > 0 && bIsAlive)
+	if (bCanFire && bIsAlive)
 	{
-		// Add Delay
-		float CurrentTime = GetWorld()->GetTimeSeconds();
-		if (CurrentTime >= NextFireTime)
+		if (CurrentAmmoSize > 0)
 		{
-			FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
-
-			// ver 0.4.2a
-			// Fix Fire Direction
-			FVector AimDirection = GetAdjustedAim();
-			FVector FinalDirection;
-
-			if (WeaponData)
+			// Add Delay
+			float CurrentTime = GetWorld()->GetTimeSeconds();
+			if (CurrentTime >= NextFireTime)
 			{
-				if (WeaponData->Type == EWeaponType::Panzerfaust)
+				FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
+
+				// ver 0.4.2a
+				// Fix Fire Direction
+				FVector AimDirection = GetAdjustedAim();
+				FVector FinalDirection;
+
+				if (WeaponData)
 				{
-					FinalDirection = AimDirection;
+					if (WeaponData->Type == EWeaponType::Panzerfaust)
+					{
+						FinalDirection = AimDirection;
+					}
+					else
+					{
+						FinalDirection = GetMovementSpreadDirection(AimDirection);
+					}
 				}
-				else
+
+
+				ServerRPCFire(MuzzleLocation, FinalDirection);
+
+				if (WeaponData)
 				{
-					FinalDirection = GetMovementSpreadDirection(AimDirection);
+					switch (WeaponData->Type)
+					{
+					case EWeaponType::Pistol:
+						ApplyRecoil(AmmoDamage / 10);
+						PlaySound(PSTFireSoundCue, MuzzleLocation);
+						break;
+					case EWeaponType::Rifle:
+						ApplyRecoil(AmmoDamage / 20);
+						PlaySound(ARFireSoundCue, MuzzleLocation);
+						break;
+					case EWeaponType::Shotgun:
+						ApplyRecoil(AmmoDamage);
+						PlaySound(SGFireSoundCue, MuzzleLocation);
+						break;
+					case EWeaponType::SniperRifle:
+						ApplyRecoil(AmmoDamage / 10);
+						PlaySound(SRFireSoundCue, MuzzleLocation);
+						break;
+					case EWeaponType::Panzerfaust:
+						PlaySound(RPGFireSoundCue, MuzzleLocation);
+						break;
+					default:
+						ApplyRecoil(AmmoDamage);
+						PlaySound(PSTFireSoundCue, MuzzleLocation);
+						break;
+					}
 				}
+				NextFireTime = CurrentTime + RPM;
+
+				RecoilStrength *= 1.07f;
 			}
-			
-
-			ServerRPCFire(MuzzleLocation, FinalDirection);
-
-			if (WeaponData)
-			{
-				switch (WeaponData->Type)
-				{
-				case EWeaponType::Pistol:
-					ApplyRecoil(AmmoDamage / 10);
-					PlaySound(PSTFireSoundCue, MuzzleLocation);
-					break;
-				case EWeaponType::Rifle:
-					ApplyRecoil(AmmoDamage / 20);
-					PlaySound(ARFireSoundCue, MuzzleLocation);
-					break;
-				case EWeaponType::Shotgun:
-					ApplyRecoil(AmmoDamage);
-					PlaySound(SGFireSoundCue, MuzzleLocation);
-					break;
-				case EWeaponType::SniperRifle:
-					ApplyRecoil(AmmoDamage / 10);
-					PlaySound(SRFireSoundCue, MuzzleLocation);
-					break;
-				case EWeaponType::Panzerfaust:
-					PlaySound(RPGFireSoundCue, MuzzleLocation);
-					break;
-				default:
-					ApplyRecoil(AmmoDamage);
-					PlaySound(PSTFireSoundCue, MuzzleLocation);
-					break;
-				}
-
-				if (WeaponData->Type != EWeaponType::Panzerfaust && WeaponData->Type != EWeaponType::Shotgun)
-				{
-					FTransform ShellTransform = Weapon->GetSocketTransform(FName("ShellSocket"));
-					SpawnShell(ShellTransform);
-				}
-			}
-			NextFireTime = CurrentTime + RPM;
-
-			RecoilStrength *= 1.1f;
 		}
-	}
-	else
-	{
-		StopFire();
-
-		if (CurrentAmmoSize == 0)
+		else
 		{
-			PlaySound(MagEmptySoundCue, GetActorLocation());
+			StopFire();
+
+			if (CurrentAmmoSize <= 0)
+			{
+				PlaySound(MagEmptySoundCue, GetActorLocation());
+			}
 		}
 	}
 }
@@ -766,7 +763,9 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 	// Panzerfaust Spawn Actor Per Fire
 	if (WeaponData->Type == EWeaponType::Panzerfaust)
 	{
-		AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, NewLocation, NewDirection.Rotation());
+		FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
+
+		AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, MuzzleLocation, NewDirection.Rotation());
 		if (Rocket)
 		{
 			Rocket->SetActorScale3D(FVector(1.f, 1.f * AmmoScale, 1.f * AmmoScale));
@@ -774,7 +773,8 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 			Rocket->SetLifeSpan(4.0f);
 			Rocket->SetActive(true);
 			Rocket->Fire(NewDirection);
-			MulticastRPCFire(Rocket, NewLocation, NewDirection);
+
+			//MulticastRPCFire(this, Rocket, MuzzleLocation, NewDirection);
 
 			CurrentAmmoSize--;
 		}
@@ -791,8 +791,20 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 				Bullet->SetActorLocation(NewLocation);
 				Bullet->SetActive(true);
 				Bullet->Fire(BulletRotation.Vector());
-				MulticastRPCFire(Bullet, NewLocation, BulletRotation.Vector());
-
+				/*for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+				{
+					if (PlayerController && GetController() != PlayerController)
+					{
+						if (!PlayerController->IsLocalController())
+						{
+							AAACharacterPlayer* OtherPlayer = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
+							if (OtherPlayer)
+							{
+								OtherPlayer->ClientRPCFire(this, Bullet, NewLocation, BulletRotation.Vector());
+							}
+						}
+					}
+				}*/
 				CurrentAmmoSize--;
 			}
 		}
@@ -806,15 +818,30 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 			Bullet->SetActorLocation(NewLocation);
 			Bullet->SetActive(true);
 			Bullet->Fire(NewDirection);
-			MulticastRPCFire(Bullet, NewLocation, NewDirection);
+			/*for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+			{
+				if (PlayerController && GetController() != PlayerController)
+				{
+					if (!PlayerController->IsLocalController())
+					{
+						AAACharacterPlayer* OtherPlayer = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
+						if (OtherPlayer)
+						{
+							OtherPlayer->ClientRPCFire(this, Bullet, NewLocation, NewDirection);
+						}
+					}
+				}
+			}*/
 
 			CurrentAmmoSize--;
+
+			ClientRPCSpawnShell();
 		}
 	}
 
 	if (CurrentAmmoSize == 0)
 	{
-		ServerRPCPlayReloadAnimation();
+		ServerRPCPlayEmptyReloadAnimation();
 
 		if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
 		{
@@ -823,13 +850,33 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 	}
 }
 
-void AAACharacterPlayer::MulticastRPCFire_Implementation(AAAWeaponAmmo* AmmoClass, const FVector& NewLocation, const FVector& NewDirection)
+void AAACharacterPlayer::ClientRPCFire_Implementation(AAACharacterPlayer* CharacterToPlay, AAAWeaponAmmo* AmmoClass, const FVector& NewLocation, const FVector& NewDirection)
 {
-	if (AmmoClass)
+	if (AmmoClass && CharacterToPlay)
 	{
+		/*AmmoClass->SetOwnerPlayer(CharacterToPlay);
 		AmmoClass->SetActorLocation(NewLocation);
-		AmmoClass->Fire(NewDirection);
+		AmmoClass->SetActive(true);
+		AmmoClass->Fire(NewDirection);*/
 	}
+}
+
+void AAACharacterPlayer::MulticastRPCFire_Implementation(AAACharacterPlayer* CharacterToPlay, AAAWeaponAmmo* AmmoClass, const FVector& NewLocation, const FVector& NewDirection)
+{
+	if (AmmoClass && CharacterToPlay)
+	{
+		//AmmoClass->SetActorScale3D(FVector(1.f, 1.f * AmmoScale, 1.f * AmmoScale));
+		//AmmoClass->SetOwnerPlayer(CharacterToPlay);
+		//AmmoClass->SetLifeSpan(4.0f);
+		//AmmoClass->SetActive(true);
+		//AmmoClass->Fire(NewDirection);
+	}
+}
+
+void AAACharacterPlayer::ClientRPCSpawnShell_Implementation()
+{
+	FTransform ShellTransform = Weapon->GetSocketTransform(FName("ShellSocket"));
+	SpawnShell(ShellTransform);
 }
 
 void AAACharacterPlayer::SetPooledAmmoClass(UClass* NewAmmoClass)
@@ -841,13 +888,13 @@ void AAACharacterPlayer::EquipAmmo(UClass* NewAmmoClass)
 {
 	if (NewAmmoClass)
 	{
+		SetPooledAmmoClass(NewAmmoClass);
 		if (!HasAuthority())
 		{
-			SetPooledAmmoClass(NewAmmoClass);
-		}
-		if (IsLocallyControlled())
-		{
-			ServerRPCSetPooledAmmoClass(NewAmmoClass);
+			if (IsLocallyControlled())
+			{
+				ServerRPCSetPooledAmmoClass(NewAmmoClass);
+			}
 		}
 	}
 	ClearPool();
@@ -855,7 +902,7 @@ void AAACharacterPlayer::EquipAmmo(UClass* NewAmmoClass)
 
 bool AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Validate(UClass* NewAmmoClass)
 {
-	return true;
+	return IsValid(NewAmmoClass);
 }
 
 void AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Implementation(UClass* NewAmmoClass)
@@ -888,33 +935,37 @@ void AAACharacterPlayer::ClientRPCSetPooledAmmoClass_Implementation(AAACharacter
 
 void AAACharacterPlayer::Reload()
 {
-	if (CurrentAmmoSize < MaxAmmoSize && CurrentAmmoSize != 0)
+	if (CurrentAmmoSize < MaxAmmoSize && CurrentAmmoSize != 0 && bCanFire)
 	{
 		if (bIsRun)
 		{
 			StopRun();
 		}
 
-		if (HasAuthority())
+		if (!HasAuthority())
 		{
-			if (IsLocallyControlled())
-			{
-				MulticastRPCPlayReloadAnimation();
-			}
+			PlayReloadAnimation();
 		}
-		else
-		{
-			if (IsLocallyControlled())
-			{
-				ServerRPCPlayReloadAnimation();
-			}
-		}
+
+		ServerRPCPlayReloadAnimation();
 
 		if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
 		{
 			ChangeZoom();
 		}
 	}
+}
+
+bool AAACharacterPlayer::ServerRPCPlayEmptyReloadAnimation_Validate()
+{
+	return bCanFire;
+}
+
+void AAACharacterPlayer::ServerRPCPlayEmptyReloadAnimation_Implementation()
+{
+	PlayReloadAnimation();
+
+	MulticastRPCPlayReloadAnimation();
 }
 
 bool AAACharacterPlayer::ServerRPCPlayReloadAnimation_Validate()
@@ -924,7 +975,30 @@ bool AAACharacterPlayer::ServerRPCPlayReloadAnimation_Validate()
 
 void AAACharacterPlayer::ServerRPCPlayReloadAnimation_Implementation()
 {
-	MulticastRPCPlayReloadAnimation();
+	PlayReloadAnimation();
+
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				AAACharacterPlayer* OtherPlayer = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
+				if (OtherPlayer)
+				{
+					OtherPlayer->ClientRPCPlayReloadAnimation(this);
+				}
+			}
+		}
+	}
+}
+
+void AAACharacterPlayer::ClientRPCPlayReloadAnimation_Implementation(AAACharacterPlayer* CharacterToPlay)
+{
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->PlayReloadAnimation();
+	}
 }
 
 void AAACharacterPlayer::MulticastRPCPlayReloadAnimation_Implementation()
@@ -953,21 +1027,41 @@ void AAACharacterPlayer::ApplyAbility()
 	{
 		SetAllAbility(AllAbility);
 		SetAbilityInController(AllAbility);
-	}
-	if (IsLocallyControlled())
-	{
 		ServerRPCApplyAbility(AllAbility);
+	}
+	else
+	{
+		if (IsLocallyControlled())
+		{
+			SetAllAbility(AllAbility);
+			SetAbilityInController(AllAbility);
+
+			ClearPool();
+
+			for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+			{
+				if (PlayerController && GetController() != PlayerController)
+				{
+					if (!PlayerController->IsLocalController())
+					{
+						AAACharacterPlayer* OtherPlayer = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
+						if (OtherPlayer)
+						{
+							OtherPlayer->ClientRPCApplyAbility(this, AllAbility);
+						}
+					}
+				}
+			}
+		}
 	}
 }
 
 void AAACharacterPlayer::ServerRPCApplyAbility_Implementation(const FAAAbilityStat& NewAbilityStat)
 {
-	
-	SetAllAbility(NewAbilityStat);
-	SetAbilityInController(NewAbilityStat);
-
 	ClearPool();
 	//UE_LOG(LogAACharacter, Error, TEXT("Server"));
+
+	SetAllAbility(NewAbilityStat);
 
 	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
 	{
@@ -1043,6 +1137,7 @@ void AAACharacterPlayer::SetAbilityInController(const FAAAbilityStat& NewAbility
 
 void AAACharacterPlayer::SetAbilityBeginPlay()
 {
+
 	if (IsLocallyControlled())
 	{
 		AAAPlayerController* testController = Cast<AAAPlayerController>(GetController());
@@ -1062,7 +1157,6 @@ void AAACharacterPlayer::SetAbilityBeginPlay()
 
 USkeletalMesh* AAACharacterPlayer::SetChangeSkeletalMesh(bool bChange)
 {
-	
 	bChange ? CurrentIndex++ : CurrentIndex--;
 	if (CurrentIndex == -1) CurrentIndex = MaxIndex - 1;
 	if (CurrentIndex == MaxIndex) CurrentIndex = 0;
@@ -1083,7 +1177,7 @@ void AAACharacterPlayer::SetPlayerStopFire()
 {
 	if (HasAuthority())
 	{
-		bCanFire = false;
+		ServerSetCanFire(false);
 	}
 	else
 	{
@@ -1095,7 +1189,7 @@ void AAACharacterPlayer::ClientRPCSetPlayerStopFire_Implementation()
 {
 	if (IsLocallyControlled())
 	{
-		bCanFire = false;
+		ServerSetCanFire(false);
 	}
 }
 
