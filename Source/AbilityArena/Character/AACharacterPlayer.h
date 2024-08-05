@@ -139,7 +139,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AmmoPool, Meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<class AAAWeaponAmmo>> AmmoPool;
 
-	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = AmmoPool, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AmmoPool, Meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class AAAWeaponAmmo> PooledAmmoClass;
 
 	int32 AmmoPoolSize = 0;
@@ -235,7 +235,7 @@ protected:
 	UPROPERTY()
 	TArray<FAAAbilityStat> SelectedAbilityArray;
 
-	UPROPERTY(Replicated, VisibleInstanceOnly, Category = Ability, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleInstanceOnly, Category = Ability, Meta = (AllowPrivateAccess = "true"))
 	FAAAbilityStat SelectedAbility;
 
 	UPROPERTY(Config, EditAnywhere)

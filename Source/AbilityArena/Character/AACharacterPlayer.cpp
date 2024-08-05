@@ -198,8 +198,6 @@ void AAACharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AAACharacterPlayer, PooledAmmoClass);
-	DOREPLIFETIME(AAACharacterPlayer, SelectedAbility);
 	DOREPLIFETIME(AAACharacterPlayer, bIsSlowly);
 }
 

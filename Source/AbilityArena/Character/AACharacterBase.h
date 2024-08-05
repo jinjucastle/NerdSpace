@@ -73,7 +73,7 @@ protected:
 
 	// ver 0.1.2a
 	// Set Replicated
-	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAAWeaponItemData> WeaponData;
 
 	//ver 0.4.2b

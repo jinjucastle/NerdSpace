@@ -133,7 +133,6 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
-	DOREPLIFETIME(AAACharacterBase, WeaponData);
 	DOREPLIFETIME(AAACharacterBase, MaxAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, CurrentAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, bCanFire);
