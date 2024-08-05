@@ -292,17 +292,29 @@ void AAACharacterBase::SetWeaponDataBegin()
 {
 	//ver0.8.1b
 	//SavedWeaponData 
-	if (IsLocallyControlled())
+	FTimerHandle DelayTimerHandle;
+
+	if (!IsValid(WeaponData))
 	{
-		AAAPlayerController* testController = Cast<AAAPlayerController>(GetController());
-		if (testController)
+		GetWorld()->GetTimerManager().SetTimer(
+			DelayTimerHandle,
+			FTimerDelegate::CreateLambda([&]() {
+				SetWeaponDataBegin();
+				GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
+				}), 0.1f, false);
+	}
+	else
+	{
+		if (IsLocallyControlled())
 		{
-			UAAGameInstance* PC = Cast<UAAGameInstance>(testController->GetGameInstance());
-			PC->SetWeaponItemData(WeaponData);
-			//UE_LOG(LogAACharacter, Error, TEXT("WeaponData:%s"), *PC->GetName());
+			AAAPlayerController* testController = Cast<AAAPlayerController>(GetController());
+			if (testController)
+			{
+				UAAGameInstance* PC = Cast<UAAGameInstance>(testController->GetGameInstance());
+				PC->SetWeaponItemData(WeaponData);
+			}
 		}
 	}
-	
 }
 
 void AAACharacterBase::SetWeaponDataStore()

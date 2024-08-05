@@ -182,12 +182,6 @@ public:
 	void ServerRPCFire(const FVector& NewLocation, const FVector& NewDirection);
 
 	UFUNCTION(Client, Unreliable)
-	void ClientRPCFire(AAACharacterPlayer* CharacterToPlay, class AAAWeaponAmmo* AmmoClass, const FVector& NewLocation, const FVector& NewDirection);
-
-	UFUNCTION(NetMulticast, Unreliable)
-	void MulticastRPCFire(AAACharacterPlayer* CharacterToPlay, class AAAWeaponAmmo* AmmoClass, const FVector& NewLocation, const FVector& NewDirection);
-
-	UFUNCTION(Client, Unreliable)
 	void ClientRPCSpawnShell();
 
 // ver 0.1.3a
