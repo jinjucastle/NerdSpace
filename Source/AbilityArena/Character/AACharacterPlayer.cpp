@@ -754,7 +754,7 @@ FVector AAACharacterPlayer::GetMovementSpreadDirection(const FVector& InAimDirec
 bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FVector& NewDirection)
 {
 	// add validation logic later
-	return bCanFire && (CurrentAmmoSize > 0);
+	return CurrentAmmoSize > 0;
 }
 
 void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation, const FVector& NewDirection)
@@ -774,8 +774,6 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 			Rocket->SetActive(true);
 			Rocket->Fire(NewDirection);
 
-			//MulticastRPCFire(this, Rocket, MuzzleLocation, NewDirection);
-
 			CurrentAmmoSize--;
 		}
 	}
@@ -791,20 +789,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 				Bullet->SetActorLocation(NewLocation);
 				Bullet->SetActive(true);
 				Bullet->Fire(BulletRotation.Vector());
-				/*for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
-				{
-					if (PlayerController && GetController() != PlayerController)
-					{
-						if (!PlayerController->IsLocalController())
-						{
-							AAACharacterPlayer* OtherPlayer = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
-							if (OtherPlayer)
-							{
-								OtherPlayer->ClientRPCFire(this, Bullet, NewLocation, BulletRotation.Vector());
-							}
-						}
-					}
-				}*/
+
 				CurrentAmmoSize--;
 			}
 		}
@@ -818,20 +803,6 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 			Bullet->SetActorLocation(NewLocation);
 			Bullet->SetActive(true);
 			Bullet->Fire(NewDirection);
-			/*for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
-			{
-				if (PlayerController && GetController() != PlayerController)
-				{
-					if (!PlayerController->IsLocalController())
-					{
-						AAACharacterPlayer* OtherPlayer = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
-						if (OtherPlayer)
-						{
-							OtherPlayer->ClientRPCFire(this, Bullet, NewLocation, NewDirection);
-						}
-					}
-				}
-			}*/
 
 			CurrentAmmoSize--;
 
@@ -847,29 +818,6 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 		{
 			ChangeZoom();
 		}
-	}
-}
-
-void AAACharacterPlayer::ClientRPCFire_Implementation(AAACharacterPlayer* CharacterToPlay, AAAWeaponAmmo* AmmoClass, const FVector& NewLocation, const FVector& NewDirection)
-{
-	if (AmmoClass && CharacterToPlay)
-	{
-		/*AmmoClass->SetOwnerPlayer(CharacterToPlay);
-		AmmoClass->SetActorLocation(NewLocation);
-		AmmoClass->SetActive(true);
-		AmmoClass->Fire(NewDirection);*/
-	}
-}
-
-void AAACharacterPlayer::MulticastRPCFire_Implementation(AAACharacterPlayer* CharacterToPlay, AAAWeaponAmmo* AmmoClass, const FVector& NewLocation, const FVector& NewDirection)
-{
-	if (AmmoClass && CharacterToPlay)
-	{
-		//AmmoClass->SetActorScale3D(FVector(1.f, 1.f * AmmoScale, 1.f * AmmoScale));
-		//AmmoClass->SetOwnerPlayer(CharacterToPlay);
-		//AmmoClass->SetLifeSpan(4.0f);
-		//AmmoClass->SetActive(true);
-		//AmmoClass->Fire(NewDirection);
 	}
 }
 
