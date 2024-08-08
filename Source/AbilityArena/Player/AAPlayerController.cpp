@@ -61,14 +61,7 @@ FAAAbilityStat AAAPlayerController::SendGameInstance()
 			SavedStat = PC->GetPlayerStat();
 		}
 	}
-	else
-	{
-		UAAGameInstance* PC = Cast<UAAGameInstance>(GetGameInstance());
-		if (PC)
-		{
-			SavedStat = PC->GetPlayerStat();
-		}
-	}
+
 	return SavedStat;
 }
 
@@ -115,6 +108,7 @@ void AAAPlayerController::OnPossess(APawn* InPawn)
 		{
 			UE_LOG(LogTemp, Log, TEXT("Controller Possess Pawn Complete."));
 			GameMode->PlayerPossessCompleted(this);
+			SyncWeaponData();
 		}
 	}
 }
@@ -577,6 +571,18 @@ void AAAPlayerController::ResetPlayerStat()
 		else
 		{
 			ClientRPCResetPlayerStat();
+		}
+	}
+}
+
+void AAAPlayerController::SyncWeaponData()
+{
+	if (IsLocalController())
+	{
+		AAACharacterBase* PlayerCharacter = Cast<AAACharacterBase>(GetPawn());
+		if (PlayerCharacter && PlayerCharacter->HasAuthority())
+		{
+			PlayerCharacter->SetWeaponDataStore();
 		}
 	}
 }
