@@ -133,6 +133,7 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
+	DOREPLIFETIME(AAACharacterBase, WeaponData);
 	DOREPLIFETIME(AAACharacterBase, MaxAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, CurrentAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, bCanFire);
@@ -231,8 +232,6 @@ void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* N
 			SetWeaponMesh(WeaponData);
 			Stat->SetWeaponStat(WeaponData->WeaponStat);
 
-			// ver 0.3.2a
-			// Set Ammo Size
 			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
 			CurrentAmmoSize = MaxAmmoSize;
 	}
@@ -379,10 +378,10 @@ void AAACharacterBase::SetWeaponDataStore()
 				}
 			}
 		}
-	}
-	if (IsValid(WeaponData))
-	{
-		EquipWeapon(WeaponData);
+		if (IsValid(WeaponData))
+		{
+			EquipWeapon(WeaponData);
+		}
 	}
 }
 
