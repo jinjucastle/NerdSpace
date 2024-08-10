@@ -122,6 +122,7 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPCSyncWeaponData();
 
+	void SyncWeaponMesh();
 // ver 0.3.2a
 // AmmoSize
 	UPROPERTY(Replicated, BlueprintReadOnly)
@@ -146,9 +147,11 @@ protected:
 
 public:
 	void PlayReloadAnimation();
-	void ServerSetCanFire(bool NewCanFire);
 	void CompleteReload();
   
+	UFUNCTION(Server, Reliable)
+	void ServerSetCanFire(bool NewCanFire);
+
 	UFUNCTION(Client, UnReliable)
 	void ClientRPCSetCanFire(AAACharacterBase* CharacterToPlay, bool NewCanFire);
 

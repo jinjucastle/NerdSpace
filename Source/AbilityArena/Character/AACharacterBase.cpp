@@ -348,34 +348,22 @@ void AAACharacterBase::SetWeaponDataStore()
 
 				FTimerHandle DelayTimerHandle;
 
-				if (!IsValid(WeaponData))
+				if (!HasAuthority())
 				{
-					GetWorld()->GetTimerManager().SetTimer(
-						DelayTimerHandle,
-						FTimerDelegate::CreateLambda([&]() {
-							SetWeaponDataStore();
-							GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
-							}), 0.1f, false);
+					ServerRPCSetWeaponDataStore(WeaponData);
 				}
 				else
 				{
-					if (!HasAuthority())
+					for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
 					{
-						ServerRPCSetWeaponDataStore(WeaponData);
-					}
-					else
-					{
-						for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+						if (PlayerController && GetController() != PlayerController)
 						{
-							if (PlayerController && GetController() != PlayerController)
+							if (!PlayerController->IsLocalController())
 							{
-								if (!PlayerController->IsLocalController())
+								AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(PlayerController->GetPawn());
+								if (OtherPlayer)
 								{
-									AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(PlayerController->GetPawn());
-									if (OtherPlayer)
-									{
-										OtherPlayer->ClientRPCSetWeaponDataStore(WeaponData, this);
-									}
+									OtherPlayer->ClientRPCSetWeaponDataStore(WeaponData, this);
 								}
 							}
 						}
@@ -383,10 +371,14 @@ void AAACharacterBase::SetWeaponDataStore()
 				}
 			}
 		}
-		if (IsValid(WeaponData))
-		{
-			EquipWeapon(WeaponData);
-		}
+	}
+}
+
+void AAACharacterBase::SyncWeaponMesh()
+{
+	if (IsValid(WeaponData))
+	{
+		EquipWeapon(WeaponData);
 	}
 }
 
@@ -433,8 +425,6 @@ void AAACharacterBase::PlayReloadAnimation()
 {
 	if (ReloadMontage || PistolReloadMontage)
 	{
-		FOnMontageEnded EndDelegate;
-
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance)
 		{
@@ -449,13 +439,17 @@ void AAACharacterBase::PlayReloadAnimation()
 					AnimInstance->Montage_Play(ReloadMontage, ReloadSpeed);
 					break;
 				}
+
+				if (bCanFire)
+				{
+					ServerSetCanFire(false);
+				}
 			}
 		}
-		ServerSetCanFire(false);
 	}
 }
 
-void AAACharacterBase::ServerSetCanFire(bool NewCanFire)
+void AAACharacterBase::ServerSetCanFire_Implementation(bool NewCanFire)
 {
 	bCanFire = NewCanFire;
 	ClientRPCSetCanFire(this, NewCanFire);
@@ -493,7 +487,6 @@ void AAACharacterBase::RecoverHealth(UAAItemData* InItemData)
 		UE_LOG(LogAACharacter, Log, TEXT("Recover Health"));
 		Stat->HealHp(AARecoveryItem->RecoveryAmount);
 	}
-
 }
 
 void AAACharacterBase::MakeShield(UAAItemData* InItemData)
@@ -607,7 +600,6 @@ float AAACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 				PlaySound(SmallHitSoundCue, GetActorLocation());
 			}
 		}
-
 
 		if (AAAPlayerController* InstigatorController = Cast<AAAPlayerController>(EventInstigator))
 		{

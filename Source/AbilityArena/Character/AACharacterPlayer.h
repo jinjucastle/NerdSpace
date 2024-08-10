@@ -318,9 +318,6 @@ public:
 // Card Select Time Set Plyer Can't Fire
 	void SetPlayerStopFire();
 
-	UFUNCTION(Client, UnReliable)
-	void ClientRPCSetPlayerStopFire();
-
 // ver 0.10.3a
 // Snifer Rifle Scope UI Section
 protected:

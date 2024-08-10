@@ -1,10 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Animation/AnimNotify_Cocking.h"
+#include "Animation/AnimNotify_CompleteReload.h"
 #include "Character/AACharacterPlayer.h"
 
-void UAnimNotify_Cocking::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
+void UAnimNotify_CompleteReload::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
     Super::Notify(MeshComp, Animation, EventReference);
 
@@ -13,8 +13,7 @@ void UAnimNotify_Cocking::Notify(USkeletalMeshComponent* MeshComp, UAnimSequence
         AAACharacterPlayer* Character = Cast<AAACharacterPlayer>(MeshComp->GetOwner());
         if (Character)
         {
-            Character->PlayCockingSound();
-            Character->CompleteReload();
+            Character->ServerSetCanFire(true);
         }
     }
 }

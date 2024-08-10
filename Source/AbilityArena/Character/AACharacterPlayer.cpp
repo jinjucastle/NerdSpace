@@ -1134,22 +1134,7 @@ USkeletalMesh* AAACharacterPlayer::updateSkeletalMesh(int32 NewIndex)
 
 void AAACharacterPlayer::SetPlayerStopFire()
 {
-	if (HasAuthority())
-	{
-		ServerSetCanFire(false);
-	}
-	else
-	{
-		ClientRPCSetPlayerStopFire();
-	}
-}
-
-void AAACharacterPlayer::ClientRPCSetPlayerStopFire_Implementation()
-{
-	if (IsLocallyControlled())
-	{
-		ServerSetCanFire(false);
-	}
+	ServerSetCanFire(false);
 }
 
 void AAACharacterPlayer::ShowScopeWidget()

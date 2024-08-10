@@ -591,6 +591,19 @@ void AAAGameMode::SyncWeaponDataForAllPlayers()
 			}
 		}
 	}
+
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get());
+		if (PlayerController)
+		{
+			AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
+			if (PlayerCharacter && PlayerCharacter->HasAuthority())
+			{
+				PlayerCharacter->SyncWeaponMesh();
+			}
+		}
+	}
 }
 
 void AAAGameMode::MulticastRPCShowScoreUI_Implementation()
