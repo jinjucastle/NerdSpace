@@ -150,7 +150,7 @@ public:
 	void CompleteReload();
   
 	UFUNCTION(Client, UnReliable)
-	void ClientRPCSetCanFire(bool NewCanFire);
+	void ClientRPCSetCanFire(AAACharacterBase* CharacterToPlay, bool NewCanFire);
 
   //TODO : Delete
 	int32 TestNum;

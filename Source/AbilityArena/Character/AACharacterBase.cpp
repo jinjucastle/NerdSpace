@@ -256,7 +256,12 @@ void AAACharacterBase::ClientRPCChangeWeapon_Implementation(AAACharacterBase* Ch
 {
 	if (CharacterToPlay)
 	{
-		CharacterToPlay->EquipWeapon(NewWeaponData);
+		CharacterToPlay->WeaponData = NewWeaponData;
+		CharacterToPlay->SetWeaponMesh(CharacterToPlay->WeaponData);
+		CharacterToPlay->Stat->SetWeaponStat(CharacterToPlay->WeaponData->WeaponStat);
+
+		CharacterToPlay->MaxAmmoSize = CharacterToPlay->WeaponData->AmmoPoolExpandSize;
+		CharacterToPlay->CurrentAmmoSize = CharacterToPlay->MaxAmmoSize;
 	}
 }
 
@@ -453,7 +458,7 @@ void AAACharacterBase::PlayReloadAnimation()
 void AAACharacterBase::ServerSetCanFire(bool NewCanFire)
 {
 	bCanFire = NewCanFire;
-	ClientRPCSetCanFire(NewCanFire);
+	ClientRPCSetCanFire(this, NewCanFire);
 }
 
 void AAACharacterBase::CompleteReload()
@@ -461,9 +466,12 @@ void AAACharacterBase::CompleteReload()
 	CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
 }
 
-void AAACharacterBase::ClientRPCSetCanFire_Implementation(bool NewCanFire)
+void AAACharacterBase::ClientRPCSetCanFire_Implementation(AAACharacterBase* CharacterToPlay, bool NewCanFire)
 {
-	bCanFire = NewCanFire;
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->bCanFire = NewCanFire;
+	}
 }
 
 void AAACharacterBase::TakeItem(UAAItemData* InItemData)
