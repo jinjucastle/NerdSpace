@@ -142,8 +142,6 @@ void AAACharacterPlayer::BeginPlay()
 		UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(DotEffectMaterial, this);
 		PostProcessComponent->AddOrUpdateBlendable(DynamicMaterial);
 	}
-
-	SetAbilityBeginPlay();
 }
 
 void AAACharacterPlayer::Tick(float DeltaTime)
@@ -752,69 +750,72 @@ FVector AAACharacterPlayer::GetMovementSpreadDirection(const FVector& InAimDirec
 bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FVector& NewDirection)
 {
 	// add validation logic later
-	return CurrentAmmoSize > 0;
+	return true;
 }
 
 void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation, const FVector& NewDirection)
 {
 	// ver 0.3.1a
 	// Panzerfaust Spawn Actor Per Fire
-	if (WeaponData->Type == EWeaponType::Panzerfaust)
+	if (bCanFire)
 	{
-		FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
-
-		AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, MuzzleLocation, NewDirection.Rotation());
-		if (Rocket)
+		if (WeaponData->Type == EWeaponType::Panzerfaust)
 		{
-			Rocket->SetActorScale3D(FVector(1.f, 1.f * AmmoScale, 1.f * AmmoScale));
-			Rocket->SetOwnerPlayer(this);
-			Rocket->SetLifeSpan(4.0f);
-			Rocket->SetActive(true);
-			Rocket->Fire(NewDirection);
+			FVector MuzzleLocation = Weapon->GetSocketLocation(FName("BarrelEndSocket"));
 
-			CurrentAmmoSize--;
+			AAAWeaponAmmo* Rocket = GetWorld()->SpawnActor<AAAWeaponAmmo>(PooledAmmoClass, MuzzleLocation, NewDirection.Rotation());
+			if (Rocket)
+			{
+				Rocket->SetActorScale3D(FVector(1.f, 1.f * AmmoScale, 1.f * AmmoScale));
+				Rocket->SetOwnerPlayer(this);
+				Rocket->SetLifeSpan(4.0f);
+				Rocket->SetActive(true);
+				Rocket->Fire(NewDirection);
+
+				CurrentAmmoSize--;
+			}
 		}
-	}
-	else if (WeaponData->Type == EWeaponType::Shotgun)
-	{
-		for (int i = 0; i < WeaponData->AmmoPoolExpandSize / 2; i++)
+		else if (WeaponData->Type == EWeaponType::Shotgun)
+		{
+			for (int i = 0; i < WeaponData->AmmoPoolExpandSize / 2; i++)
+			{
+				AAAWeaponAmmo* Bullet = GetPooledAmmo();
+
+				if (Bullet)
+				{
+					FRotator BulletRotation = NewDirection.Rotation() + GetRandomRotator();
+					Bullet->SetActorLocation(NewLocation);
+					Bullet->SetActive(true);
+					Bullet->Fire(BulletRotation.Vector());
+
+					CurrentAmmoSize--;
+				}
+			}
+		}
+		else
 		{
 			AAAWeaponAmmo* Bullet = GetPooledAmmo();
 
 			if (Bullet)
 			{
-				FRotator BulletRotation = NewDirection.Rotation() + GetRandomRotator();
 				Bullet->SetActorLocation(NewLocation);
 				Bullet->SetActive(true);
-				Bullet->Fire(BulletRotation.Vector());
+				Bullet->Fire(NewDirection);
 
 				CurrentAmmoSize--;
+
+				ClientRPCSpawnShell();
 			}
 		}
-	}
-	else
-	{
-		AAAWeaponAmmo* Bullet = GetPooledAmmo();
 
-		if (Bullet)
+		if (CurrentAmmoSize <= 0)
 		{
-			Bullet->SetActorLocation(NewLocation);
-			Bullet->SetActive(true);
-			Bullet->Fire(NewDirection);
+			ServerRPCPlayEmptyReloadAnimation();
 
-			CurrentAmmoSize--;
-
-			ClientRPCSpawnShell();
-		}
-	}
-
-	if (CurrentAmmoSize == 0)
-	{
-		ServerRPCPlayEmptyReloadAnimation();
-
-		if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
-		{
-			ChangeZoom();
+			if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
+			{
+				ChangeZoom();
+			}
 		}
 	}
 }
@@ -848,7 +849,8 @@ void AAACharacterPlayer::EquipAmmo(UClass* NewAmmoClass)
 
 bool AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Validate(UClass* NewAmmoClass)
 {
-	return IsValid(NewAmmoClass);
+	//return IsValid(NewAmmoClass);
+	return true;
 }
 
 void AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Implementation(UClass* NewAmmoClass)
@@ -904,7 +906,8 @@ void AAACharacterPlayer::Reload()
 
 bool AAACharacterPlayer::ServerRPCPlayEmptyReloadAnimation_Validate()
 {
-	return bCanFire;
+	//return bCanFire;
+	return true;
 }
 
 void AAACharacterPlayer::ServerRPCPlayEmptyReloadAnimation_Implementation()
@@ -916,7 +919,8 @@ void AAACharacterPlayer::ServerRPCPlayEmptyReloadAnimation_Implementation()
 
 bool AAACharacterPlayer::ServerRPCPlayReloadAnimation_Validate()
 {
-	return bCanFire;
+	//return bCanFire;
+	return true;
 }
 
 void AAACharacterPlayer::ServerRPCPlayReloadAnimation_Implementation()
@@ -963,7 +967,7 @@ FRotator AAACharacterPlayer::GetRandomRotator()
 
 void AAACharacterPlayer::ApplyAbility()
 {
-	FAAAbilityStat AllAbility;
+	FAAAbilityStat AllAbility = FAAAbilityStat();
 	for (int i = 0; i < SelectedAbilityArray.Num(); i++)
 	{
 		AllAbility = AllAbility + SelectedAbilityArray[i];
@@ -971,9 +975,12 @@ void AAACharacterPlayer::ApplyAbility()
 
 	if (!HasAuthority())
 	{
-		SetAllAbility(AllAbility);
-		SetAbilityInController(AllAbility);
-		ServerRPCApplyAbility(AllAbility);
+		if (IsLocallyControlled())
+		{
+			SetAllAbility(AllAbility);
+			SetAbilityInController(AllAbility);
+			ServerRPCApplyAbility(AllAbility);
+		}
 	}
 	else
 	{
@@ -1038,6 +1045,8 @@ void AAACharacterPlayer::SetAbility(const FAAAbilityStat& InAddAbility)
 {
 	SelectedAbility = InAddAbility;
 	SelectedAbilityArray.Add(SelectedAbility);
+
+	UE_LOG(LogTemp, Log, TEXT("Call SetAbility"));
 }
 
 void AAACharacterPlayer::SetAllAbility(const FAAAbilityStat& NewAbilityStat)
@@ -1083,7 +1092,6 @@ void AAACharacterPlayer::SetAbilityInController(const FAAAbilityStat& NewAbility
 
 void AAACharacterPlayer::SetAbilityBeginPlay()
 {
-
 	if (IsLocallyControlled())
 	{
 		AAAPlayerController* testController = Cast<AAAPlayerController>(GetController());
@@ -1099,6 +1107,11 @@ void AAACharacterPlayer::SetAbilityBeginPlay()
 			}
 		}
 	}
+}
+
+void AAACharacterPlayer::ClientRPCSyncAbility_Implementation()
+{
+	SetAbilityBeginPlay();
 }
 
 USkeletalMesh* AAACharacterPlayer::SetChangeSkeletalMesh(bool bChange)

@@ -201,4 +201,8 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class AAAWeaponAmmo> DefaultAmmoClass;
+
+// ver 0.19.1a
+// WeaponData Syncronize
+	void SyncWeaponData();
 };

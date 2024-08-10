@@ -143,16 +143,16 @@ void AAAWeaponAmmo::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, cl
 
 void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
 {
+	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
+
 	if (AAACharacterPlayer* OtherActor = Cast<AAACharacterPlayer>(Other))
 	{
-		if (Cast<AAAPlayerController>(OtherActor->GetController()) == Cast<AAAPlayerController>(Owner->GetController()))
+		if (OtherActor == Owner)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Ignore"));
 			return;
 		}
 	}
-
-	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
 
 	if (HasAuthority())
 	{

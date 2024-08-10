@@ -103,6 +103,7 @@ void AAAGameMode::DefaultGameTimer()
 
 				else
 				{
+					AAGameStateT->RemainingTime--;
 					for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 					{
 						if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
@@ -288,12 +289,21 @@ void AAAGameMode::InitializeSpawnPoints()
 
 AActor* AAAGameMode::ChoosePlayerStart_Implementation(AController* Player)
 {
-	APlayerStart* ChosenSpawnPoint = GetRandomAvailableSpawnPoint();
-	if (ChosenSpawnPoint)
+	const int32 MaxRetries = 10;
+	int32 RetryCount = 0;
+	APlayerStart* ChosenSpawnPoint = nullptr;
+
+	while (RetryCount < MaxRetries)
 	{
-		UsedPlayerStartPoints.Add(ChosenSpawnPoint);
-		UE_LOG(LogTemp, Warning, TEXT("Chosen Spawn Point: %s"), *ChosenSpawnPoint->GetName());
-		return ChosenSpawnPoint;
+		ChosenSpawnPoint = GetRandomAvailableSpawnPoint();
+		if (ChosenSpawnPoint && !IsSpawnPointOccupied(ChosenSpawnPoint))
+		{
+			UsedPlayerStartPoints.Add(ChosenSpawnPoint);
+			UE_LOG(LogTemp, Warning, TEXT("Chosen Spawn Point: %s"), *ChosenSpawnPoint->GetName());
+			return ChosenSpawnPoint;
+		}
+
+		RetryCount++;
 	}
 
 	return Super::ChoosePlayerStart_Implementation(Player);
@@ -306,26 +316,8 @@ APlayerStart* AAAGameMode::GetRandomAvailableSpawnPoint()
 		if (!UsedPlayerStartPoints.Contains(SpawnPoint) && !IsSpawnPointOccupied(SpawnPoint))
 		{
 			AvailableSpawnPoints.Add(SpawnPoint);
+			return SpawnPoint;
 		}
-	}
-
-	if (AvailableSpawnPoints.Num() > 0)
-	{
-		int32 RandomIndex = FMath::RandRange(0, AvailableSpawnPoints.Num() - 1);
-
-		if (IsSpawnPointOccupied(AvailableSpawnPoints[RandomIndex]))
-		{
-			FTimerHandle DelayTimerHandle;
-
-			GetWorld()->GetTimerManager().SetTimer(
-				DelayTimerHandle,
-				FTimerDelegate::CreateLambda([&]() {
-					InitializeSpawnPoints();
-					GetRandomAvailableSpawnPoint();
-					GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
-					}), 0.1f, false);
-		}
-		return AvailableSpawnPoints[RandomIndex];
 	}
 
 	return nullptr;
@@ -452,10 +444,11 @@ void AAAGameMode::CreateWinnerUI(AAAPlayerController* WinnerController)
 
 void AAAGameMode::CheckAllPlayersPossessed()
 {
-	if (AlivePlayers >= TotalPlayers)
+	if (NumPlayersPossessed >= TotalPlayers)
 	{
 		OnAllPlayersReady.Broadcast();
 		StartGame();
+		SyncWeaponDataForAllPlayers();
 	}
 }
 
@@ -579,6 +572,23 @@ void AAAGameMode::ClearAllTimersInLevel(UWorld* World)
 		{
 			// 타이머 매니저를 가져와 타이머 클리어
 			Actor->GetWorldTimerManager().ClearAllTimersForObject(Actor);
+		}
+	}
+}
+
+void AAAGameMode::SyncWeaponDataForAllPlayers()
+{
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get());
+		if (PlayerController)
+		{
+			AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
+			if (PlayerCharacter && PlayerCharacter->HasAuthority())
+			{
+				PlayerCharacter->ClientRPCSyncWeaponData();
+				PlayerCharacter->ClientRPCSyncAbility();
+			}
 		}
 	}
 }

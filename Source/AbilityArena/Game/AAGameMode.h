@@ -131,4 +131,8 @@ private:
 // ver 0.17.4a
 // All Object's Clear Timer in Level
 	void ClearAllTimersInLevel(UWorld* World);
+
+// ver 0.19.1a
+// WeaponData Syncronize
+	void SyncWeaponDataForAllPlayers();
 };

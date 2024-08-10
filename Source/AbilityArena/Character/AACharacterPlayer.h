@@ -264,6 +264,9 @@ public:
 
 	void SetAbilityBeginPlay();
 
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCSyncAbility();
+
 	UFUNCTION(BlueprintCallable)
 	USkeletalMesh* SetChangeSkeletalMesh(bool bChange);
 

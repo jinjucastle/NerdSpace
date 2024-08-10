@@ -73,7 +73,7 @@ protected:
 
 	// ver 0.1.2a
 	// Set Replicated
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAAWeaponItemData> WeaponData;
 
 	//ver 0.4.2b
@@ -117,6 +117,11 @@ public:
 	UFUNCTION(Client, UnReliable)
 	void ClientRPCSetWeaponDataStore(class UAAWeaponItemData* NewWeaponData, AAACharacterBase* CharacterToPlay);
 
+	// ver 0.19.1a
+	// WeaponData Syncronize
+	UFUNCTION(Client, Reliable)
+	void ClientRPCSyncWeaponData();
+
 // ver 0.3.2a
 // AmmoSize
 	UPROPERTY(Replicated, BlueprintReadOnly)
@@ -144,6 +149,9 @@ public:
 	void ServerSetCanFire(bool NewCanFire);
 	void CompleteReload();
   
+	UFUNCTION(Client, UnReliable)
+	void ClientRPCSetCanFire(bool NewCanFire);
+
   //TODO : Delete
 	int32 TestNum;
 

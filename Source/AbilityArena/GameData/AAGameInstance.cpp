@@ -19,6 +19,8 @@ void UAAGameInstance::Init()
 	UE_LOG(LogTemp, Warning, TEXT("CallGameInStance"));
 	
 	Score.Empty();
+	
+	SetDefaultStat();
 }
 
 void UAAGameInstance::SetWeaponItemData(TObjectPtr<class UAAWeaponItemData> SetPresentWeapon)
@@ -34,7 +36,6 @@ TObjectPtr<class UAAWeaponItemData> UAAGameInstance::GetsetWeaponItemData()
 void UAAGameInstance::SetPlayerStat(const FAAAbilityStat& NewPlayerStat)
 {
 	PlayerStat = NewPlayerStat;
-	
 }
 
 FAAAbilityStat UAAGameInstance::GetPlayerStat()
@@ -134,7 +135,7 @@ void UAAGameInstance::SetDefaultStat()
 		SetAmmoClass(GameDefaultAmmoClass);
 	}
 
-	SetPlayerStat(FAAAbilityStat());
+	SetPlayerStat(FAAAbilityStat(1.0f));
 }
 
 void UAAGameInstance::CreateSession()

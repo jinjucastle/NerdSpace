@@ -133,6 +133,7 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
+	DOREPLIFETIME(AAACharacterBase, WeaponData);
 	DOREPLIFETIME(AAACharacterBase, MaxAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, CurrentAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, bCanFire);
@@ -144,13 +145,6 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void AAACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-	//ver 0.4.2b 
-	//Casting GameInstance
-	SetWeaponDataStore();
-
-	//test
-	EquipWeapon(WeaponData);
 }
 
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
@@ -192,24 +186,42 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 
 			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
 			CurrentAmmoSize = MaxAmmoSize;
+
+			ServerRPCChangeWeapon(WeaponData);
 		}
 		else
 		{
 			WeaponData = WeaponItemData;
+			SetWeaponMesh(WeaponData);
+			Stat->SetWeaponStat(WeaponData->WeaponStat);
+
+			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
+			CurrentAmmoSize = MaxAmmoSize;
+
+			for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+			{
+				if (PlayerController && GetController() != PlayerController)
+				{
+					if (!PlayerController->IsLocalController())
+					{
+						AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(PlayerController->GetPawn());
+						if (OtherPlayer)
+						{
+							OtherPlayer->ClientRPCChangeWeapon(this, WeaponData);
+						}
+					}
+				}
+			}
 		}
 
 		SetWeaponDataBegin();
-
-		if(IsLocallyControlled())
-		{
-			ServerRPCChangeWeapon(WeaponData);
-		}
 	}
 }
 
 bool AAACharacterBase::ServerRPCChangeWeapon_Validate(UAAWeaponItemData* NewWeaponData)
 {
-	return IsValid(NewWeaponData);
+	//return IsValid(NewWeaponData);
+	return true;
 }
 
 void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* NewWeaponData)
@@ -220,8 +232,6 @@ void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* N
 			SetWeaponMesh(WeaponData);
 			Stat->SetWeaponStat(WeaponData->WeaponStat);
 
-			// ver 0.3.2a
-			// Set Ammo Size
 			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
 			CurrentAmmoSize = MaxAmmoSize;
 	}
@@ -367,27 +377,23 @@ void AAACharacterBase::SetWeaponDataStore()
 					}
 				}
 			}
-			else
-			{
-				if (WeaponData == nullptr)
-				{
-					FTimerHandle DelayTimerHandle;
-
-					GetWorld()->GetTimerManager().SetTimer(
-						DelayTimerHandle,
-						FTimerDelegate::CreateLambda([&]() {
-							SetWeaponDataStore();
-							GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
-							}), 0.1f, false);
-				}
-			}
+		}
+		if (IsValid(WeaponData))
+		{
+			EquipWeapon(WeaponData);
 		}
 	}
 }
 
+void AAACharacterBase::ClientRPCSyncWeaponData_Implementation()
+{
+	SetWeaponDataStore();
+}
+
 bool AAACharacterBase::ServerRPCSetWeaponDataStore_Validate(UAAWeaponItemData* NewWeaponData)
 {
-	return IsValid(NewWeaponData);
+	//return IsValid(NewWeaponData);
+	return true;
 }
 
 void AAACharacterBase::ServerRPCSetWeaponDataStore_Implementation(UAAWeaponItemData* NewWeaponData)
@@ -427,8 +433,6 @@ void AAACharacterBase::PlayReloadAnimation()
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance)
 		{
-			//AnimInstance->StopAllMontages(0.1f);
-
 			if (WeaponData)
 			{
 				switch (WeaponData->Type)
@@ -442,7 +446,6 @@ void AAACharacterBase::PlayReloadAnimation()
 				}
 			}
 		}
-
 		ServerSetCanFire(false);
 	}
 }
@@ -450,11 +453,17 @@ void AAACharacterBase::PlayReloadAnimation()
 void AAACharacterBase::ServerSetCanFire(bool NewCanFire)
 {
 	bCanFire = NewCanFire;
+	ClientRPCSetCanFire(NewCanFire);
 }
 
 void AAACharacterBase::CompleteReload()
 {
 	CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
+}
+
+void AAACharacterBase::ClientRPCSetCanFire_Implementation(bool NewCanFire)
+{
+	bCanFire = NewCanFire;
 }
 
 void AAACharacterBase::TakeItem(UAAItemData* InItemData)
