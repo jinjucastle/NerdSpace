@@ -559,7 +559,7 @@ void AAAPlayerController::ResetPlayerStat()
 					PC->SetAmmoClass(DefaultAmmoClass);
 				}
 
-				PC->SetPlayerStat(FAAAbilityStat());
+				PC->SetPlayerStat(FAAAbilityStat(1.0f));
 
 				if (GameResultUI)
 				{
@@ -600,7 +600,7 @@ void AAAPlayerController::ClientRPCResetPlayerStat_Implementation()
 				PC->SetAmmoClass(DefaultAmmoClass);
 			}
 
-			PC->SetPlayerStat(FAAAbilityStat());
+			PC->SetPlayerStat(FAAAbilityStat(1.0f));
 
 			if (GameResultUI)
 			{

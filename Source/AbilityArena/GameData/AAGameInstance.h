@@ -119,7 +119,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetCurrentSesstionNumber(int32 InputSessionNumber) { CurrentSessionNumber = InputSessionNumber; }
 
-
 	UFUNCTION(BlueprintCallable)
 	void SetDefaultStat();
 

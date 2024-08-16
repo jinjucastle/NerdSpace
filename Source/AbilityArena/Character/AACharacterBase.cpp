@@ -134,7 +134,6 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(AAACharacterBase, WeaponData);
-	DOREPLIFETIME(AAACharacterBase, MaxAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, CurrentAmmoSize);
 	DOREPLIFETIME(AAACharacterBase, bCanFire);
 	DOREPLIFETIME(AAACharacterBase, bIsAlive);
@@ -145,6 +144,13 @@ void AAACharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void AAACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	SetWeaponDataStore();
+
+	if (IsValid(WeaponData) && IsLocallyControlled())
+	{
+		EquipWeapon(WeaponData);
+	}
 }
 
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
@@ -187,7 +193,10 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 			MaxAmmoSize = WeaponData->AmmoPoolExpandSize;
 			CurrentAmmoSize = MaxAmmoSize;
 
-			ServerRPCChangeWeapon(WeaponData);
+			if (IsLocallyControlled())
+			{
+				ServerRPCChangeWeapon(WeaponData);
+			}
 		}
 		else
 		{
@@ -257,11 +266,23 @@ void AAACharacterBase::ClientRPCChangeWeapon_Implementation(AAACharacterBase* Ch
 	if (CharacterToPlay)
 	{
 		CharacterToPlay->WeaponData = NewWeaponData;
-		CharacterToPlay->SetWeaponMesh(CharacterToPlay->WeaponData);
-		CharacterToPlay->Stat->SetWeaponStat(CharacterToPlay->WeaponData->WeaponStat);
+		CharacterToPlay->SetWeaponMesh(NewWeaponData);
+		CharacterToPlay->Stat->SetWeaponStat(NewWeaponData->WeaponStat);
 
-		CharacterToPlay->MaxAmmoSize = CharacterToPlay->WeaponData->AmmoPoolExpandSize;
+		CharacterToPlay->MaxAmmoSize = NewWeaponData->AmmoPoolExpandSize;
 		CharacterToPlay->CurrentAmmoSize = CharacterToPlay->MaxAmmoSize;
+
+		for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(PlayerController->GetPawn());
+				if (OtherPlayer)
+				{
+					ServerRPCRequestOthersWeaponData(OtherPlayer);
+				}
+			}
+		}
 	}
 }
 
@@ -348,33 +369,70 @@ void AAACharacterBase::SetWeaponDataStore()
 
 				FTimerHandle DelayTimerHandle;
 
-				if (!HasAuthority())
+				if (WeaponData)
 				{
-					ServerRPCSetWeaponDataStore(WeaponData);
-				}
-				else
-				{
-					for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+					if (!HasAuthority())
 					{
-						if (PlayerController && GetController() != PlayerController)
+						ServerRPCSetWeaponDataStore(WeaponData);
+					}
+					else
+					{
+						for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
 						{
-							if (!PlayerController->IsLocalController())
+							if (PlayerController && GetController() != PlayerController)
 							{
-								AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(PlayerController->GetPawn());
-								if (OtherPlayer)
+								if (!PlayerController->IsLocalController())
 								{
-									OtherPlayer->ClientRPCSetWeaponDataStore(WeaponData, this);
+									AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(PlayerController->GetPawn());
+									if (OtherPlayer)
+									{
+										OtherPlayer->ClientRPCSetWeaponDataStore(WeaponData, this);
+									}
 								}
 							}
 						}
 					}
 				}
+				else
+				{
+					GetWorld()->GetTimerManager().SetTimer(
+						DelayTimerHandle,
+						FTimerDelegate::CreateLambda([&]() {
+							SetWeaponDataStore();
+							GetWorld()->GetTimerManager().ClearTimer(DelayTimerHandle);
+							}), 0.1f, false);
+				}
 			}
+		}
+		if (IsValid(WeaponData))
+		{
+			EquipWeapon(WeaponData);
 		}
 	}
 }
 
-void AAACharacterBase::SyncWeaponMesh()
+bool AAACharacterBase::ServerRPCRequestOthersWeaponData_Validate(AAACharacterBase* RequestingPlayer)
+{
+	return true;
+}
+
+void AAACharacterBase::ServerRPCRequestOthersWeaponData_Implementation(AAACharacterBase* RequestingPlayer)
+{
+	if (HasAuthority())
+	{
+		UAAWeaponItemData* PlayerWeaponData = RequestingPlayer->WeaponData;
+		ClientRPCReceiveOthersWeaponData(RequestingPlayer, PlayerWeaponData);
+	}
+}
+
+void AAACharacterBase::ClientRPCReceiveOthersWeaponData_Implementation(AAACharacterBase* RequestingPlayer, UAAWeaponItemData* ReceiveWeaponData)
+{
+	RequestingPlayer->SetWeaponMesh(ReceiveWeaponData);
+
+	UE_LOG(LogTemp, Log, TEXT("Success set to other client's weapon mesh"));
+}
+
+void AAACharacterBase::ClientRPCSyncWeaponMesh_Implementation()
 {
 	if (IsValid(WeaponData))
 	{
@@ -418,6 +476,7 @@ void AAACharacterBase::ClientRPCSetWeaponDataStore_Implementation(UAAWeaponItemD
 	if (CharacterToPlay)
 	{
 		CharacterToPlay->WeaponData = NewWeaponData;
+		CharacterToPlay->EquipWeapon(NewWeaponData);
 	}
 }
 
@@ -456,6 +515,16 @@ void AAACharacterBase::ServerSetCanFire_Implementation(bool NewCanFire)
 }
 
 void AAACharacterBase::CompleteReload()
+{
+	if (!HasAuthority())
+	{
+		ServerRPCCompleteReload();
+	}
+
+	CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
+}
+
+void AAACharacterBase::ServerRPCCompleteReload_Implementation()
 {
 	CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
 }
