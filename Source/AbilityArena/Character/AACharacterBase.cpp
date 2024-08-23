@@ -145,12 +145,6 @@ void AAACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetWeaponDataStore();
-
-	if (IsValid(WeaponData) && IsLocallyControlled())
-	{
-		EquipWeapon(WeaponData);
-	}
 }
 
 void AAACharacterBase::SetCharacterControlData(const UAACharacterControlData* CharacterControlData)
@@ -271,18 +265,6 @@ void AAACharacterBase::ClientRPCChangeWeapon_Implementation(AAACharacterBase* Ch
 
 		CharacterToPlay->MaxAmmoSize = NewWeaponData->AmmoPoolExpandSize;
 		CharacterToPlay->CurrentAmmoSize = CharacterToPlay->MaxAmmoSize;
-
-		for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
-		{
-			if (!PlayerController->IsLocalController())
-			{
-				AAACharacterBase* OtherPlayer = Cast<AAACharacterBase>(PlayerController->GetPawn());
-				if (OtherPlayer)
-				{
-					ServerRPCRequestOthersWeaponData(OtherPlayer);
-				}
-			}
-		}
 	}
 }
 
@@ -365,7 +347,7 @@ void AAACharacterBase::SetWeaponDataStore()
 
 			if (PC->GetsetWeaponItemData())
 			{
-				WeaponData = testController->SetInitData();
+				WeaponData = PC->GetsetWeaponItemData();
 
 				FTimerHandle DelayTimerHandle;
 
@@ -411,28 +393,7 @@ void AAACharacterBase::SetWeaponDataStore()
 	}
 }
 
-bool AAACharacterBase::ServerRPCRequestOthersWeaponData_Validate(AAACharacterBase* RequestingPlayer)
-{
-	return true;
-}
-
-void AAACharacterBase::ServerRPCRequestOthersWeaponData_Implementation(AAACharacterBase* RequestingPlayer)
-{
-	if (HasAuthority())
-	{
-		UAAWeaponItemData* PlayerWeaponData = RequestingPlayer->WeaponData;
-		ClientRPCReceiveOthersWeaponData(RequestingPlayer, PlayerWeaponData);
-	}
-}
-
-void AAACharacterBase::ClientRPCReceiveOthersWeaponData_Implementation(AAACharacterBase* RequestingPlayer, UAAWeaponItemData* ReceiveWeaponData)
-{
-	RequestingPlayer->SetWeaponMesh(ReceiveWeaponData);
-
-	UE_LOG(LogTemp, Log, TEXT("Success set to other client's weapon mesh"));
-}
-
-void AAACharacterBase::ClientRPCSyncWeaponMesh_Implementation()
+void AAACharacterBase::MulticastRPCSyncWeaponMesh_Implementation()
 {
 	if (IsValid(WeaponData))
 	{
@@ -447,7 +408,6 @@ void AAACharacterBase::ClientRPCSyncWeaponData_Implementation()
 
 bool AAACharacterBase::ServerRPCSetWeaponDataStore_Validate(UAAWeaponItemData* NewWeaponData)
 {
-	//return IsValid(NewWeaponData);
 	return true;
 }
 

@@ -122,14 +122,8 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPCSyncWeaponData();
 
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRPCRequestOthersWeaponData(AAACharacterBase* RequestingPlayer);
-
-	UFUNCTION(Client, Reliable)
-	void ClientRPCReceiveOthersWeaponData(AAACharacterBase* RequestingPlayer, UAAWeaponItemData* ReceiveWeaponData);
-
-	UFUNCTION(Client, Reliable)
-	void ClientRPCSyncWeaponMesh();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCSyncWeaponMesh();
 // ver 0.3.2a
 // AmmoSize
 	UPROPERTY(Replicated, BlueprintReadOnly)

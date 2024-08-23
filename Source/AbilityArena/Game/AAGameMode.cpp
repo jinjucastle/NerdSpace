@@ -587,7 +587,7 @@ void AAAGameMode::SyncWeaponDataForAllPlayers()
 			if (PlayerCharacter && PlayerCharacter->HasAuthority())
 			{
 				PlayerCharacter->ClientRPCSyncWeaponData();
-				PlayerCharacter->ClientRPCSyncWeaponMesh();
+				PlayerCharacter->MulticastRPCSyncWeaponMesh();
 				PlayerCharacter->ClientRPCSyncAbility();
 			}
 		}

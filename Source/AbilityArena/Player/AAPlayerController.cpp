@@ -580,7 +580,7 @@ void AAAPlayerController::SyncWeaponData()
 	if (IsLocalController())
 	{
 		AAACharacterBase* PlayerCharacter = Cast<AAACharacterBase>(GetPawn());
-		if (PlayerCharacter && PlayerCharacter->HasAuthority())
+		if (PlayerCharacter)
 		{
 			PlayerCharacter->SetWeaponDataStore();
 		}
