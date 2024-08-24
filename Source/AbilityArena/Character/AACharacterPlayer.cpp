@@ -772,7 +772,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 				Rocket->SetActive(true);
 				Rocket->Fire(NewDirection);
 
-				CurrentAmmoSize--;
+				CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize - 1, 0, MaxAmmoSize);
 			}
 		}
 		else if (WeaponData->Type == EWeaponType::Shotgun)
@@ -788,7 +788,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 					Bullet->SetActive(true);
 					Bullet->Fire(BulletRotation.Vector());
 
-					CurrentAmmoSize--;
+					CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize - 1, 0, MaxAmmoSize);
 				}
 			}
 		}
@@ -802,7 +802,7 @@ void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation
 				Bullet->SetActive(true);
 				Bullet->Fire(NewDirection);
 
-				CurrentAmmoSize--;
+				CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize - 1, 0, MaxAmmoSize);
 
 				ClientRPCSpawnShell();
 			}
