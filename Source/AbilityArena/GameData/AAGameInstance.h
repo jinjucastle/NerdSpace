@@ -7,7 +7,6 @@
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "AAAbilityStat.h"
-
 #include "AAGameInstance.generated.h"
 
 
@@ -97,7 +96,7 @@ public:
 	TMap<FString, FString> PlayerNicknames;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TObjectPtr<USkeletalMesh> CharacterMesh;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 CharacterIndex;
 
@@ -118,7 +117,6 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	void SetCurrentSesstionNumber(int32 InputSessionNumber) { CurrentSessionNumber = InputSessionNumber; }
-
 
 	UFUNCTION(BlueprintCallable)
 	void SetDefaultStat();
