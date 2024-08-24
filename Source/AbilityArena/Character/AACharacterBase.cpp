@@ -487,6 +487,7 @@ void AAACharacterBase::CompleteReload()
 void AAACharacterBase::ServerRPCCompleteReload_Implementation()
 {
 	CurrentAmmoSize = FMath::Clamp(CurrentAmmoSize + MaxAmmoSize, 0, MaxAmmoSize);
+	ServerSetCanFire(true);
 }
 
 void AAACharacterBase::ClientRPCSetCanFire_Implementation(AAACharacterBase* CharacterToPlay, bool NewCanFire)
