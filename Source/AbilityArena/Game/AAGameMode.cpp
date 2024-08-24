@@ -587,20 +587,8 @@ void AAAGameMode::SyncWeaponDataForAllPlayers()
 			if (PlayerCharacter && PlayerCharacter->HasAuthority())
 			{
 				PlayerCharacter->ClientRPCSyncWeaponData();
+				PlayerCharacter->MulticastRPCSyncWeaponMesh();
 				PlayerCharacter->ClientRPCSyncAbility();
-			}
-		}
-	}
-
-	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-	{
-		AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get());
-		if (PlayerController)
-		{
-			AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
-			if (PlayerCharacter && PlayerCharacter->HasAuthority())
-			{
-				PlayerCharacter->SyncWeaponMesh();
 			}
 		}
 	}

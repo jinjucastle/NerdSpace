@@ -559,7 +559,7 @@ void AAAPlayerController::ResetPlayerStat()
 					PC->SetAmmoClass(DefaultAmmoClass);
 				}
 
-				PC->SetPlayerStat(FAAAbilityStat());
+				PC->SetPlayerStat(FAAAbilityStat(1.0f));
 
 				if (GameResultUI)
 				{
@@ -580,7 +580,7 @@ void AAAPlayerController::SyncWeaponData()
 	if (IsLocalController())
 	{
 		AAACharacterBase* PlayerCharacter = Cast<AAACharacterBase>(GetPawn());
-		if (PlayerCharacter && PlayerCharacter->HasAuthority())
+		if (PlayerCharacter)
 		{
 			PlayerCharacter->SetWeaponDataStore();
 		}
@@ -600,7 +600,7 @@ void AAAPlayerController::ClientRPCResetPlayerStat_Implementation()
 				PC->SetAmmoClass(DefaultAmmoClass);
 			}
 
-			PC->SetPlayerStat(FAAAbilityStat());
+			PC->SetPlayerStat(FAAAbilityStat(1.0f));
 
 			if (GameResultUI)
 			{

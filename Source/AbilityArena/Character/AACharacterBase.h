@@ -114,7 +114,7 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCSetWeaponDataStore(class UAAWeaponItemData* NewWeaponData);
 
-	UFUNCTION(Client, UnReliable)
+	UFUNCTION(Client, Reliable)
 	void ClientRPCSetWeaponDataStore(class UAAWeaponItemData* NewWeaponData, AAACharacterBase* CharacterToPlay);
 
 	// ver 0.19.1a
@@ -122,7 +122,8 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPCSyncWeaponData();
 
-	void SyncWeaponMesh();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCSyncWeaponMesh();
 // ver 0.3.2a
 // AmmoSize
 	UPROPERTY(Replicated, BlueprintReadOnly)
@@ -148,6 +149,9 @@ protected:
 public:
 	void PlayReloadAnimation();
 	void CompleteReload();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPCCompleteReload();
   
 	UFUNCTION(Server, Reliable)
 	void ServerSetCanFire(bool NewCanFire);

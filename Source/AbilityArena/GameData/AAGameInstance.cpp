@@ -123,10 +123,6 @@ FString UAAGameInstance::GetPlayerNickname(const FString& InSteamID) const
 	return FString();
 }
 
-
-
-
-
 void UAAGameInstance::SetDefaultStat()
 {
 	if (GameDefaultWeaponData && GameDefaultAmmoClass)
