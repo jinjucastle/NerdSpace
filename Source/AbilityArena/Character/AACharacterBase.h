@@ -126,7 +126,7 @@ public:
 	void MulticastRPCSyncWeaponMesh();
 // ver 0.3.2a
 // AmmoSize
-	UPROPERTY(Replicated, BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly)
 	int32 MaxAmmoSize = 0;
 
 	UPROPERTY(Replicated, BlueprintReadOnly)
