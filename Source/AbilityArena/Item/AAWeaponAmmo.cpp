@@ -184,7 +184,7 @@ void AAAWeaponAmmo::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimi
 void AAAWeaponAmmo::Fire(const FVector& FireDirection) const
 {
 	AmmoMovement->Velocity = FireDirection * AmmoMovement->InitialSpeed;
-	UE_LOG(LogTemp, Log, TEXT("Fire called with direction: %s"), *FireDirection.ToString());
+	UE_LOG(LogTemp, Log, TEXT("Fire called with direction: %s, AmmoSpeed = %f"), *FireDirection.ToString(), AmmoMovement->InitialSpeed);
 }
 
 void AAAWeaponAmmo::MulticastRPCApplyImpulse_Implementation(UPrimitiveComponent* OverlappedComp, const FVector& Impulse)

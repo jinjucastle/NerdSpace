@@ -360,7 +360,7 @@ void AAAPlayerController::ClientSetSteamID_Implementation(const FString& InSteam
 	{
 		SteamID = InSteamID;
 		SteamNickName = InSteamNickName;
-		SetSteamIDInPlayerState(SteamID, SteamNickName);
+
 		UE_LOG(LogTemp, Log, TEXT("%s(%s) is ClientRPC SetSteamID"), *SteamID, *SteamNickName);
 	}
 }
@@ -446,6 +446,8 @@ void AAAPlayerController::SetSteamIDAndNickName()
 					else
 					{
 						ServerSetSteamID(NewID, NewNickName);
+
+						SetSteamIDInPlayerState(SteamID, SteamNickName);
 
 						UE_LOG(LogTemp, Log, TEXT("Set Steam ID and Nickname Complete Client: %s(%s)"), *SteamNickName, *SteamID);
 					}
@@ -536,11 +538,15 @@ void AAAPlayerController::PossessLastPlayerPawn()
 	if (LastPlayerPawn != nullptr)
 	{
 		UnPossess();
-		LastPlayerPawn->SetActorEnableCollision(true);
-		LastPlayerPawn->SetActorHiddenInGame(false);
-		Possess(LastPlayerPawn);
-
-		LastPlayerPawn = nullptr;
+		AAACharacterPlayer* LastPlayerCharacter = Cast<AAACharacterPlayer>(LastPlayerPawn);
+		if (LastPlayerCharacter)
+		{
+			LastPlayerCharacter->GetMesh()->SetSimulatePhysics(false);
+			LastPlayerCharacter->GetMesh()->SetAllBodiesSimulatePhysics(false);
+			LastPlayerCharacter->GetMesh()->SetCollisionProfileName(TEXT("AACharacterMesh"));
+			Possess(LastPlayerPawn);
+			LastPlayerPawn = nullptr;
+		}
 	}
 }
 

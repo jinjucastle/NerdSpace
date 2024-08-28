@@ -13,8 +13,8 @@ public:
 	FAAAbilityStat() : MaxHp(0.0f), RPM(0.0f), Damage(0.0f), MovementSpeed(0.0f), AmmoSpeed(0.0f), AmmoSize(0.0f), AmmoScale(0.0f), Acceleration(0.0f),
 		ReloadSpeed(0.0f), SplashRound(0.0f), BloodDrain(0), Magnification(0) {}
 
-	FAAAbilityStat(float InBaseStatSize) : MaxHp(InBaseStatSize), RPM(0.0f), Damage(InBaseStatSize), MovementSpeed(1.0f), AmmoSpeed(1.0f), AmmoSize(1.0f), AmmoScale(1.0f), Acceleration(1.0f),
-		ReloadSpeed(1.0f), SplashRound(0.0f), BloodDrain(0), Magnification(1) {}
+	FAAAbilityStat(float InBaseStatSize) : MaxHp(InBaseStatSize), RPM(0.0f), Damage(InBaseStatSize), MovementSpeed(InBaseStatSize), AmmoSpeed(InBaseStatSize), AmmoSize(InBaseStatSize), AmmoScale(InBaseStatSize), Acceleration(InBaseStatSize),
+		ReloadSpeed(InBaseStatSize), SplashRound(0.0f), BloodDrain(0), Magnification(1) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
 	float MaxHp;

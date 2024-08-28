@@ -208,13 +208,28 @@ void AAACharacterPlayer::ChangeZoom()
 		SetCharacterControl(ECharacterZoomType::ZoomIn);
 
 		//SniferRifle UI
-		if (WeaponData)
+		if (IsValid(FollowCamera))
 		{
-			if (WeaponData->Type == EWeaponType::SniperRifle)
+			if (WeaponData)
 			{
-				FollowCamera->SetRelativeLocation(FVector(160.f, 30.f, 30.f));
-				ShowScopeWidget();
+				if (WeaponData->Type == EWeaponType::SniperRifle)
+				{
+					FVector NewCameraLocation = FVector(160.f, 30.f, 30.f);
+					if (!NewCameraLocation.ContainsNaN())
+					{
+						FollowCamera->SetRelativeLocation(NewCameraLocation);
+						ShowScopeWidget();
+					}
+					else
+					{
+						UE_LOG(LogTemp, Log, TEXT("NewCameraLocation is ContainsNaN"));
+					}
+				}
 			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("FollowCamera is not valid"));
 		}
 	}
 	else if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
@@ -614,7 +629,6 @@ void AAACharacterPlayer::Fire()
 					}
 				}
 
-
 				ServerRPCFire(MuzzleLocation, FinalDirection);
 
 				if (WeaponData)
@@ -1012,7 +1026,6 @@ void AAACharacterPlayer::ApplyAbility()
 void AAACharacterPlayer::ServerRPCApplyAbility_Implementation(const FAAAbilityStat& NewAbilityStat)
 {
 	ClearPool();
-	//UE_LOG(LogAACharacter, Error, TEXT("Server"));
 
 	SetAllAbility(NewAbilityStat);
 
@@ -1162,18 +1175,23 @@ void AAACharacterPlayer::SetDead()
 {
 	Super::SetDead();
 
-	FActorSpawnParameters SpawnParameter;
-	SpawnParameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-	ASpectatorPawn* SpectatorCam = GetWorld()->SpawnActor<ASpectatorPawn>(SpectatorCamera, FollowCamera->GetComponentTransform(), SpawnParameter);
 	AAAPlayerController* MyController = Cast<AAAPlayerController>(GetController());
-	if (IsValid(SpectatorCam) && IsValid(MyController))
+	if (IsValid(MyController))
 	{
 		AAAGameStateT* GS = Cast<AAAGameStateT>(GetWorld()->GetGameState());
 		if (GS->GetAlivePlayer() >= 2)
 		{
-			MyController->OnPlayerDeath();
-			MyController->Possess(SpectatorCam);
+			FActorSpawnParameters SpawnParameter;
+			SpawnParameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+			ASpectatorPawn* SpectatorCam = GetWorld()->SpawnActor<ASpectatorPawn>(SpectatorCamera, FollowCamera->GetComponentTransform(), SpawnParameter);
+			if (IsValid(SpectatorCam))
+			{
+				MyController->OnPlayerDeath();
+				HideScopeWidget();
+				MyController->RemoveUI();
+				MyController->Possess(SpectatorCam);
+			}
 		}
 	}
 	else

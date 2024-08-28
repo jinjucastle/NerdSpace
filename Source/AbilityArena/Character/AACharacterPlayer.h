@@ -255,7 +255,7 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerRPCApplyAbility(const FAAAbilityStat& NewAbilityStat);
 
-	UFUNCTION(Client, Unreliable)
+	UFUNCTION(Client, Reliable)
 	void ClientRPCApplyAbility(AAACharacterPlayer* CharacterToPlay, const FAAAbilityStat& NewAbilityStat);
 
 	void SetAllAbility(const FAAAbilityStat& NewAbilityStat);
@@ -264,7 +264,7 @@ public:
 
 	void SetAbilityBeginPlay();
 
-	UFUNCTION(Client, Unreliable)
+	UFUNCTION(Client, Reliable)
 	void ClientRPCSyncAbility();
 
 	UFUNCTION(BlueprintCallable)

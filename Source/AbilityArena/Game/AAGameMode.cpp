@@ -78,6 +78,7 @@ void AAAGameMode::DefaultGameTimer()
 			}
 			else
 			{
+				AAGameStateT->RemainingTime = FMath::Clamp(AAGameStateT->RemainingTime, 0, 7);
 				UE_LOG(LogTemp, Log, TEXT("Finish Game, Move To Lobby: %d"), AAGameStateT->RemainingTime);
 			}
 		}
@@ -103,7 +104,6 @@ void AAAGameMode::DefaultGameTimer()
 
 				else
 				{
-					AAGameStateT->RemainingTime--;
 					for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 					{
 						if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
@@ -152,6 +152,8 @@ void AAAGameMode::FinishGame()
 
 	// ver 0.10.1a
 	// All client can't fire & add card select ui
+	int32 ControllerIndex = 0;
+
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
 		if (AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get()))
@@ -166,6 +168,12 @@ void AAAGameMode::FinishGame()
 				PlayerController->PossessLastPlayerPawn();
 				PlayerController->SetIgnoreMoveInput(true);
 				PlayerController->SetupUIInputmode();
+
+				FTimerHandle LoopTimerHandle;
+				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle, [this, PlayerController]()
+					{
+						PlayerController->ClientRPCCreateCardSelectUI(CardSelectUIClass);
+					}, 0.1f * ControllerIndex , false);
 				PlayerController->ClientRPCCreateCardSelectUI(CardSelectUIClass);
 			}
 		}
@@ -380,7 +388,9 @@ void AAAGameMode::CheckForRoundEnd()
 				}
 			}
 		}
-		FinishGame();
+
+		FTimerHandle RoundFinishHandle;
+		GetWorld()->GetTimerManager().SetTimer(RoundFinishHandle, this, &AAAGameMode::FinishGame, 0.2f, false);
 	}
 }
 
@@ -447,8 +457,10 @@ void AAAGameMode::CheckAllPlayersPossessed()
 	if (NumPlayersPossessed >= TotalPlayers)
 	{
 		OnAllPlayersReady.Broadcast();
-		StartGame();
 		SyncWeaponDataForAllPlayers();
+
+		FTimerHandle StartHandle;
+		GetWorldTimerManager().SetTimer(StartHandle, this, &AAAGameMode::StartGame, 0.4f * TotalPlayers, false);
 	}
 }
 
@@ -532,7 +544,7 @@ void AAAGameMode::ShowScoreUI()
 
 					GameInstance->Score.GenerateKeyArray(PlayerIDs);
 
-					if (PlayerIDs.Num() > 1)
+					if (PlayerIDs.Num() > TotalPlayers - 1)
 					{
 						for (const FString& PlayerID : PlayerIDs)
 						{
@@ -578,6 +590,8 @@ void AAAGameMode::ClearAllTimersInLevel(UWorld* World)
 
 void AAAGameMode::SyncWeaponDataForAllPlayers()
 {
+	int32 ControllerIndex = 0;
+
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
 		AAAPlayerController* PlayerController = Cast<AAAPlayerController>(It->Get());
@@ -586,11 +600,16 @@ void AAAGameMode::SyncWeaponDataForAllPlayers()
 			AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
 			if (PlayerCharacter && PlayerCharacter->HasAuthority())
 			{
-				PlayerCharacter->ClientRPCSyncWeaponData();
-				PlayerCharacter->MulticastRPCSyncWeaponMesh();
-				PlayerCharacter->ClientRPCSyncAbility();
+				FTimerHandle LoopTimerHandle1;
+				FTimerHandle LoopTimerHandle2;
+				FTimerHandle LoopTimerHandle3;
+				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle1, PlayerCharacter, &AAACharacterPlayer::ClientRPCSyncWeaponData, 0.1f * ControllerIndex, false);
+				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle2, PlayerCharacter, &AAACharacterPlayer::MulticastRPCSyncWeaponMesh, 0.2f * ControllerIndex, false);
+				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle3, PlayerCharacter, &AAACharacterPlayer::ClientRPCSyncAbility, 0.3f * ControllerIndex, false);
 			}
 		}
+
+		ControllerIndex++;
 	}
 }
 
