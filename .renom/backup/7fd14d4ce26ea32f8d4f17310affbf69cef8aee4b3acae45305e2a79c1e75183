@@ -1,6 +1,7 @@
+
+
 [/Script/EngineSettings.GeneralProjectSettings]
 ProjectID=44A659E54E6DA77A7E35A8BDEE58232D
-ProjectName=NerdSpace
 
 [Staging]
 +AllowedConfigFiles=AbilityArena/Config/DefaultAbilityArena.ini
@@ -128,3 +129,4 @@ bSkipMovies=False
 PerPlatformBuildConfig=()
 PerPlatformTargetFlavorName=(("Android", "Android_ASTC"))
 PerPlatformBuildTarget=()
+

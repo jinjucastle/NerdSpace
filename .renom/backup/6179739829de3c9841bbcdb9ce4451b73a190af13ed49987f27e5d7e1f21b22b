@@ -6,6 +6,7 @@ LogTemp=Log
 bEnableCaptureDeviceAudioInput=False
 
 [/Script/EngineSettings.GameMapsSettings]
+
 GameDefaultMap=/Game/Maps/TestJoinMap.TestJoinMap
 EditorStartupMap=/Game/Maps/TestJoinMap.TestJoinMap
 GameInstanceClass=/Game/Blueprint/TestMainMenu/BP_AAGameinstance.BP_AAGameinstance_C
@@ -273,5 +274,3 @@ bCookBlueprintComponentTemplateData=False
 bSubstepping=True
 bTickPhysicsAsync=False
 
-[URL]
-GameName=NerdSpace
