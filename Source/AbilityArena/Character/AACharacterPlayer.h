@@ -232,9 +232,6 @@ protected:
 // ver 0.6.2a
 // AbilityStat Section
 protected:
-	UPROPERTY()
-	TArray<FAAAbilityStat> SelectedAbilityArray;
-
 	UPROPERTY(VisibleInstanceOnly, Category = Ability, Meta = (AllowPrivateAccess = "true"))
 	FAAAbilityStat SelectedAbility;
 
@@ -264,8 +261,8 @@ public:
 
 	void SetAbilityBeginPlay();
 
-	UFUNCTION(Client, Reliable)
-	void ClientRPCSyncAbility();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCSyncAbility();
 
 	UFUNCTION(BlueprintCallable)
 	USkeletalMesh* SetChangeSkeletalMesh(bool bChange);

@@ -401,7 +401,7 @@ void AAACharacterBase::MulticastRPCSyncWeaponMesh_Implementation()
 	}
 }
 
-void AAACharacterBase::ClientRPCSyncWeaponData_Implementation()
+void AAACharacterBase::MulticastRPCSyncWeaponData_Implementation()
 {
 	SetWeaponDataStore();
 }

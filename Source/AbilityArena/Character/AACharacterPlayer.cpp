@@ -142,6 +142,8 @@ void AAACharacterPlayer::BeginPlay()
 		UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(DotEffectMaterial, this);
 		PostProcessComponent->AddOrUpdateBlendable(DynamicMaterial);
 	}
+
+	SetAbilityBeginPlay();
 }
 
 void AAACharacterPlayer::Tick(float DeltaTime)
@@ -981,45 +983,20 @@ FRotator AAACharacterPlayer::GetRandomRotator()
 
 void AAACharacterPlayer::ApplyAbility()
 {
-	FAAAbilityStat AllAbility = FAAAbilityStat();
-	for (int i = 0; i < SelectedAbilityArray.Num(); i++)
+	FAAAbilityStat AllAbility;
+	AAAPlayerController* CharacterController = Cast<AAAPlayerController>(GetController());
+	if (CharacterController)
 	{
-		AllAbility = AllAbility + SelectedAbilityArray[i];
+		AllAbility = CharacterController->SendGameInstance();
 	}
 
-	if (!HasAuthority())
-	{
-		if (IsLocallyControlled())
-		{
-			SetAllAbility(AllAbility);
-			SetAbilityInController(AllAbility);
-			ServerRPCApplyAbility(AllAbility);
-		}
-	}
-	else
-	{
-		if (IsLocallyControlled())
-		{
-			SetAllAbility(AllAbility);
-			SetAbilityInController(AllAbility);
+	AllAbility = AllAbility + SelectedAbility;
 
-			ClearPool();
+	SetAbilityInController(AllAbility);
 
-			for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
-			{
-				if (PlayerController && GetController() != PlayerController)
-				{
-					if (!PlayerController->IsLocalController())
-					{
-						AAACharacterPlayer* OtherPlayer = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
-						if (OtherPlayer)
-						{
-							OtherPlayer->ClientRPCApplyAbility(this, AllAbility);
-						}
-					}
-				}
-			}
-		}
+	if (IsLocallyControlled())
+	{
+		ServerRPCApplyAbility(AllAbility);
 	}
 }
 
@@ -1043,7 +1020,6 @@ void AAACharacterPlayer::ServerRPCApplyAbility_Implementation(const FAAAbilitySt
 			}
 		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("ServerRPCApplyAbility: New MaxHp = %f"), Stat->GetMaxHp());
 }
 
 void AAACharacterPlayer::ClientRPCApplyAbility_Implementation(AAACharacterPlayer* CharacterToPlay, const FAAAbilityStat& NewAbilityStat)
@@ -1057,7 +1033,6 @@ void AAACharacterPlayer::ClientRPCApplyAbility_Implementation(AAACharacterPlayer
 void AAACharacterPlayer::SetAbility(const FAAAbilityStat& InAddAbility)
 {
 	SelectedAbility = InAddAbility;
-	SelectedAbilityArray.Add(SelectedAbility);
 
 	UE_LOG(LogTemp, Log, TEXT("Call SetAbility"));
 }
@@ -1097,8 +1072,15 @@ void AAACharacterPlayer::SetAbilityInController(const FAAAbilityStat& NewAbility
 		if (testController)
 		{
 			UAAGameInstance* PC = Cast<UAAGameInstance>(testController->GetGameInstance());
-			PC->SetPlayerStat(NewAbilityStat);
-			PC->SetAmmoClass(PooledAmmoClass);
+			if (PC)
+			{
+				PC->SetPlayerStat(NewAbilityStat);
+				PC->SetAmmoClass(PooledAmmoClass);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Log, TEXT("Cast Fail to GameInstance"));
+			}
 		}
 	}
 }
@@ -1113,7 +1095,6 @@ void AAACharacterPlayer::SetAbilityBeginPlay()
 			UAAGameInstance* PC = Cast<UAAGameInstance>(testController->GetGameInstance());
 			if (PC)
 			{
-				SetAbility(testController->SendGameInstance());
 				EquipAmmo(PC->GetAmmoClass());
 				PC->SetAmmoClass(PC->GetAmmoClass());
 				ApplyAbility();
@@ -1122,7 +1103,7 @@ void AAACharacterPlayer::SetAbilityBeginPlay()
 	}
 }
 
-void AAACharacterPlayer::ClientRPCSyncAbility_Implementation()
+void AAACharacterPlayer::MulticastRPCSyncAbility_Implementation()
 {
 	SetAbilityBeginPlay();
 }

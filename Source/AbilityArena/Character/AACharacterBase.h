@@ -119,8 +119,8 @@ public:
 
 	// ver 0.19.1a
 	// WeaponData Syncronize
-	UFUNCTION(Client, Reliable)
-	void ClientRPCSyncWeaponData();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCSyncWeaponData();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCSyncWeaponMesh();

@@ -603,9 +603,9 @@ void AAAGameMode::SyncWeaponDataForAllPlayers()
 				FTimerHandle LoopTimerHandle1;
 				FTimerHandle LoopTimerHandle2;
 				FTimerHandle LoopTimerHandle3;
-				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle1, PlayerCharacter, &AAACharacterPlayer::ClientRPCSyncWeaponData, 0.1f * ControllerIndex, false);
+				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle1, PlayerCharacter, &AAACharacterPlayer::MulticastRPCSyncWeaponData, 0.1f * ControllerIndex, false);
 				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle2, PlayerCharacter, &AAACharacterPlayer::MulticastRPCSyncWeaponMesh, 0.2f * ControllerIndex, false);
-				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle3, PlayerCharacter, &AAACharacterPlayer::ClientRPCSyncAbility, 0.3f * ControllerIndex, false);
+				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle3, PlayerCharacter, &AAACharacterPlayer::MulticastRPCSyncAbility, 0.3f * ControllerIndex, false);
 			}
 		}
 
