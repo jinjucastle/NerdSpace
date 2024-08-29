@@ -1,0 +1,116 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "AAWeaponAmmo.generated.h"
+
+UENUM(BlueprintType)
+enum class EAmmoType : uint8
+{
+	Normal = 0,
+	Rocket,
+	Funny
+};
+
+UCLASS()
+class NERDSPACE_API AAAWeaponAmmo : public AActor
+{
+	GENERATED_BODY()
+
+public:
+	// Sets default values for this actor's properties
+	AAAWeaponAmmo();
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+public:
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+// ver 0.0.2a
+// Create Ammo Actor
+protected:
+	UPROPERTY(EditAnywhere, Category = Properties, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> AmmoMesh;
+
+	UPROPERTY(VisibleAnywhere, Category = Properties, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UProjectileMovementComponent> AmmoMovement;
+
+	float Damage;
+
+	virtual void NotifyHit(class UPrimitiveComponent* MyComp, AActor* Other, class UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit) override;
+
+	UFUNCTION()
+	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+// ver 0.0.2a
+// Fire Action 
+public:
+	// ver 0.3.1a
+	// Change Function Parameter
+	void Fire(const FVector& FireDirection)const;
+
+	// ver 0.8.1a
+	// Multicast Impulse
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCApplyImpulse(UPrimitiveComponent* OverlappedComp, const FVector& Impulse);
+
+// ver 0.0.2a
+// Object Pool System
+public:
+	void SetOwnerPlayer(class AAACharacterPlayer* InPlayer);
+	void ReturnSelf();
+	void SetActive(bool InIsActive);
+	FORCEINLINE bool IsActive() { return bIsActive; }
+
+private:
+	FTimerHandle ActiveHandle;
+	bool bIsActive;
+	TObjectPtr<class AAACharacterPlayer> Owner;
+
+// ver 0.1.3a
+// Add Rocket Acceleration To Need AmmoType
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Type)
+	EAmmoType AmmoType;
+
+// ver 0.7.3a
+// Damage Section
+	FORCEINLINE void SetDamage(const float NewDamage) { Damage = NewDamage; }
+
+// ver 0.7.4a
+// Panzerfaust Splash Damage
+	void ApplySplashDamage();
+
+protected:
+	float SplashRound;
+
+	// ver 0.11.2a
+	// Owner Location
+	FVector OwnerLocation;
+
+// ver 0.11.6a
+// fx Section & Sound Section
+public:
+	UPROPERTY(EditDefaultsOnly, Category = "Effects")
+	class UNiagaraSystem* AmmoEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Effects")
+	class UNiagaraSystem* HitEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFXAudio")
+	TObjectPtr<class USoundCue> AmmoSoundCue;
+
+	void PlaySoundCue();
+
+protected:
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCPlaySound(USoundCue* SoundCue, FVector Location);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCPlayEffect(UNiagaraSystem* InEffect, FVector Location);
+};
