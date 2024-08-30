@@ -143,15 +143,27 @@ void AAACharacterPlayer::BeginPlay()
 		PostProcessComponent->AddOrUpdateBlendable(DynamicMaterial);
 	}
 
-	SetAbilityBeginPlay();
+	if (IsLocallyControlled() && HasAuthority())
+	{
+		SetAbilityBeginPlay();
+	}
 }
 
 void AAACharacterPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	float NewZoomedFov = ZoomedFOV / Magnification;
+	float NewZoomedFov;
 
+	if (Magnification != 0)
+	{
+		NewZoomedFov = ZoomedFOV / Magnification;
+	}
+	else
+	{
+		NewZoomedFov = ZoomedFOV / 1;
+	}
+	
 	if (WeaponData)
 	{
 		float TargetFOV = (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn && WeaponData->Type == EWeaponType::SniperRifle) ? NewZoomedFov : DefaultFOV;
@@ -993,6 +1005,11 @@ void AAACharacterPlayer::ApplyAbility()
 	AllAbility = AllAbility + SelectedAbility;
 
 	SetAbilityInController(AllAbility);
+
+	if (!HasAuthority())
+	{
+		SetAllAbility(AllAbility);
+	}
 
 	if (IsLocallyControlled())
 	{
