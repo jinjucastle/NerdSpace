@@ -147,6 +147,9 @@ void AAACharacterPlayer::BeginPlay()
 	{
 		SetAbilityBeginPlay();
 	}
+
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+	bCanFire = false;
 }
 
 void AAACharacterPlayer::Tick(float DeltaTime)
@@ -1186,6 +1189,10 @@ void AAACharacterPlayer::SetDead()
 			if (IsValid(SpectatorCam))
 			{
 				MyController->OnPlayerDeath();
+				if (CurrentCharacterZoomType == ECharacterZoomType::ZoomIn)
+				{
+					ChangeZoom();
+				}
 				HideScopeWidget();
 				MyController->RemoveUI();
 				MyController->Possess(SpectatorCam);

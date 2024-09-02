@@ -5,6 +5,7 @@
 #include "Game/AAGameStateT.h"
 #include "GameData/AAGameInstance.h"
 #include "GameFramework/PlayerStart.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Player/AAPlayerController.h"
 #include "Player/AASpawnPoint.h"
 #include "Character/AACharacterPlayer.h"
@@ -571,6 +572,13 @@ void AAAGameMode::HideScoreUI()
 		if (PlayerController)
 		{
 			PlayerController->ClientRPCRemoveScoreWidget();
+			
+			AAACharacterPlayer* PlayerCharacter = Cast<AAACharacterPlayer>(PlayerController->GetPawn());
+			if(PlayerCharacter)
+			{
+				PlayerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+				PlayerCharacter->ServerSetCanFire(true);
+			}
 		}
 	}
 }
@@ -603,9 +611,9 @@ void AAAGameMode::SyncWeaponDataForAllPlayers()
 				FTimerHandle LoopTimerHandle1;
 				FTimerHandle LoopTimerHandle2;
 				FTimerHandle LoopTimerHandle3;
-				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle1, PlayerCharacter, &AAACharacterPlayer::MulticastRPCSyncWeaponData, 0.1f * ControllerIndex, false);
-				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle2, PlayerCharacter, &AAACharacterPlayer::MulticastRPCSyncWeaponMesh, 0.2f * ControllerIndex, false);
-				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle3, PlayerCharacter, &AAACharacterPlayer::MulticastRPCSyncAbility, 0.3f * ControllerIndex, false);
+				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle1, PlayerCharacter, &AAACharacterPlayer::MulticastRPCSyncWeaponData, 0.2f * ControllerIndex, false);
+				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle2, PlayerCharacter, &AAACharacterPlayer::MulticastRPCSyncWeaponMesh, 0.4f * ControllerIndex, false);
+				GetWorld()->GetTimerManager().SetTimer(LoopTimerHandle3, PlayerCharacter, &AAACharacterPlayer::MulticastRPCSyncAbility, 0.6f * ControllerIndex, false);
 			}
 		}
 
