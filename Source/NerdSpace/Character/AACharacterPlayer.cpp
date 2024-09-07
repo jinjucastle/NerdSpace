@@ -780,8 +780,7 @@ FVector AAACharacterPlayer::GetMovementSpreadDirection(const FVector& InAimDirec
 
 bool AAACharacterPlayer::ServerRPCFire_Validate(const FVector& NewLocation, const FVector& NewDirection)
 {
-	// add validation logic later
-	return true;
+	return IsValid(WeaponData);
 }
 
 void AAACharacterPlayer::ServerRPCFire_Implementation(const FVector& NewLocation, const FVector& NewDirection)
@@ -880,8 +879,7 @@ void AAACharacterPlayer::EquipAmmo(UClass* NewAmmoClass)
 
 bool AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Validate(UClass* NewAmmoClass)
 {
-	//return IsValid(NewAmmoClass);
-	return true;
+	return IsValid(NewAmmoClass);
 }
 
 void AAACharacterPlayer::ServerRPCSetPooledAmmoClass_Implementation(UClass* NewAmmoClass)
@@ -937,8 +935,7 @@ void AAACharacterPlayer::Reload()
 
 bool AAACharacterPlayer::ServerRPCPlayEmptyReloadAnimation_Validate()
 {
-	//return bCanFire;
-	return true;
+	return (CurrentAmmoSize != MaxAmmoSize) ? true : false;
 }
 
 void AAACharacterPlayer::ServerRPCPlayEmptyReloadAnimation_Implementation()
@@ -950,8 +947,7 @@ void AAACharacterPlayer::ServerRPCPlayEmptyReloadAnimation_Implementation()
 
 bool AAACharacterPlayer::ServerRPCPlayReloadAnimation_Validate()
 {
-	//return bCanFire;
-	return true;
+	return (CurrentAmmoSize != MaxAmmoSize) ? true : false;
 }
 
 void AAACharacterPlayer::ServerRPCPlayReloadAnimation_Implementation()

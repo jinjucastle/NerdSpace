@@ -367,9 +367,7 @@ void AAAPlayerController::ClientSetSteamID_Implementation(const FString& InSteam
 
 bool AAAPlayerController::ServerSetSteamID_Validate(const FString& InSteamID, const FString& InSteamNickName)
 {
-	/*UAAGameInstance* MyGameInstace = Cast<UAAGameInstance>(GetGameInstance());
-	return MyGameInstace->CheckScore(InSteamID);*/
-	return true;
+	return (InSteamID.Len() > 0) ? true : false;
 }
 
 void AAAPlayerController::ServerSetSteamID_Implementation(const FString& InSteamID, const FString& InSteamNickName)

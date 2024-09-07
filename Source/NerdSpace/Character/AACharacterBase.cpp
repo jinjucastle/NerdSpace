@@ -223,8 +223,7 @@ void AAACharacterBase::EquipWeapon(UAAItemData* InItemData)
 
 bool AAACharacterBase::ServerRPCChangeWeapon_Validate(UAAWeaponItemData* NewWeaponData)
 {
-	//return IsValid(NewWeaponData);
-	return true;
+	return IsValid(NewWeaponData);
 }
 
 void AAACharacterBase::ServerRPCChangeWeapon_Implementation(UAAWeaponItemData* NewWeaponData)
@@ -408,7 +407,7 @@ void AAACharacterBase::MulticastRPCSyncWeaponData_Implementation()
 
 bool AAACharacterBase::ServerRPCSetWeaponDataStore_Validate(UAAWeaponItemData* NewWeaponData)
 {
-	return true;
+	return IsValid(NewWeaponData);
 }
 
 void AAACharacterBase::ServerRPCSetWeaponDataStore_Implementation(UAAWeaponItemData* NewWeaponData)
@@ -690,7 +689,7 @@ void AAACharacterBase::SetDead()
 
 bool AAACharacterBase::ServerRPCPlaySound_Validate(USoundCue* SoundCue, FVector Location)
 {
-	return true;
+	return IsValid(SoundCue);
 }
 
 void AAACharacterBase::ServerRPCPlaySound_Implementation(USoundCue* SoundCue, FVector Location)
