@@ -5,12 +5,7 @@
 #include "Item/AAWeaponAmmo.h"
 #include "Game/AAGameMode.h"
 
-UAAGameInstance::UAAGameInstance()
-{
-	bSetPlayerStatStay = false;
 
-	PlayerName = TEXT("Player Name");
-}
 //ver 0.4.2b
 // incomplete GameInstance
 void UAAGameInstance::Init()
@@ -19,7 +14,7 @@ void UAAGameInstance::Init()
 	UE_LOG(LogTemp, Warning, TEXT("CallGameInStance"));
 	
 	Score.Empty();
-	
+	bSetPlayerStatStay = false;
 	SetDefaultStat();
 }
 
