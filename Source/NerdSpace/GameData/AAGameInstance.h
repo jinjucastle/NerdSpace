@@ -7,6 +7,7 @@
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "AAAbilityStat.h"
+#include "AdvancedFriendsGameInstance.h"
 #include "AAGameInstance.generated.h"
 
 
@@ -27,11 +28,10 @@ public:
 };
 
 UCLASS()
-class NERDSPACE_API UAAGameInstance : public UGameInstance
+class NERDSPACE_API UAAGameInstance : public UAdvancedFriendsGameInstance
 {
 	GENERATED_BODY()
 public:
-	UAAGameInstance();
 
 	virtual void Init() override;
 private:
